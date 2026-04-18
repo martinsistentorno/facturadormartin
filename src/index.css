@@ -1,0 +1,247 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+/* ───────────────────────────────────────────
+   COMAND — Design Tokens
+   Estética Agencia (Command) basándose en captura real.
+   ─────────────────────────────────────────── */
+
+@theme {
+  --color-base: #F8F3E9;  /* Fondo marfil/crema cálido */
+  --color-surface: #FFFFFF;
+  --color-surface-alt: #F0EDE1;
+  --color-border: #E8E2D5;
+
+  --color-text-primary: #1A1A1A;
+  --color-text-secondary: #4A4A4A;
+  --color-text-muted: #808080;
+
+  /* Colores principales de las tarjetas (Screenshot) */
+  --color-card-green: #2B5745;
+  --color-card-blue: #2F6474;
+  --color-card-red: #C54B4B; 
+  --color-card-yellow: #C8AC3E;
+
+  --color-accent: #C54B4B; /* Rojo COMMAND como acento */
+  --color-accent-hover: #D15B5B;
+
+  /* Colores Funcionales (antiguos mantenidos para compatibilidad) */
+  --color-green: #2D8F5E;
+  --color-green-subtle: #dcfce7;
+  --color-yellow: #D4A843;
+  --color-yellow-subtle: #fef08a;
+  --color-red: #C0443C;
+  --color-red-subtle: #fee2e2;
+
+  --font-montserrat: 'Montserrat', sans-serif;
+  --font-space: 'Space Grotesk', sans-serif;
+}
+
+/* ─── Base ─── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-space);
+  background-color: var(--color-base);
+  color: var(--color-text-primary);
+  line-height: 1.6;
+}
+
+/* ─── Typography Fluid Clamps ─── */
+h1, h2, h3, h4, h5, h6, .display-text {
+  font-family: var(--font-montserrat);
+  text-transform: uppercase;
+  font-weight: 900;
+  color: var(--color-text-primary);
+}
+
+h1 { font-size: clamp(2rem, 5vw, 3.5rem); line-height: 1.1; }
+h2 { font-size: clamp(1.75rem, 4vw, 2.5rem); line-height: 1.15; }
+h3 { font-size: clamp(1.25rem, 3vw, 1.75rem); line-height: 1.2; }
+
+/* ─── Botones tipo Cápsula ─── */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #ffffff;
+  color: #1A1A1A;
+  font-family: var(--font-space);
+  font-weight: 600;
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
+  padding: 0.85rem 2rem;
+  border-radius: 9999px; /* Pill shaped */
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  border: 1px solid #F0EDE1;
+  transition: all 0.2s ease-in-out;
+  cursor: pointer;
+  text-transform: uppercase;
+  gap: 0.5rem;
+}
+
+.btn-primary:hover {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+  transform: translateY(-2px);
+  border-color: #E8E2D5;
+}
+
+.btn-primary:active {
+  transform: translateY(0px);
+}
+
+.btn-primary svg {
+  width: 16px;
+  height: 16px;
+  opacity: 0.7;
+}
+
+/* Botón Rojo Acertado (basado en el rojo) */
+.btn-accent {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-card-red);
+  color: #ffffff;
+  font-family: var(--font-space);
+  font-weight: 600;
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
+  padding: 0.85rem 2rem;
+  border-radius: 9999px;
+  box-shadow: 0 4px 6px -1px rgba(197, 75, 75, 0.2);
+  transition: all 0.2s ease-in-out;
+  cursor: pointer;
+  text-transform: uppercase;
+  border: none;
+}
+
+.btn-accent:hover {
+  background-color: var(--color-accent-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 12px -1px rgba(197, 75, 75, 0.3);
+}
+
+/* ─── Componentes extraídos de la captura ─── */
+.card-rounded {
+  border-radius: 32px;
+  padding: 2.5rem;
+  color: white;
+}
+.card-green { background-color: var(--color-card-green); }
+.card-blue { background-color: var(--color-card-blue); }
+.card-red { background-color: var(--color-card-red); }
+.card-yellow { background-color: var(--color-card-yellow); }
+
+.input-soft {
+  background-color: #ffffff;
+  border: 1px solid var(--color-border);
+  font-family: var(--font-space);
+  border-radius: 16px;
+  padding: 0.75rem 1.25rem;
+  transition: all 0.2s ease-out;
+  outline: none;
+  box-shadow: inset 0 2px 4px 0 rgba(0,0,0,0.02);
+}
+
+.input-soft:focus {
+  border-color: var(--color-card-blue);
+  box-shadow: 0 0 0 3px rgba(47, 100, 116, 0.1);
+}
+
+/* ─── Scrollbar Custom ─── */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-base);
+}
+::-webkit-scrollbar-thumb {
+  background: #E8E2D5;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-card-red);
+}
+
+/* ─── Selection ─── */
+::selection {
+  background: var(--color-card-yellow);
+  color: white;
+}
+
+/* ─── Utility animations ─── */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.35s ease-out forwards;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes drawerIn {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(100px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes toastOut {
+  from { opacity: 1; transform: translateX(0); }
+  to   { opacity: 0; transform: translateX(100px); }
+}
+
+@keyframes pulseSubtle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.animate-slide-down {
+  animation: slideDown 0.25s ease-out forwards;
+}
+
+.animate-drawer-in {
+  animation: drawerIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-toast-in {
+  animation: toastIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-toast-out {
+  animation: toastOut 0.3s ease-in forwards;
+}
+
+.animate-pulse-subtle {
+  animation: pulseSubtle 2s ease-in-out infinite;
+}
