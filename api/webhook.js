@@ -3,12 +3,25 @@ import { createClient } from '@supabase/supabase-js'
 export default async function handler(req, res) {
   // CORS
   res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
   if (req.method === 'OPTIONS') return res.status(200).end()
+
+  // Mercado Pago a veces manda GET para verificar que la URL está viva
+  if (req.method === 'GET') {
+    return res.status(200).json({ status: 'ok', message: 'Webhook activo' })
+  }
+
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' })
 
+  console.log('═══════════════════════════════════════════════')
   console.log('[Webhook] Nueva notificación recibida')
+  console.log('[Webhook] Headers:', JSON.stringify({
+    'content-type': req.headers['content-type'],
+    'x-signature': req.headers['x-signature'],
+    'x-request-id': req.headers['x-request-id'],
+    'user-agent': req.headers['user-agent']
+  }))
 
   try {
     const supabaseUrl = process.env.VITE_SUPABASE_URL
@@ -25,11 +38,24 @@ export default async function handler(req, res) {
     const supabaseAdmin = createClient(supabaseUrl, supabaseKey)
     const body = req.body
 
-    console.log('[Webhook] Body:', JSON.stringify(body))
+    // Log COMPLETO del body para diagnóstico
+    console.log('[Webhook] Body COMPLETO:', JSON.stringify(body, null, 2))
+    console.log('[Webhook] Query params:', JSON.stringify(req.query))
 
-    if (!body) return res.status(200).json({ received: true, processed: false, reason: 'Empty payload' })
+    if (!body || Object.keys(body).length === 0) {
+      console.log('[Webhook] Body vacío, revisando query params...')
+      // A veces MP manda datos como query params
+      if (req.query?.topic && req.query?.id) {
+        console.log('[Webhook] Datos en query params, redirigiendo...')
+        return await processPayment(supabaseAdmin, accessToken, req.query.id, res)
+      }
+      return res.status(200).json({ received: true, processed: false, reason: 'Empty payload' })
+    }
 
-    const topic = body.topic || body.type
+    const topic = body.topic || body.type || ''
+    const action = body.action || ''
+
+    console.log(`[Webhook] Topic: "${topic}" | Action: "${action}"`)
 
     // ════════════════════════════════════════════════════
     //  ORDEN de Mercado Libre (Marketplace)
@@ -112,101 +138,64 @@ export default async function handler(req, res) {
     }
 
     // ════════════════════════════════════════════════════
-    //  PAGO de Mercado Pago (QR, Point, Link de Pago)
+    //  PAGO de Mercado Pago (QR, Point, Link, Transferencia)
     //  topic: "payment" o action contiene "payment"
+    //  También capturamos "merchant_order" por si viene así
     // ════════════════════════════════════════════════════
-    if (topic === 'payment' || body.action?.includes('payment')) {
-      const paymentId = String(body.data?.id || body.resource?.split('/')?.pop() || '')
+    if (
+      topic === 'payment' ||
+      topic === 'merchant_order' ||
+      action.includes('payment') ||
+      body.data?.id
+    ) {
+      let paymentId = ''
+
+      if (topic === 'merchant_order') {
+        // Si es merchant_order, extraemos los pagos de la orden comercial
+        const moId = body.data?.id || body.resource?.split('/')?.pop()
+        console.log('[Webhook] → Merchant Order:', moId)
+
+        const moRes = await fetch(`https://api.mercadopago.com/merchant_orders/${moId}`, {
+          headers: { 'Authorization': `Bearer ${accessToken}` }
+        })
+        if (moRes.ok) {
+          const mo = await moRes.json()
+          console.log('[Webhook] Merchant Order payments:', JSON.stringify(mo.payments))
+          // Procesar cada pago de la merchant order
+          const approvedPayments = (mo.payments || []).filter(p => p.status === 'approved')
+          if (approvedPayments.length === 0) {
+            console.log('[Webhook] Merchant Order sin pagos aprobados')
+            return res.status(200).json({ received: true, processed: false, reason: 'No approved payments in MO' })
+          }
+          paymentId = String(approvedPayments[0].id)
+        } else {
+          const errText = await moRes.text()
+          console.error('[Webhook] Error al consultar Merchant Order:', errText)
+          // Intentar procesar como payment directo
+          paymentId = String(body.data?.id || '')
+        }
+      } else {
+        paymentId = String(body.data?.id || body.resource?.split('/')?.pop() || '')
+      }
+
       if (!paymentId) return res.status(200).json({ processed: false, reason: 'No payment ID' })
-      console.log('[Webhook] → MePa Payment:', paymentId)
 
-      // Duplicado directo
-      const { data: existingPayment } = await supabaseAdmin
-        .from('ventas').select('id').eq('mp_payment_id', paymentId).maybeSingle()
-      if (existingPayment) return res.status(200).json({ received: true, duplicate: true })
-
-      // Duplicado cruzado: si ya entró como order y la order tiene este paymentId
-      // Buscamos en datos_fiscales->meli_payment_ids
-      const { data: existingViaOrder } = await supabaseAdmin
-        .from('ventas')
-        .select('id')
-        .contains('datos_fiscales', { meli_payment_ids: [paymentId] })
-        .limit(1)
-      if (existingViaOrder && existingViaOrder.length > 0) {
-        console.log('[Webhook] Pago ya registrado via order, saltando')
-        return res.status(200).json({ received: true, duplicate: true })
-      }
-
-      // Consultar la info del pago
-      const payRes = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
-        headers: { 'Authorization': `Bearer ${accessToken}` }
-      })
-      if (!payRes.ok) {
-        const errText = await payRes.text()
-        throw new Error(`MePa Payments API ${payRes.status}: ${errText}`)
-      }
-      const payment = await payRes.json()
-
-      // Si es un pago de una orden de MeLi, ignorar (ya lo maneja orders_v2)
-      if (payment.order?.id) {
-        const meliOrderId = String(payment.order.id)
-        const { data: existingMeliOrder } = await supabaseAdmin
-          .from('ventas').select('id').eq('mp_payment_id', `order-${meliOrderId}`).maybeSingle()
-        if (existingMeliOrder) {
-          console.log('[Webhook] Pago pertenece a orden MeLi ya registrada, saltando')
-          return res.status(200).json({ received: true, duplicate: true })
-        }
-      }
-
-      // Solo procesar pagos aprobados
-      if (payment.status !== 'approved') {
-        console.log(`[Webhook] Pago no aprobado: ${payment.status}`)
-        return res.status(200).json({ received: true, processed: false, reason: `Status: ${payment.status}` })
-      }
-
-      // Datos del pagador
-      const payer = payment.payer || {}
-      let clienteNombre = 'Consumidor Final'
-      if (payer.first_name) clienteNombre = `${payer.first_name} ${payer.last_name || ''}`.trim()
-      else if (payer.email) clienteNombre = payer.email.split('@')[0]
-
-      // Método de pago
-      const typeId = payment.payment_type_id || ''
-      const methodMap = {
-        'credit_card': 'Tarjeta de Crédito',
-        'debit_card': 'Tarjeta de Débito',
-        'account_money': 'Mercado Pago',
-        'ticket': 'Efectivo',
-        'bank_transfer': 'Transferencia'
-      }
-      const formaPago = methodMap[typeId] || 'Mercado Pago'
-
-      const ventaRecord = {
-        fecha: payment.date_approved || payment.date_created || new Date().toISOString(),
-        cliente: clienteNombre,
-        monto: payment.transaction_amount || 0,
-        status: 'pendiente',
-        mp_payment_id: paymentId,
-        datos_fiscales: {
-          email: payer.email || '',
-          identification: { type: payer.identification?.type || 'DNI', number: payer.identification?.number || '' },
-          cuit: payer.identification?.number || '',
-          forma_pago: formaPago,
-          mp_status: payment.status,
-          mp_method: payment.payment_method_id || '',
-          origen: 'mercadopago'
-        }
-      }
-
-      const { error: insertError } = await supabaseAdmin.from('ventas').insert([ventaRecord])
-      if (insertError) throw new Error(`DB Insert Error: ${insertError.message}`)
-
-      console.log('[Webhook] MePa Payment registrado OK')
-      return res.status(200).json({ received: true, processed: true, paymentId })
+      return await processPayment(supabaseAdmin, accessToken, paymentId, res)
     }
 
-    // Cualquier otro tópico (merchant_orders, messages, etc.)
-    console.log(`[Webhook] Tópico no manejado: ${topic}`)
+    // ════════════════════════════════════════════════════
+    //  CATCH-ALL: Cualquier otro tópico
+    //  Lo registramos completo para diagnóstico
+    // ════════════════════════════════════════════════════
+    console.log(`[Webhook] ⚠️ Tópico NO MANEJADO: "${topic}"`)
+    console.log(`[Webhook] Body completo del tópico no manejado:`, JSON.stringify(body, null, 2))
+
+    // Si tiene un data.id, intentamos procesarlo como pago de todas formas
+    if (body.data?.id) {
+      console.log('[Webhook] Tiene data.id, intentando como pago...')
+      return await processPayment(supabaseAdmin, accessToken, String(body.data.id), res)
+    }
+
     return res.status(200).json({ received: true, processed: false, reason: `Tópico ignorado: ${topic}` })
 
   } catch (err) {
@@ -214,4 +203,101 @@ export default async function handler(req, res) {
     // Siempre respondemos 200 para que MeLi/MP no re-envíe infinitamente
     return res.status(200).json({ error: err.message })
   }
+}
+
+// ════════════════════════════════════════════════════════════
+//  Función compartida para procesar un Payment por su ID
+// ════════════════════════════════════════════════════════════
+async function processPayment(supabaseAdmin, accessToken, paymentId, res) {
+  console.log('[Webhook] → Procesando Payment:', paymentId)
+
+  // Duplicado directo
+  const { data: existingPayment } = await supabaseAdmin
+    .from('ventas').select('id').eq('mp_payment_id', paymentId).maybeSingle()
+  if (existingPayment) {
+    console.log('[Webhook] Pago duplicado, saltando')
+    return res.status(200).json({ received: true, duplicate: true })
+  }
+
+  // Duplicado cruzado: si ya entró como order y la order tiene este paymentId
+  const { data: existingViaOrder } = await supabaseAdmin
+    .from('ventas')
+    .select('id')
+    .contains('datos_fiscales', { meli_payment_ids: [paymentId] })
+    .limit(1)
+  if (existingViaOrder && existingViaOrder.length > 0) {
+    console.log('[Webhook] Pago ya registrado via order, saltando')
+    return res.status(200).json({ received: true, duplicate: true })
+  }
+
+  // Consultar la info del pago
+  const payRes = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
+    headers: { 'Authorization': `Bearer ${accessToken}` }
+  })
+  if (!payRes.ok) {
+    const errText = await payRes.text()
+    throw new Error(`MePa Payments API ${payRes.status}: ${errText}`)
+  }
+  const payment = await payRes.json()
+
+  console.log('[Webhook] Payment status:', payment.status, '| type:', payment.payment_type_id, '| method:', payment.payment_method_id)
+
+  // Si es un pago de una orden de MeLi, ignorar (ya lo maneja orders_v2)
+  if (payment.order?.id) {
+    const meliOrderId = String(payment.order.id)
+    const { data: existingMeliOrder } = await supabaseAdmin
+      .from('ventas').select('id').eq('mp_payment_id', `order-${meliOrderId}`).maybeSingle()
+    if (existingMeliOrder) {
+      console.log('[Webhook] Pago pertenece a orden MeLi ya registrada, saltando')
+      return res.status(200).json({ received: true, duplicate: true })
+    }
+  }
+
+  // Solo procesar pagos aprobados
+  if (payment.status !== 'approved') {
+    console.log(`[Webhook] Pago no aprobado: ${payment.status}`)
+    return res.status(200).json({ received: true, processed: false, reason: `Status: ${payment.status}` })
+  }
+
+  // Datos del pagador
+  const payer = payment.payer || {}
+  let clienteNombre = 'Consumidor Final'
+  if (payer.first_name) clienteNombre = `${payer.first_name} ${payer.last_name || ''}`.trim()
+  else if (payer.email) clienteNombre = payer.email.split('@')[0]
+
+  // Método de pago
+  const typeId = payment.payment_type_id || ''
+  const methodMap = {
+    'credit_card': 'Tarjeta de Crédito',
+    'debit_card': 'Tarjeta de Débito',
+    'account_money': 'Mercado Pago',
+    'ticket': 'Efectivo',
+    'bank_transfer': 'Transferencia',
+    'transfer': 'Transferencia'
+  }
+  const formaPago = methodMap[typeId] || payment.payment_method_id || 'Mercado Pago'
+
+  const ventaRecord = {
+    fecha: payment.date_approved || payment.date_created || new Date().toISOString(),
+    cliente: clienteNombre,
+    monto: payment.transaction_amount || 0,
+    status: 'pendiente',
+    mp_payment_id: paymentId,
+    datos_fiscales: {
+      email: payer.email || '',
+      identification: { type: payer.identification?.type || 'DNI', number: payer.identification?.number || '' },
+      cuit: payer.identification?.number || '',
+      forma_pago: formaPago,
+      mp_status: payment.status,
+      mp_method: payment.payment_method_id || '',
+      mp_type: payment.payment_type_id || '',
+      origen: 'mercadopago'
+    }
+  }
+
+  const { error: insertError } = await supabaseAdmin.from('ventas').insert([ventaRecord])
+  if (insertError) throw new Error(`DB Insert Error: ${insertError.message}`)
+
+  console.log(`[Webhook] ✅ Payment ${paymentId} registrado OK (${formaPago})`)
+  return res.status(200).json({ received: true, processed: true, paymentId })
 }
