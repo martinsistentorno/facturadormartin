@@ -147,6 +147,18 @@ export default async function handler(req, res) {
         }
       }
 
+      // ─── Determinar forma de pago ───
+      const typeId = payment.payment_type_id || ''
+      const methodMap = {
+        'credit_card': 'Tarjeta de Crédito',
+        'debit_card': 'Tarjeta de Débito',
+        'account_money': 'Mercado Pago',
+        'ticket': 'Efectivo',
+        'bank_transfer': 'Transferencia',
+        'transfer': 'Transferencia'
+      }
+      const formaPago = methodMap[typeId] || payment.payment_method_id || 'Mercado Pago'
+
       const ventaRecord = {
         fecha: payment.date_approved || payment.date_created || new Date().toISOString(),
         cliente: clienteNombre,
