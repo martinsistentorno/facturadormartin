@@ -67,20 +67,16 @@ export default async function handler(req, res) {
     for (const payment of payments) {
       const paymentId = String(payment.id)
 
-      // ─── Filtrar pagos SALIENTES ───
-      // Comparamos como String porque MP a veces devuelve números y a veces strings
-      const payerId = String(payment.payer?.id || '')
+      // ─── Solo aceptar pagos RECIBIDOS ───
+      // Un pago es "recibido" cuando el dueño de la cuenta es el COLLECTOR (cobrador)
       const collectorId = String(payment.collector_id || '')
       const myId = String(myUserId || '')
-      const opType = payment.operation_type || ''
 
-      console.log(`[Sync] Pago ${paymentId}: payer=${payerId}, collector=${collectorId}, myId=${myId}, op=${opType}`)
+      console.log(`[Sync] Pago ${paymentId}: collector=${collectorId}, myId=${myId}, op=${payment.operation_type || 'N/A'}, monto=$${payment.transaction_amount}`)
 
-      // Es SALIENTE si: el pagador es el dueño de la cuenta
-      // O si el collector NO es el dueño (y tenemos el ID)
-      if (myId && (payerId === myId || (collectorId && collectorId !== myId))) {
+      if (myId && collectorId !== myId) {
         outgoing++
-        console.log(`[Sync] Pago ${paymentId} es SALIENTE, saltando`)
+        console.log(`[Sync] Pago ${paymentId} NO es para esta cuenta (collector=${collectorId}), saltando`)
         continue
       }
 

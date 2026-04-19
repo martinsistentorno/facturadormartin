@@ -242,8 +242,8 @@ async function processPayment(supabaseAdmin, accessToken, paymentId, res) {
 
   console.log('[Webhook] Payment status:', payment.status, '| type:', payment.payment_type_id, '| method:', payment.payment_method_id)
 
-  // ─── Filtrar pagos SALIENTES ───
-  // Si el dueño de la cuenta es el pagador, es un envío de dinero, no una venta
+  // ─── Solo aceptar pagos RECIBIDOS ───
+  // Si el dueño de la cuenta NO es el collector, es un gasto/envío, no una venta
   try {
     const meRes = await fetch('https://api.mercadopago.com/users/me', {
       headers: { 'Authorization': `Bearer ${accessToken}` }
@@ -251,18 +251,17 @@ async function processPayment(supabaseAdmin, accessToken, paymentId, res) {
     if (meRes.ok) {
       const me = await meRes.json()
       const myId = String(me.id)
-      const payerId = String(payment.payer?.id || '')
       const collectorId = String(payment.collector_id || '')
 
-      console.log(`[Webhook] Pago ${paymentId}: payer=${payerId}, collector=${collectorId}, myId=${myId}`)
+      console.log(`[Webhook] Pago ${paymentId}: collector=${collectorId}, myId=${myId}`)
 
-      if (payerId === myId || (collectorId && collectorId !== myId)) {
-        console.log(`[Webhook] Pago ${paymentId} es SALIENTE, ignorando`)
-        return res.status(200).json({ received: true, processed: false, reason: 'Pago saliente' })
+      if (collectorId && collectorId !== myId) {
+        console.log(`[Webhook] Pago ${paymentId} NO es para esta cuenta, ignorando`)
+        return res.status(200).json({ received: true, processed: false, reason: 'Pago no recibido por esta cuenta' })
       }
     }
   } catch (meErr) {
-    console.warn('[Webhook] No se pudo verificar si es pago saliente:', meErr.message)
+    console.warn('[Webhook] No se pudo verificar collector:', meErr.message)
   }
 
   // Si es un pago de una orden de MeLi, ignorar (ya lo maneja orders_v2)
