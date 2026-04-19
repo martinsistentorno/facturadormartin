@@ -281,11 +281,21 @@ async function processPayment(supabaseAdmin, accessToken, paymentId, res) {
     return res.status(200).json({ received: true, processed: false, reason: `Status: ${payment.status}` })
   }
 
-  // Datos del pagador
+  // ─── Extraer datos completos del pagador ───
   const payer = payment.payer || {}
   let clienteNombre = 'Consumidor Final'
-  if (payer.first_name) clienteNombre = `${payer.first_name} ${payer.last_name || ''}`.trim()
-  else if (payer.email) clienteNombre = payer.email.split('@')[0]
+
+  if (payment.point_of_interaction?.transaction_data?.bank_info?.payer_info?.name) {
+    // Transferencias bancarias CVU
+    clienteNombre = payment.point_of_interaction.transaction_data.bank_info.payer_info.name
+  } else if (payer.first_name) {
+    // Pagos estándar MP
+    clienteNombre = `${payer.first_name} ${payer.last_name || ''}`.trim()
+  } else if (payer.entity_type === 'individual' && payer.identification?.number) {
+    clienteNombre = `DNI ${payer.identification.number}`
+  } else if (payer.email) {
+    clienteNombre = payer.email.split('@')[0]
+  }
 
   // Método de pago
   const typeId = payment.payment_type_id || ''

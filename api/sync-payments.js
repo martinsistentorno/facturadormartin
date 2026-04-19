@@ -89,29 +89,9 @@ export default async function handler(req, res) {
         continue
       }
 
-      // Datos del pagador
-      const payer = payment.payer || {}
-      let clienteNombre = 'Consumidor Final'
-      if (payer.first_name) clienteNombre = `${payer.first_name} ${payer.last_name || ''}`.trim()
-      else if (payer.email) clienteNombre = payer.email.split('@')[0]
-
-      // Método de pago
-      const typeId = payment.payment_type_id || ''
-      const methodMap = {
-        'credit_card': 'Tarjeta de Crédito',
-        'debit_card': 'Tarjeta de Débito',
-        'account_money': 'Mercado Pago',
-        'ticket': 'Efectivo',
-        'bank_transfer': 'Transferencia',
-        'transfer': 'Transferencia'
-      }
-      const formaPago = methodMap[typeId] || payment.payment_method_id || 'Mercado Pago'
-
       // ─── Detectar si viene de Mercado Libre ───
-      // Si el pago tiene un order.id, pertenece a una venta del marketplace
       const isMeLiOrder = !!payment.order?.id
       const origen = isMeLiOrder ? 'mercadolibre' : 'mercadopago'
-      // Prefijo "order-" para que la tabla lo muestre como "MeLi #xxx"
       const mpId = isMeLiOrder ? `order-${payment.order.id}` : paymentId
 
       // Si es de MeLi, verificar que no exista ya por el order ID
@@ -124,6 +104,49 @@ export default async function handler(req, res) {
         }
       }
 
+      // ─── Extraer datos completos del cliente ───
+      const payer = payment.payer || {}
+      let clienteNombre = 'Consumidor Final'
+      let docNumber = payer.identification?.number || ''
+      let docType = payer.identification?.type || 'DNI'
+      let email = payer.email || ''
+
+      if (isMeLiOrder) {
+        // En Mercado Libre, consultamos la orden para obtener los verdaderos datos del comprador
+        try {
+          const orderRes = await fetch(`https://api.mercadolibre.com/orders/${payment.order.id}`, {
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+          })
+          if (orderRes.ok) {
+            const order = await orderRes.json()
+            const buyer = order.buyer || {}
+            if (buyer.first_name) {
+              clienteNombre = `${buyer.first_name} ${buyer.last_name || ''}`.trim()
+            } else if (buyer.nickname) {
+              clienteNombre = buyer.nickname
+            }
+            docNumber = buyer.billing_info?.doc_number || buyer.identification?.number || docNumber
+            docType = buyer.billing_info?.doc_type || docType
+            email = buyer.email || email
+          }
+        } catch (err) {
+          console.warn(`[Sync] Error al obtener la orden de MeLi ${payment.order.id}:`, err)
+        }
+      } else {
+        // En Mercado Pago, intentar sacar el nombre de 여러 lados
+        if (payment.point_of_interaction?.transaction_data?.bank_info?.payer_info?.name) {
+          // Transferencias bancarias CVU
+          clienteNombre = payment.point_of_interaction.transaction_data.bank_info.payer_info.name
+        } else if (payer.first_name) {
+          // Pagos estándar MP
+          clienteNombre = `${payer.first_name} ${payer.last_name || ''}`.trim()
+        } else if (payer.entity_type === 'individual' && payer.identification?.number) {
+          clienteNombre = `DNI ${payer.identification.number}`
+        } else if (payer.email) {
+          clienteNombre = payer.email.split('@')[0]
+        }
+      }
+
       const ventaRecord = {
         fecha: payment.date_approved || payment.date_created || new Date().toISOString(),
         cliente: clienteNombre,
@@ -131,9 +154,9 @@ export default async function handler(req, res) {
         status: 'pendiente',
         mp_payment_id: mpId,
         datos_fiscales: {
-          email: payer.email || '',
-          identification: { type: payer.identification?.type || 'DNI', number: payer.identification?.number || '' },
-          cuit: payer.identification?.number || '',
+          email: email,
+          identification: { type: docType, number: docNumber },
+          cuit: docNumber,
           forma_pago: formaPago,
           mp_status: payment.status,
           mp_method: payment.payment_method_id || '',
