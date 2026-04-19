@@ -2,8 +2,10 @@ import { X, FileDown, Edit2, RotateCcw, Calendar, CreditCard, User, Hash, Shield
 import StatusBadge from './StatusBadge';
 import { generateInvoicePdf } from '../utils/invoicePdf';
 import { useEffect } from 'react';
+import { useConfig } from '../context/ConfigContext';
 
 export default function SaleDetailDrawer({ venta, isOpen, onClose, onEdit, onRetry }) {
+  const { emisor } = useConfig();
   // Close on Escape
   useEffect(() => {
     const handleEsc = (e) => { if (e.key === 'Escape') onClose(); };
@@ -26,7 +28,9 @@ export default function SaleDetailDrawer({ venta, isOpen, onClose, onEdit, onRet
   const cuitCliente = venta.datos_fiscales?.cuit || '';
   const condIva = cuitCliente && cuitCliente.length >= 10 ? 'IVA Responsable Inscripto' : 'Consumidor Final';
   const formaPago = venta.datos_fiscales?.forma_pago || 'No especificada';
-  const origen = venta.mp_payment_id ? 'Mercado Libre' : 'Manual';
+  const origenRaw = venta.datos_fiscales?.origen;
+  const origen = origenRaw === 'mercadolibre' ? 'Mercado Libre' : origenRaw === 'mercadopago' ? 'Mercado Pago' : venta.mp_payment_id ? 'Mercado Libre' : 'Manual';
+  const displayPaymentId = venta.mp_payment_id ? venta.mp_payment_id.replace(/^order-/, '') : '';
 
   const handleDownload = async () => {
     if (venta.pdf_url) {
@@ -39,7 +43,7 @@ export default function SaleDetailDrawer({ venta, isOpen, onClose, onEdit, onRet
       } catch (_) { /* URL expirada o inaccesible */ }
     }
     // Fallback: generar PDF local
-    generateInvoicePdf(venta);
+    generateInvoicePdf(venta, emisor);
   };
 
   // Status timeline
@@ -81,7 +85,7 @@ export default function SaleDetailDrawer({ venta, isOpen, onClose, onEdit, onRet
           {/* ─── Status + monto hero ─── */}
           <div className="flex items-center justify-between">
             <StatusBadge status={venta.status} />
-            <span className="text-2xl font-bold text-text-primary" style={{ fontFamily: 'Space Grotesk' }}>
+            <span className="text-2xl font-bold text-text-primary" style={{ fontFamily: 'Inter' }}>
               {formatCurrency(venta.monto)}
             </span>
           </div>
@@ -98,8 +102,8 @@ export default function SaleDetailDrawer({ venta, isOpen, onClose, onEdit, onRet
             <InfoRow label="Fecha" value={`${formatDate(venta.fecha)} ${formatTime(venta.fecha)}`} />
             <InfoRow label="Forma de Pago" value={formaPago} />
             <InfoRow label="Origen" value={origen} highlight={origen === 'Mercado Libre' ? 'accent' : null} />
-            {venta.mp_payment_id && (
-              <InfoRow label="ID MeLi" value={`#${venta.mp_payment_id}`} mono />
+            {displayPaymentId && (
+              <InfoRow label={origen === 'Mercado Pago' ? 'ID Pago MP' : 'ID MeLi'} value={`#${displayPaymentId}`} mono />
             )}
           </Section>
 
@@ -115,7 +119,7 @@ export default function SaleDetailDrawer({ venta, isOpen, onClose, onEdit, onRet
           {/* ─── Error detalle ─── */}
           {venta.status === 'error' && venta.datos_fiscales?.error_detalle && (
             <div className="bg-red-subtle/50 border border-red/20 rounded-xl p-4">
-              <p className="text-xs font-bold text-red uppercase tracking-widest mb-2" style={{ fontFamily: 'Space Grotesk' }}>
+              <p className="text-xs font-bold text-red uppercase tracking-widest mb-2" style={{ fontFamily: 'Inter' }}>
                 Motivo del Error
               </p>
               <p className="text-sm text-red/80">{venta.datos_fiscales.error_detalle}</p>
@@ -166,7 +170,7 @@ export default function SaleDetailDrawer({ venta, isOpen, onClose, onEdit, onRet
             {venta.status === 'facturado' && venta.cae && (
               <button
                 onClick={handleDownload}
-                className="w-full flex items-center justify-center gap-2 bg-black text-white py-3 rounded-xl font-bold uppercase tracking-wider text-sm hover:-translate-y-0.5 hover:shadow-lg transition-all cursor-pointer"
+                className="w-full flex items-center justify-center gap-2 bg-[#3460A8] text-white py-3 rounded-xl font-bold uppercase tracking-wider text-sm hover:-translate-y-0.5 hover:shadow-lg transition-all cursor-pointer"
                 style={{ fontFamily: 'Montserrat' }}
               >
                 <FileDown size={16} />
@@ -207,7 +211,7 @@ function Section({ title, icon: Icon, children }) {
     <div>
       <div className="flex items-center gap-2 mb-3">
         {Icon && <Icon size={14} className="text-text-muted" />}
-        <h4 className="text-xs font-bold text-text-muted uppercase tracking-widest" style={{ fontFamily: 'Space Grotesk' }}>
+        <h4 className="text-xs font-bold text-text-muted uppercase tracking-widest" style={{ fontFamily: 'Inter' }}>
           {title}
         </h4>
       </div>

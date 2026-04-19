@@ -1,12 +1,15 @@
-import { useAuth } from './context/AuthContext'
+﻿import { useAuth } from './context/AuthContext'
+import { useConfig } from './context/ConfigContext'
 import Home from './pages/Home'
 import Login from './pages/Login'
+import EmisorSetupModal from './components/EmisorSetupModal'
 
 export default function App() {
   const { user, loading } = useAuth()
+  const { emisor, loading: configLoading, needsSetup, saveConfig } = useConfig()
 
   // ─── Loading state ───
-  /* if (loading) {
+  if (loading || configLoading) {
     return (
       <div className="min-h-screen bg-base flex items-center justify-center">
         <div className="text-center animate-fade-in">
@@ -15,12 +18,12 @@ export default function App() {
         </div>
       </div>
     )
-  } */
+  }
 
   // ─── Not authenticated ───
-  /* if (!user) {
+  if (!user) {
     return <Login />
-  } */
+  }
 
   // ─── Authenticated ───
   return <Home />

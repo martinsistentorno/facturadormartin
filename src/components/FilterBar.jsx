@@ -11,7 +11,7 @@ const STATUS_OPTIONS = [
 export default function FilterBar({ filters, onFilterChange, totalCount, filteredCount }) {
   const [expanded, setExpanded] = useState(false);
 
-  const hasActiveFilters = filters.search || filters.status || filters.dateFrom || filters.dateTo || filters.montoMin || filters.montoMax;
+  const hasActiveFilters = filters.search || filters.status || filters.medio || filters.dateFrom || filters.dateTo || filters.montoMin || filters.montoMax;
 
   const update = (key, value) => {
     onFilterChange({ ...filters, [key]: value });
@@ -21,6 +21,7 @@ export default function FilterBar({ filters, onFilterChange, totalCount, filtere
     onFilterChange({
       search: '',
       status: '',
+      medio: '',
       dateFrom: '',
       dateTo: '',
       montoMin: '',
@@ -40,7 +41,7 @@ export default function FilterBar({ filters, onFilterChange, totalCount, filtere
             value={filters.search}
             onChange={(e) => update('search', e.target.value)}
             className="w-full pl-10 pr-4 py-2 bg-surface-alt border border-border rounded-lg text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-accent transition-colors"
-            style={{ fontFamily: 'Space Grotesk' }}
+            style={{ fontFamily: 'Inter' }}
           />
         </div>
 
@@ -54,7 +55,7 @@ export default function FilterBar({ filters, onFilterChange, totalCount, filtere
               : 'bg-surface-alt border-border text-text-secondary hover:border-accent/30'
             }
           `}
-          style={{ fontFamily: 'Space Grotesk' }}
+          style={{ fontFamily: 'Inter' }}
         >
           <Filter size={14} />
           Filtros
@@ -67,24 +68,24 @@ export default function FilterBar({ filters, onFilterChange, totalCount, filtere
           <button
             onClick={clearAll}
             className="flex items-center gap-1 px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wider bg-red-subtle border border-red/20 text-red hover:bg-red/10 transition-colors cursor-pointer"
-            style={{ fontFamily: 'Space Grotesk' }}
+            style={{ fontFamily: 'Inter' }}
           >
             <X size={14} />
             Limpiar
           </button>
         )}
 
-        <span className="text-xs text-text-muted whitespace-nowrap hidden sm:block" style={{ fontFamily: 'Space Grotesk' }}>
+        <span className="text-xs text-text-muted whitespace-nowrap hidden sm:block" style={{ fontFamily: 'Inter' }}>
           {hasActiveFilters ? `${filteredCount} de ${totalCount}` : `${totalCount} registros`}
         </span>
       </div>
 
       {/* Expanded filters */}
       {expanded && (
-        <div className="px-4 pb-4 pt-1 border-t border-border grid grid-cols-2 sm:grid-cols-4 gap-3 animate-slide-down">
+        <div className="px-4 pb-4 pt-1 border-t border-border grid grid-cols-2 md:grid-cols-5 gap-3 animate-slide-down">
           {/* Estado */}
           <div>
-            <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5" style={{ fontFamily: 'Space Grotesk' }}>
+            <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5" style={{ fontFamily: 'Inter' }}>
               Estado
             </label>
             <select
@@ -98,9 +99,27 @@ export default function FilterBar({ filters, onFilterChange, totalCount, filtere
             </select>
           </div>
 
+          {/* Medio */}
+          <div>
+            <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5" style={{ fontFamily: 'Inter' }}>
+              Medio de Pago
+            </label>
+            <select
+              value={filters.medio || ''}
+              onChange={(e) => update('medio', e.target.value)}
+              className="w-full bg-surface-alt border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent cursor-pointer"
+            >
+              <option value="">Todos</option>
+              <option value="Contado">Contado / Efectivo</option>
+              <option value="Mercado Pago">Mercado Pago</option>
+              <option value="Transferencia">Transferencia</option>
+              <option value="Tarjeta">Tarjeta (Cred/Deb)</option>
+            </select>
+          </div>
+
           {/* Fecha Desde */}
           <div>
-            <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5" style={{ fontFamily: 'Space Grotesk' }}>
+            <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5" style={{ fontFamily: 'Inter' }}>
               <Calendar size={10} className="inline mr-1" />Desde
             </label>
             <input
@@ -113,7 +132,7 @@ export default function FilterBar({ filters, onFilterChange, totalCount, filtere
 
           {/* Fecha Hasta */}
           <div>
-            <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5" style={{ fontFamily: 'Space Grotesk' }}>
+            <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5" style={{ fontFamily: 'Inter' }}>
               <Calendar size={10} className="inline mr-1" />Hasta
             </label>
             <input
@@ -126,7 +145,7 @@ export default function FilterBar({ filters, onFilterChange, totalCount, filtere
 
           {/* Monto */}
           <div>
-            <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5" style={{ fontFamily: 'Space Grotesk' }}>
+            <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5" style={{ fontFamily: 'Inter' }}>
               <DollarSign size={10} className="inline mr-1" />Rango Monto
             </label>
             <div className="flex gap-2">

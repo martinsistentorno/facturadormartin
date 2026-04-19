@@ -94,5 +94,15 @@ export function useVentas() {
     if (deleteError) throw deleteError
   }, [])
 
-  return { ventas, setVentas, loading, error, refetch: fetchVentas, updateVentaStatus, updateVenta, createVenta, deleteVenta }
+  const bulkCreateVentas = useCallback(async (payloads) => {
+    const { data, error: createError } = await supabase
+      .from('ventas')
+      .insert(payloads)
+      .select()
+
+    if (createError) throw createError
+    return data
+  }, [])
+
+  return { ventas, setVentas, loading, error, refetch: fetchVentas, updateVentaStatus, updateVenta, createVenta, deleteVenta, bulkCreateVentas }
 }

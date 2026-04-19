@@ -30,15 +30,30 @@ export default async function handler(req, res) {
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseKey)
 
+    // ─── Fetch emisor config from DB ───
+    let emisorConfig = null
+    try {
+      const { data: cfgData, error: cfgError } = await supabaseAdmin
+        .from('config_emisor')
+        .select('*')
+        .limit(1)
+        .maybeSingle()
+      if (cfgError) console.error('⚠️ Error leyendo config_emisor:', cfgError.message)
+      emisorConfig = cfgData
+    } catch (cfgErr) {
+      console.error('⚠️ Error fetch config_emisor:', cfgErr.message)
+    }
+
     // ─── Config AFIP ───
     const cuit = process.env.AFIP_CUIT
     const certBase64 = process.env.AFIP_CERT_BASE64
     const keyBase64 = process.env.AFIP_KEY_BASE64
-    const ptoVta = parseInt(process.env.AFIP_PTO_VTA || '1')
+    const ptoVta = emisorConfig?.pto_vta || parseInt(process.env.AFIP_PTO_VTA || '1')
+    const tipoCbte = emisorConfig?.tipo_cbte || 11
     const isProduction = process.env.AFIP_PRODUCTION === 'true'
     const isSandbox = process.env.AFIP_SANDBOX === 'true'
 
-    console.log(`Config: CUIT=${cuit}, PtoVta=${ptoVta}, Production=${isProduction}, Sandbox=${isSandbox}`)
+    console.log(`Config: CUIT=${cuit}, PtoVta=${ptoVta}, TipoCbte=${tipoCbte}, Production=${isProduction}, Sandbox=${isSandbox}`)
 
     // ══════════════════════════════════════════════
     //  MODO SANDBOX — Simula sin tocar AFIP
@@ -116,7 +131,7 @@ export default async function handler(req, res) {
         // Obtener último comprobante y calcular el siguiente
         let lastVoucher
         try {
-          lastVoucher = await afip.ElectronicBilling.getLastVoucher(ptoVta, 11)
+          lastVoucher = await afip.ElectronicBilling.getLastVoucher(ptoVta, tipoCbte)
         } catch (afipErr) {
           console.error('❌ Error detallado de AFIP SDK:', JSON.stringify(afipErr, null, 2))
           console.error('❌ afipErr.message:', afipErr.message)
@@ -136,7 +151,7 @@ export default async function handler(req, res) {
         const data = {
           'CantReg': 1,
           'PtoVta': ptoVta,
-          'CbteTipo': 11,              // Factura C
+          'CbteTipo': tipoCbte,
           'Concepto': 1,               // Productos
           'DocTipo': docTipo,
           'DocNro': docNro,
@@ -173,7 +188,7 @@ export default async function handler(req, res) {
             copy: 1,
             voucher_info: {
               PtoVta: ptoVta,
-              CbteTipo: 11,
+              CbteTipo: tipoCbte,
               CbteNro: nextVoucher
             }
           })

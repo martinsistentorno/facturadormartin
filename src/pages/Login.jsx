@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { Loader2, AlertCircle } from 'lucide-react'
 
@@ -57,7 +57,7 @@ export default function Login() {
           )}
 
           <div className="space-y-2">
-            <label htmlFor="email" className="block text-xs font-bold text-text-secondary uppercase tracking-widest ml-1" style={{fontFamily: 'Space Grotesk'}}>
+            <label htmlFor="email" className="block text-xs font-bold text-text-secondary uppercase tracking-widest ml-1" style={{fontFamily: 'Inter'}}>
               Email
             </label>
             <input
@@ -72,7 +72,7 @@ export default function Login() {
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="password" className="block text-xs font-bold text-text-secondary uppercase tracking-widest ml-1" style={{fontFamily: 'Space Grotesk'}}>
+            <label htmlFor="password" className="block text-xs font-bold text-text-secondary uppercase tracking-widest ml-1" style={{fontFamily: 'Inter'}}>
               Contraseña
             </label>
             <input
@@ -102,7 +102,7 @@ export default function Login() {
           </div>
         </form>
 
-        <p className="text-center text-text-muted text-[10px] mt-8 tracking-widest uppercase font-bold" style={{fontFamily: 'Space Grotesk'}}>
+        <p className="text-center text-text-muted text-[10px] mt-8 tracking-widest uppercase font-bold" style={{fontFamily: 'Inter'}}>
           Acceso privado - Command Soluciones
         </p>
       </div>

@@ -1,4 +1,4 @@
-export default function StatusBadge({ status }) {
+﻿export default function StatusBadge({ status }) {
   const config = {
     pendiente: {
       label: 'Pendiente',

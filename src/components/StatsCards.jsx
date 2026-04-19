@@ -1,4 +1,4 @@
-import { TrendingUp, Clock, FileCheck, AlertTriangle } from 'lucide-react'
+﻿import { TrendingUp, Clock, FileCheck, AlertTriangle } from 'lucide-react'
 import { useState } from 'react'
 import { filterVentasByTimeframe } from '../utils/dateUtils'
 

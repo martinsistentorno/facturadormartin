@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+﻿import { useState, useEffect, useCallback } from 'react';
 import { CheckCircle, AlertTriangle, XCircle, Info, X } from 'lucide-react';
 
 const ICONS = {
@@ -39,7 +39,7 @@ function ToastItem({ toast, onRemove }) {
         ${COLORS[toast.type] || COLORS.info}
         ${exiting ? 'animate-toast-out' : 'animate-toast-in'}
       `}
-      style={{ fontFamily: 'Space Grotesk' }}
+      style={{ fontFamily: 'Inter' }}
     >
       <Icon size={18} className="mt-0.5 shrink-0" />
       <p className="text-sm font-medium flex-1">{toast.message}</p>

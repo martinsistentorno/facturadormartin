@@ -75,8 +75,8 @@ export default function EmitirFacturaBar({ selectedCount, selectedVentas = [], o
           </button>
         )}
 
-        {/* Delete errors */}
-        {hasErrors && onBulkDelete && (
+        {/* Delete */}
+        {onBulkDelete && (
           <button
             onClick={onBulkDelete}
             className="flex items-center gap-2 px-3 py-2 rounded-xl bg-red-subtle border border-red/20 text-red text-xs font-bold uppercase tracking-wider hover:-translate-y-0.5 transition-all cursor-pointer"

@@ -68,7 +68,8 @@ export default function EditSaleModal({ isOpen, onClose, venta, onSave }) {
   if (!isOpen || !venta) return null;
 
   const formatDate = (d) => d ? new Date(d).toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' }) : '—';
-  const origen = venta.mp_payment_id ? 'Mercado Libre' : 'Manual';
+  const origenRaw = venta.datos_fiscales?.origen;
+  const origen = origenRaw === 'mercadolibre' ? 'Mercado Libre' : origenRaw === 'mercadopago' ? 'Mercado Pago' : venta.mp_payment_id ? 'Mercado Libre' : 'Manual';
 
   return (
     <>
@@ -120,7 +121,7 @@ export default function EditSaleModal({ isOpen, onClose, venta, onSave }) {
           {/* ─── Cliente ─── */}
           <Section title="Datos del Cliente" icon={User}>
             <div className="px-4 py-3">
-              <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-2" style={{ fontFamily: 'Space Grotesk' }}>
+              <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-2" style={{ fontFamily: 'Inter' }}>
                 Nombre / Razón Social
               </label>
               <input
@@ -132,7 +133,7 @@ export default function EditSaleModal({ isOpen, onClose, venta, onSave }) {
               />
             </div>
             <div className="px-4 py-3 border-t border-border">
-              <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-2" style={{ fontFamily: 'Space Grotesk' }}>
+              <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-2" style={{ fontFamily: 'Inter' }}>
                 CUIT / DNI
               </label>
               <input
@@ -149,7 +150,7 @@ export default function EditSaleModal({ isOpen, onClose, venta, onSave }) {
           {/* ─── Monto ─── */}
           <Section title="Importe" icon={DollarSign}>
             <div className="px-4 py-3">
-              <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-2" style={{ fontFamily: 'Space Grotesk' }}>
+              <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-2" style={{ fontFamily: 'Inter' }}>
                 Monto Total (ARS)
               </label>
               <input
@@ -191,7 +192,7 @@ export default function EditSaleModal({ isOpen, onClose, venta, onSave }) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full flex items-center justify-center gap-2 bg-black text-white py-4 rounded-xl font-black uppercase tracking-widest hover:-translate-y-0.5 hover:shadow-xl transition-all disabled:opacity-50 disabled:transform-none cursor-pointer"
+            className="w-full flex items-center justify-center gap-2 bg-[#3460A8] text-white py-4 rounded-xl font-black uppercase tracking-widest hover:-translate-y-0.5 hover:shadow-xl transition-all disabled:opacity-50 disabled:transform-none cursor-pointer"
             style={{ fontFamily: 'Montserrat' }}
           >
             {loading ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
@@ -208,7 +209,7 @@ function Section({ title, icon: Icon, children }) {
     <div>
       <div className="flex items-center gap-2 mb-3">
         {Icon && <Icon size={14} className="text-text-muted" />}
-        <h4 className="text-xs font-bold text-text-muted uppercase tracking-widest" style={{ fontFamily: 'Space Grotesk' }}>
+        <h4 className="text-xs font-bold text-text-muted uppercase tracking-widest" style={{ fontFamily: 'Inter' }}>
           {title}
         </h4>
       </div>

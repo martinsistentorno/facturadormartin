@@ -12,14 +12,16 @@ import ToastContainer, { createToast } from '../components/ToastContainer'
 import { RefreshCw, Plus, Download, ChevronDown } from 'lucide-react'
 import EditSaleModal from '../components/EditSaleModal'
 import AddSaleModal from '../components/AddSaleModal'
+import BulkImportModal from '../components/BulkImportModal'
 import { exportToCSV, exportToExcel } from '../utils/exportUtils'
 
 export default function Home() {
-  const { ventas, setVentas, loading, error, refetch, updateVentaStatus, updateVenta, createVenta, deleteVenta } = useVentas()
+  const { ventas, setVentas, loading, error, refetch, updateVentaStatus, updateVenta, createVenta, deleteVenta, bulkCreateVentas } = useVentas()
   const { search: searchClientes } = useClientes(ventas)
   const [selectedIds, setSelectedIds] = useState(new Set())
   const [toasts, setToasts] = useState([])
   const [addModalOpen, setAddModalOpen] = useState(false)
+  const [bulkImportModalOpen, setBulkImportModalOpen] = useState(false)
   const [exportMenuOpen, setExportMenuOpen] = useState(false)
   
   // ─── Modal State ───
@@ -65,7 +67,8 @@ export default function Home() {
           String(v.monto || ''),
           v.status,
           v.datos_fiscales?.forma_pago,
-          v.mp_payment_id ? `MeLi #${v.mp_payment_id}` : '',
+          v.mp_payment_id ? `MeLi #${v.mp_payment_id.replace(/^order-/, '')}` : '',
+          v.mp_payment_id ? `MP #${v.mp_payment_id.replace(/^order-/, '')}` : '',
         ].filter(Boolean).join(' ').toLowerCase()
         if (!searchable.includes(q)) return false
       }
@@ -88,9 +91,18 @@ export default function Home() {
       if (filters.montoMin && monto < Number(filters.montoMin)) return false
       if (filters.montoMax && monto > Number(filters.montoMax)) return false
 
+      // Medio filter
+      if (filters.medio) {
+        // Handle 'Contado', 'Mercado Pago', 'Tarjeta', 'Transferencia' logic
+        const formaPago = (v.datos_fiscales?.forma_pago || '').toLowerCase()
+        const q = filters.medio.toLowerCase()
+        if (q === 'contado' && !formaPago.includes('efectivo') && !formaPago.includes('contado')) return false;
+        if (q !== 'contado' && !formaPago.includes(q)) return false;
+      }
+
       return true
     })
-  }, [ventas, debouncedSearch, filters.status, filters.dateFrom, filters.dateTo, filters.montoMin, filters.montoMax])
+  }, [ventas, debouncedSearch, filters.status, filters.medio, filters.dateFrom, filters.dateTo, filters.montoMin, filters.montoMax])
 
   // ─── Selected ventas data ───
   const selectedVentas = useMemo(() =>
@@ -123,7 +135,7 @@ export default function Home() {
   }
 
   const handleToggleAll = () => {
-    const seleccionables = filteredVentas.filter(v => v.status !== 'facturado')
+    const seleccionables = filteredVentas
     if (selectedIds.size === seleccionables.length && seleccionables.length > 0) {
       setSelectedIds(new Set())
     } else {
@@ -161,16 +173,12 @@ export default function Home() {
 
   // ─── Bulk delete ───
   const handleBulkDelete = async () => {
-    const errorVentas = selectedVentas.filter(v => v.status === 'error')
-    if (errorVentas.length === 0) {
-      showToast('Solo se pueden eliminar ventas con error', 'warning')
-      return
-    }
+    if (selectedVentas.length === 0) return
 
-    if (!confirm(`¿Eliminar ${errorVentas.length} venta(s) con error?`)) return
+    if (!confirm(`¿Eliminar permanentemente ${selectedVentas.length} venta(s) del sistema?\nEsto no las borrará de AFIP si ya fueron facturadas.`)) return
 
     let deleted = 0
-    for (const v of errorVentas) {
+    for (const v of selectedVentas) {
       try {
         await deleteVenta(v.id)
         deleted++
@@ -349,7 +357,7 @@ export default function Home() {
         transition-all duration-200
         disabled:opacity-50 cursor-pointer
       "
-      style={{fontFamily: 'Space Grotesk'}}
+      style={{fontFamily: 'Inter'}}
     >
       <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
       <span className="hidden sm:inline">ACTUALIZAR</span>
@@ -389,26 +397,29 @@ export default function Home() {
             <div className="relative">
               <button
                 onClick={() => setExportMenuOpen(!exportMenuOpen)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface border border-border text-text-secondary text-xs font-bold uppercase tracking-wider hover:border-accent/30 transition-all cursor-pointer"
-                style={{ fontFamily: 'Space Grotesk' }}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-border/60 text-text-secondary text-[11px] font-bold uppercase tracking-widest hover:-translate-y-1 hover:shadow-lg hover:border-[#3460A8]/30 hover:text-[#3460A8] transition-all cursor-pointer"
+                style={{ fontFamily: 'Inter' }}
               >
-                <Download size={14} />
-                Exportar
-                <ChevronDown size={12} />
+                <Download size={14} className="text-text-muted" />
+                Exportación Masiva
+                <ChevronDown size={14} className={`transition-transform duration-200 ${exportMenuOpen ? 'rotate-180' : ''}`} />
               </button>
               {exportMenuOpen && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setExportMenuOpen(false)} />
-                  <div className="absolute right-0 mt-1 bg-surface border border-border rounded-xl shadow-xl z-50 min-w-[140px] overflow-hidden">
+                  <div className="absolute right-0 mt-2 bg-[#F9F7F2] border border-white/50 rounded-xl shadow-xl shadow-black/10 z-50 min-w-[160px] overflow-hidden animate-slide-down">
                     <button
                       onClick={() => handleExportAll('csv')}
-                      className="w-full text-left px-4 py-2.5 text-sm text-text-primary hover:bg-surface-alt transition-colors cursor-pointer"
+                      className="w-full text-left px-5 py-3 text-[11px] font-bold uppercase tracking-widest text-[#000000] hover:bg-[#3460A8]/10 hover:text-[#3460A8] transition-colors cursor-pointer"
+                      style={{ fontFamily: 'Inter' }}
                     >
-                      CSV (.csv)
+                      Archivo CSV
                     </button>
+                    <div className="h-px bg-border/40 mx-2" />
                     <button
                       onClick={() => handleExportAll('xlsx')}
-                      className="w-full text-left px-4 py-2.5 text-sm text-text-primary hover:bg-surface-alt transition-colors border-t border-border cursor-pointer"
+                      className="w-full text-left px-5 py-3 text-[11px] font-bold uppercase tracking-widest text-[#000000] hover:bg-[#2D8F5E]/10 hover:text-[#2D8F5E] transition-colors cursor-pointer"
+                      style={{ fontFamily: 'Inter' }}
                     >
                       Excel (.xlsx)
                     </button>
@@ -418,16 +429,30 @@ export default function Home() {
             </div>
 
             <button
+              onClick={() => setBulkImportModalOpen(true)}
+              className="
+                flex items-center gap-2 px-5 py-2.5 rounded-xl
+                bg-[#3460A8]/10 text-[#3460A8] text-[11px] font-bold uppercase tracking-widest
+                hover:-translate-y-1 hover:bg-[#3460A8]/20
+                transition-all duration-300 cursor-pointer
+              "
+              style={{ fontFamily: 'Montserrat' }}
+            >
+              <Download size={16} />
+              Carga Masiva
+            </button>
+
+            <button
               onClick={() => setAddModalOpen(true)}
               className="
-                flex items-center gap-1.5 px-3 py-1.5 rounded-lg
-                bg-black text-white text-xs font-bold uppercase tracking-wider
-                hover:-translate-y-0.5 hover:shadow-lg
-                transition-all duration-200 cursor-pointer
+                flex items-center gap-2 px-5 py-2.5 rounded-xl
+                bg-[#3460A8] text-white text-[11px] font-bold uppercase tracking-widest
+                hover:-translate-y-1 hover:shadow-xl hover:shadow-black/20 hover:bg-[#2F528F]
+                transition-all duration-300 cursor-pointer
               "
-              style={{ fontFamily: 'Space Grotesk' }}
+              style={{ fontFamily: 'Montserrat' }}
             >
-              <Plus size={14} />
+              <Plus size={16} className="text-[#FFE100]" />
               Nueva Venta
             </button>
           </div>
@@ -479,6 +504,16 @@ export default function Home() {
         onClose={() => setAddModalOpen(false)}
         onSave={handleCreateVenta}
         searchClientes={searchClientes}
+      />
+
+      <BulkImportModal
+        isOpen={bulkImportModalOpen}
+        onClose={() => setBulkImportModalOpen(false)}
+        onSave={async (ventasMasivas) => {
+          await bulkCreateVentas(ventasMasivas)
+          await refetch()
+          showToast(`¡${ventasMasivas.length} ventas importadas exitosamente!`, 'success')
+        }}
       />
 
       {/* ─── Summary Modal ─── */}

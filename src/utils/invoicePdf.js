@@ -1,12 +1,25 @@
 import { jsPDF } from 'jspdf';
 import QRCode from 'qrcode';
-import { EMISOR } from '../config/emisor';
 
 /**
  * Genera y descarga un PDF de factura con el formato reglamentario de AFIP.
  * @param {Object} venta - Objeto de la venta con datos fiscales y de facturación.
+ * @param {Object} emisor - Datos del emisor (desde config_emisor de Supabase).
  */
-export async function generateInvoicePdf(venta) {
+export async function generateInvoicePdf(venta, emisor) {
+  // Fallback si no se pasan datos de emisor
+  const e = {
+    razonSocial: emisor?.razon_social || 'SIN CONFIGURAR',
+    cuit: emisor?.cuit || '00000000000',
+    cuitFormateado: emisor?.cuit_fmt || '00-00000000-0',
+    domicilio: emisor?.domicilio || '',
+    inicioActividades: emisor?.inicio_actividades || '',
+    condicionIva: emisor?.condicion_iva || 'Responsable Monotributo',
+    ingresosBrutos: emisor?.ingresos_brutos || emisor?.cuit_fmt || '',
+    ptoVta: emisor?.pto_vta || 1,
+    tipoCbte: emisor?.tipo_cbte || 11,
+  };
+
   const doc = new jsPDF();
   const margin = 10;
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -31,16 +44,16 @@ export async function generateInvoicePdf(venta) {
   const maxLeftWidth = (pageWidth / 2) - margin - 15;
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
-  const razonSocialLines = doc.splitTextToSize(EMISOR.razonSocial, maxLeftWidth);
+  const razonSocialLines = doc.splitTextToSize(e.razonSocial, maxLeftWidth);
   doc.text(razonSocialLines, margin + 5, 25);
   
   const startYSub = 25 + (razonSocialLines.length * 6);
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  const domicilioLines = doc.splitTextToSize(`Domicilio: ${EMISOR.domicilio}`, maxLeftWidth);
+  const domicilioLines = doc.splitTextToSize(`Domicilio: ${e.domicilio}`, maxLeftWidth);
   doc.text(domicilioLines, margin + 5, startYSub);
   
-  doc.text(`Condición IVA: ${EMISOR.condicionIva}`, margin + 5, startYSub + (domicilioLines.length * 5) + 2);
+  doc.text(`Condición IVA: ${e.condicionIva}`, margin + 5, startYSub + (domicilioLines.length * 5) + 2);
 
   // ─── Datos Comprobante (Derecha) ───
   doc.setFontSize(18);
@@ -55,9 +68,9 @@ export async function generateInvoicePdf(venta) {
   doc.text(`Fecha de Emisión: ${fechaEmision}`, pageWidth - margin - 5, 37, { align: 'right' });
   
   doc.setFontSize(10);
-  doc.text(`CUIT: ${EMISOR.cuitFormateado}`, pageWidth - margin - 5, 45, { align: 'right' });
-  doc.text(`Ingresos Brutos: ${EMISOR.ingresosBrutos}`, pageWidth - margin - 5, 50, { align: 'right' });
-  doc.text(`Inicio de Actividades: ${EMISOR.inicioActividades}`, pageWidth - margin - 5, 55, { align: 'right' });
+  doc.text(`CUIT: ${e.cuitFormateado}`, pageWidth - margin - 5, 45, { align: 'right' });
+  doc.text(`Ingresos Brutos: ${e.ingresosBrutos}`, pageWidth - margin - 5, 50, { align: 'right' });
+  doc.text(`Inicio de Actividades: ${e.inicioActividades}`, pageWidth - margin - 5, 55, { align: 'right' });
 
   doc.line(margin, 60, pageWidth - margin, 60);
 
@@ -103,9 +116,9 @@ export async function generateInvoicePdf(venta) {
     const qrData = {
       ver: 1,
       fecha: venta.fecha ? venta.fecha.split('T')[0] : new Date().toISOString().split('T')[0],
-      cuit: Number(EMISOR.cuit),
+      cuit: Number(e.cuit),
       ptoVta: Number(nroCompArr[0]),
-      tipoCmp: EMISOR.tipoCbte,
+      tipoCmp: e.tipoCbte,
       nroCmp: Number(nroCompArr[1]),
       importe: Number(venta.monto),
       moneda: "PES",

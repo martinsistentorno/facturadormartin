@@ -14,7 +14,7 @@ function prepareRows(ventas) {
     'CAE': v.cae || '—',
     'Vto CAE': v.vto_cae ? new Date(v.vto_cae).toLocaleDateString('es-AR') : '—',
     'Forma de Pago': v.datos_fiscales?.forma_pago || '—',
-    'Origen': v.mp_payment_id ? 'Mercado Libre' : 'Manual',
+    'Origen': v.datos_fiscales?.origen === 'mercadolibre' ? 'Mercado Libre' : v.datos_fiscales?.origen === 'mercadopago' ? 'Mercado Pago' : v.mp_payment_id ? 'Mercado Libre' : 'Manual',
   }));
 }
 

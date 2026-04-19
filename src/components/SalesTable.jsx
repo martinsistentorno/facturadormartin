@@ -2,10 +2,49 @@ import StatusBadge from './StatusBadge'
 import { AlertCircle, Edit2, FileDown, RotateCcw, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react'
 import { generateInvoicePdf } from '../utils/invoicePdf'
 import { useState } from 'react'
+import { useConfig } from '../context/ConfigContext'
 
 const PAGE_SIZES = [25, 50, 100]
 
+const PaymentBadge = ({ method, mpId }) => {
+  if (!method) return <span className="text-text-muted text-xs">—</span>;
+  let bg = 'bg-surface-alt/50';
+  let text = 'text-text-secondary';
+  let label = method;
+
+  // Clean order- prefix for display
+  const cleanId = mpId ? mpId.replace(/^order-/, '') : '';
+  const isOrder = mpId?.startsWith('order-');
+
+  if (isOrder) {
+    // Mercado Libre marketplace order
+    bg = 'bg-[#FFE600]/15';
+    text = 'text-[#A68900]';
+    label = `MeLi #${cleanId}`;
+  } else if (method === 'Mercado Pago' || mpId) {
+    bg = 'bg-[#009EE3]/10';
+    text = 'text-[#009EE3]';
+    label = mpId ? `MP #${cleanId}` : 'Mercado Pago';
+  } else if (method.includes('Efectivo') || method.includes('Contado')) {
+    bg = 'bg-accent/10';
+    text = 'text-accent';
+  } else if (method.includes('Transferencia')) {
+    bg = 'bg-[#7C4DFF]/10';
+    text = 'text-[#7C4DFF]';
+  } else if (method.includes('Tarjeta')) {
+    bg = 'bg-[#E8A34A]/10';
+    text = 'text-[#9A641A]';
+  }
+
+  return (
+    <span className={`inline-block px-2 py-0.5 rounded-md text-[10px] font-semibold tracking-wide ${bg} ${text} truncate max-w-[120px]`} title={method}>
+      {label}
+    </span>
+  )
+}
+
 export default function SalesTable({ ventas, selectedIds, onToggleSelect, onToggleAll, loading, onShowError, onEdit, onRowClick, onRetry }) {
+  const { emisor } = useConfig()
   const [sortKey, setSortKey] = useState('fecha')
   const [sortDir, setSortDir] = useState('desc')
   const [page, setPage] = useState(0)
@@ -49,6 +88,10 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
         valA = a.cae || ''
         valB = b.cae || ''
         break
+      case 'medio':
+        valA = a.datos_fiscales?.forma_pago || ''
+        valB = b.datos_fiscales?.forma_pago || ''
+        break
       default:
         return 0
     }
@@ -63,8 +106,7 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
   const startIndex = page * pageSize + 1
   const endIndex = Math.min((page + 1) * pageSize, sortedVentas.length)
 
-  const pendientes = ventas.filter(v => v.status !== 'facturado')
-  const allSelected = pendientes.length > 0 && selectedIds.size === pendientes.length
+  const allSelected = ventas.length > 0 && selectedIds.size === ventas.length
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '—'
@@ -106,11 +148,7 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
   }
 
   const handleRowClick = (venta) => {
-    if (venta.status === 'facturado' || venta.status === 'error') {
-      onRowClick?.(venta)
-    } else {
-      onToggleSelect(venta.id)
-    }
+    onToggleSelect(venta.id)
   }
 
   // ─── Sort header helper ───
@@ -146,6 +184,7 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
               <SortHeader label="Fecha" sortField="fecha" />
               <SortHeader label="Cliente" sortField="cliente" />
               <SortHeader label="Monto" sortField="monto" align="right" />
+              <SortHeader label="Medio" sortField="medio" />
               <SortHeader label="Status" sortField="status" />
               <SortHeader label="Factura" sortField="factura" />
               <SortHeader label="CAE" sortField="cae" />
@@ -163,7 +202,7 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
                   className={`
                     border-b border-border transition-colors duration-150 cursor-pointer
                     ${isError ? 'bg-red-subtle/20 hover:bg-red-subtle/40' : ''}
-                    ${venta.status === 'facturado' ? 'hover:bg-green-subtle/20' : 'hover:bg-surface-alt hover:opacity-90'}
+                    hover:bg-surface-alt hover:opacity-90
                     ${isSelected ? 'bg-[#EAE4D3]' : ''}
                   `}
                 >
@@ -171,10 +210,9 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
                     <input
                       type="checkbox"
                       checked={isSelected}
-                      disabled={venta.status === 'facturado'}
                       onChange={() => onToggleSelect(venta.id)}
                       onClick={(e) => e.stopPropagation()}
-                      className="w-4 h-4 rounded border-border bg-surface-alt accent-accent cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                      className="w-4 h-4 rounded border-border bg-surface-alt accent-accent cursor-pointer"
                     />
                   </td>
                   <td className="px-4 py-3">
@@ -183,12 +221,12 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
                   </td>
                   <td className="px-4 py-3">
                     <div className="text-text-primary">{venta.cliente || '—'}</div>
-                    {venta.mp_payment_id && (
-                      <div className="text-text-muted text-xs font-mono">MeLi #{venta.mp_payment_id}</div>
-                    )}
                   </td>
                   <td className="px-4 py-3 text-right">
                     <span className="text-text-primary font-semibold tabular-nums">{formatCurrency(venta.monto)}</span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <PaymentBadge method={venta.datos_fiscales?.forma_pago} mpId={venta.mp_payment_id} />
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
@@ -262,7 +300,7 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
                                 }
                               } catch (_) { /* expired */ }
                             }
-                            generateInvoicePdf(venta);
+                            generateInvoicePdf(venta, emisor);
                           }}
                           className="p-2 text-text-muted hover:text-green hover:bg-green/10 rounded-lg transition-all cursor-pointer"
                           title="Descargar PDF"
@@ -282,7 +320,7 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
       {/* ─── Pagination bar (Gmail style) ─── */}
       <div className="flex items-center justify-between px-4 py-3 border-t border-border bg-surface-alt/50">
         <div className="flex items-center gap-3">
-          <span className="text-xs text-text-muted" style={{ fontFamily: 'Space Grotesk' }}>
+          <span className="text-xs text-text-muted" style={{ fontFamily: 'Inter' }}>
             Filas por página:
           </span>
           <select
@@ -297,7 +335,7 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
         </div>
 
         <div className="flex items-center gap-4">
-          <span className="text-xs text-text-muted tabular-nums" style={{ fontFamily: 'Space Grotesk' }}>
+          <span className="text-xs text-text-muted tabular-nums" style={{ fontFamily: 'Inter' }}>
             {startIndex}–{endIndex} de {sortedVentas.length}
           </span>
           <div className="flex items-center gap-1">
