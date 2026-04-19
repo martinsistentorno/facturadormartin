@@ -242,6 +242,23 @@ async function processPayment(supabaseAdmin, accessToken, paymentId, res) {
 
   console.log('[Webhook] Payment status:', payment.status, '| type:', payment.payment_type_id, '| method:', payment.payment_method_id)
 
+  // ─── Filtrar pagos SALIENTES ───
+  // Si el dueño de la cuenta es el pagador, es un envío de dinero, no una venta
+  try {
+    const meRes = await fetch('https://api.mercadopago.com/users/me', {
+      headers: { 'Authorization': `Bearer ${accessToken}` }
+    })
+    if (meRes.ok) {
+      const me = await meRes.json()
+      if (payment.payer?.id === me.id) {
+        console.log(`[Webhook] Pago ${paymentId} es SALIENTE (enviado por la cuenta ${me.id}), ignorando`)
+        return res.status(200).json({ received: true, processed: false, reason: 'Pago saliente' })
+      }
+    }
+  } catch (meErr) {
+    console.warn('[Webhook] No se pudo verificar si es pago saliente:', meErr.message)
+  }
+
   // Si es un pago de una orden de MeLi, ignorar (ya lo maneja orders_v2)
   if (payment.order?.id) {
     const meliOrderId = String(payment.order.id)

@@ -30,6 +30,19 @@ export default async function handler(req, res) {
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseKey)
 
+    // ─── Obtener el ID del dueño de la cuenta para filtrar pagos salientes ───
+    const meRes = await fetch('https://api.mercadopago.com/users/me', {
+      headers: { 'Authorization': `Bearer ${accessToken}` }
+    })
+    let myUserId = null
+    if (meRes.ok) {
+      const me = await meRes.json()
+      myUserId = me.id
+      console.log(`[Sync] ID de la cuenta: ${myUserId}`)
+    } else {
+      console.warn('[Sync] No se pudo obtener el ID de la cuenta, se procesarán todos los pagos')
+    }
+
     // Consultar los últimos pagos recibidos (status=approved)
     const searchUrl = `https://api.mercadopago.com/v1/payments/search?sort=date_created&criteria=desc&limit=20&status=approved`
     const searchRes = await fetch(searchUrl, {
@@ -48,10 +61,18 @@ export default async function handler(req, res) {
 
     let inserted = 0
     let skipped = 0
+    let outgoing = 0
     const results = []
 
     for (const payment of payments) {
       const paymentId = String(payment.id)
+
+      // ─── Filtrar pagos SALIENTES (donde el dueño de la cuenta es el pagador) ───
+      if (myUserId && payment.payer?.id === myUserId) {
+        outgoing++
+        console.log(`[Sync] Pago ${paymentId} es SALIENTE (enviado por la cuenta), saltando`)
+        continue
+      }
 
       // Verificar si ya existe
       const { data: existing } = await supabaseAdmin
@@ -109,13 +130,14 @@ export default async function handler(req, res) {
       }
     }
 
-    console.log(`[Sync] Completado: ${inserted} nuevos, ${skipped} ya existían`)
+    console.log(`[Sync] Completado: ${inserted} nuevos, ${skipped} ya existían, ${outgoing} salientes ignorados`)
 
     return res.status(200).json({
       success: true,
       total: payments.length,
       inserted,
       skipped,
+      outgoing,
       results
     })
 
