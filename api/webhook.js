@@ -250,8 +250,14 @@ async function processPayment(supabaseAdmin, accessToken, paymentId, res) {
     })
     if (meRes.ok) {
       const me = await meRes.json()
-      if (payment.payer?.id === me.id) {
-        console.log(`[Webhook] Pago ${paymentId} es SALIENTE (enviado por la cuenta ${me.id}), ignorando`)
+      const myId = String(me.id)
+      const payerId = String(payment.payer?.id || '')
+      const collectorId = String(payment.collector_id || '')
+
+      console.log(`[Webhook] Pago ${paymentId}: payer=${payerId}, collector=${collectorId}, myId=${myId}`)
+
+      if (payerId === myId || (collectorId && collectorId !== myId)) {
+        console.log(`[Webhook] Pago ${paymentId} es SALIENTE, ignorando`)
         return res.status(200).json({ received: true, processed: false, reason: 'Pago saliente' })
       }
     }
