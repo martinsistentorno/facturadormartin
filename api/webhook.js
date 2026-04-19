@@ -285,14 +285,26 @@ async function processPayment(supabaseAdmin, accessToken, paymentId, res) {
   const payer = payment.payer || {}
   let clienteNombre = 'Consumidor Final'
 
-  if (payment.point_of_interaction?.transaction_data?.bank_info?.payer_info?.name) {
-    // Transferencias bancarias CVU
-    clienteNombre = payment.point_of_interaction.transaction_data.bank_info.payer_info.name
+  // Para transferencias: el first_name suele ser null, pero tenemos el payer.id
+  // Usamos la API de usuarios para buscar el nombre real
+  if (payer.id && (!payer.first_name || payer.first_name === null)) {
+    try {
+      const userRes = await fetch(`https://api.mercadolibre.com/users/${payer.id}`, {
+        headers: { 'Authorization': `Bearer ${accessToken}` }
+      })
+      if (userRes.ok) {
+        const userData = await userRes.json()
+        clienteNombre = userData.first_name && userData.last_name
+          ? `${userData.first_name} ${userData.last_name}`
+          : userData.nickname || (payer.email ? payer.email.split('@')[0] : 'Consumidor Final')
+      } else if (payer.email) {
+        clienteNombre = payer.email.split('@')[0]
+      }
+    } catch (e) {
+      if (payer.email) clienteNombre = payer.email.split('@')[0]
+    }
   } else if (payer.first_name) {
-    // Pagos estándar MP
     clienteNombre = `${payer.first_name} ${payer.last_name || ''}`.trim()
-  } else if (payer.entity_type === 'individual' && payer.identification?.number) {
-    clienteNombre = `DNI ${payer.identification.number}`
   } else if (payer.email) {
     clienteNombre = payer.email.split('@')[0]
   }

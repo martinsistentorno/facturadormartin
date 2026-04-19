@@ -2,10 +2,11 @@ import { createClient } from '@supabase/supabase-js'
 
 /**
  * Endpoint de sincronización manual.
- * Consulta los últimos pagos recibidos en la cuenta de MP
- * e inserta los que todavía no estén en la base.
+ * 1. Busca los últimos pagos recibidos en MP (transferencias, QR, etc.)
+ * 2. Busca las últimas órdenes de Mercado Libre
+ * 3. Inserta los que todavía no estén en la base.
  *
- * GET /api/sync-payments → sincroniza los últimos 20 pagos recibidos
+ * GET /api/sync-payments → sincroniza todo
  */
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
@@ -21,16 +22,12 @@ export default async function handler(req, res) {
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
     const accessToken = process.env.MELI_ACCESS_TOKEN || process.env.MP_ACCESS_TOKEN
 
-    if (!supabaseUrl || !supabaseKey) {
-      throw new Error('Faltan credenciales de Supabase.')
-    }
-    if (!accessToken) {
-      throw new Error('Falta MELI_ACCESS_TOKEN.')
-    }
+    if (!supabaseUrl || !supabaseKey) throw new Error('Faltan credenciales de Supabase.')
+    if (!accessToken) throw new Error('Falta MELI_ACCESS_TOKEN.')
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseKey)
 
-    // ─── Obtener el ID del dueño de la cuenta para filtrar pagos salientes ───
+    // ─── Obtener el ID del dueño de la cuenta ───
     const meRes = await fetch('https://api.mercadopago.com/users/me', {
       headers: { 'Authorization': `Bearer ${accessToken}` }
     })
@@ -39,152 +36,240 @@ export default async function handler(req, res) {
       const me = await meRes.json()
       myUserId = me.id
       console.log(`[Sync] ID de la cuenta: ${myUserId}`)
-    } else {
-      console.warn('[Sync] No se pudo obtener el ID de la cuenta, se procesarán todos los pagos')
     }
 
-    // Consultar los últimos pagos recibidos (status=approved)
-    const searchUrl = `https://api.mercadopago.com/v1/payments/search?sort=date_created&criteria=desc&limit=20&status=approved`
-    const searchRes = await fetch(searchUrl, {
-      headers: { 'Authorization': `Bearer ${accessToken}` }
-    })
+    // Cache de nombres de usuarios para no repetir llamadas
+    const userNameCache = {}
 
-    if (!searchRes.ok) {
-      const errText = await searchRes.text()
-      throw new Error(`MP Search API ${searchRes.status}: ${errText}`)
+    // ─── Función helper: buscar nombre real de un usuario por su ID ───
+    async function getUserName(userId) {
+      if (!userId) return null
+      const uid = String(userId)
+      if (userNameCache[uid]) return userNameCache[uid]
+
+      try {
+        const userRes = await fetch(`https://api.mercadolibre.com/users/${uid}`, {
+          headers: { 'Authorization': `Bearer ${accessToken}` }
+        })
+        if (userRes.ok) {
+          const userData = await userRes.json()
+          const name = userData.first_name && userData.last_name
+            ? `${userData.first_name} ${userData.last_name}`
+            : userData.nickname || null
+          userNameCache[uid] = name
+          return name
+        }
+      } catch (e) {
+        console.warn(`[Sync] Error buscando usuario ${uid}:`, e.message)
+      }
+      return null
     }
-
-    const searchData = await searchRes.json()
-    const payments = searchData.results || []
-
-    console.log(`[Sync] Encontrados ${payments.length} pagos aprobados recientes`)
 
     let inserted = 0
     let skipped = 0
     let outgoing = 0
     const results = []
 
-    for (const payment of payments) {
-      const paymentId = String(payment.id)
+    // ══════════════════════════════════════════════════════════
+    //  PARTE 1: Sincronizar PAGOS de Mercado Pago
+    //  (transferencias, QR, Point, links de pago)
+    // ══════════════════════════════════════════════════════════
+    console.log('[Sync] ── Buscando pagos de Mercado Pago ──')
 
-      // ─── Solo aceptar pagos RECIBIDOS ───
-      // Un pago es "recibido" cuando el dueño de la cuenta es el COLLECTOR (cobrador)
-      const collectorId = String(payment.collector_id || '')
-      const myId = String(myUserId || '')
+    const searchUrl = `https://api.mercadopago.com/v1/payments/search?sort=date_created&criteria=desc&limit=20&status=approved`
+    const searchRes = await fetch(searchUrl, {
+      headers: { 'Authorization': `Bearer ${accessToken}` }
+    })
 
-      console.log(`[Sync] Pago ${paymentId}: collector=${collectorId}, myId=${myId}, op=${payment.operation_type || 'N/A'}, monto=$${payment.transaction_amount}`)
+    if (searchRes.ok) {
+      const searchData = await searchRes.json()
+      const payments = searchData.results || []
+      console.log(`[Sync] Encontrados ${payments.length} pagos MP`)
 
-      if (myId && collectorId !== myId) {
-        outgoing++
-        console.log(`[Sync] Pago ${paymentId} NO es para esta cuenta (collector=${collectorId}), saltando`)
-        continue
-      }
+      for (const payment of payments) {
+        const paymentId = String(payment.id)
 
-      // Verificar si ya existe
-      const { data: existing } = await supabaseAdmin
-        .from('ventas').select('id').eq('mp_payment_id', paymentId).maybeSingle()
-
-      if (existing) {
-        skipped++
-        continue
-      }
-
-      // ─── Detectar si viene de Mercado Libre ───
-      const isMeLiOrder = !!payment.order?.id
-      const origen = isMeLiOrder ? 'mercadolibre' : 'mercadopago'
-      const mpId = isMeLiOrder ? `order-${payment.order.id}` : paymentId
-
-      // Si es de MeLi, verificar que no exista ya por el order ID
-      if (isMeLiOrder) {
-        const { data: existingOrder } = await supabaseAdmin
-          .from('ventas').select('id').eq('mp_payment_id', mpId).maybeSingle()
-        if (existingOrder) {
-          skipped++
+        // Solo pagos RECIBIDOS
+        const collectorId = String(payment.collector_id || '')
+        const myId = String(myUserId || '')
+        if (myId && collectorId !== myId) {
+          outgoing++
           continue
         }
-      }
 
-      // ─── Extraer datos completos del cliente ───
-      const payer = payment.payer || {}
-      let clienteNombre = 'Consumidor Final'
-      let docNumber = payer.identification?.number || ''
-      let docType = payer.identification?.type || 'DNI'
-      let email = payer.email || ''
+        // Si tiene order.id, es de MeLi → lo procesamos en la Parte 2
+        if (payment.order?.id) {
+          continue
+        }
 
-      if (isMeLiOrder) {
-        // En Mercado Libre, consultamos la orden para obtener los verdaderos datos del comprador
-        try {
-          const orderRes = await fetch(`https://api.mercadolibre.com/orders/${payment.order.id}`, {
-            headers: { 'Authorization': `Bearer ${accessToken}` }
-          })
-          if (orderRes.ok) {
-            const order = await orderRes.json()
-            const buyer = order.buyer || {}
-            if (buyer.first_name) {
-              clienteNombre = `${buyer.first_name} ${buyer.last_name || ''}`.trim()
-            } else if (buyer.nickname) {
-              clienteNombre = buyer.nickname
-            }
-            docNumber = buyer.billing_info?.doc_number || buyer.identification?.number || docNumber
-            docType = buyer.billing_info?.doc_type || docType
-            email = buyer.email || email
+        // Ya existe?
+        const { data: existing } = await supabaseAdmin
+          .from('ventas').select('id').eq('mp_payment_id', paymentId).maybeSingle()
+        if (existing) { skipped++; continue }
+
+        // ─── Extraer nombre del cliente ───
+        const payer = payment.payer || {}
+        let clienteNombre = 'Consumidor Final'
+        let docNumber = payer.identification?.number || ''
+        let docType = payer.identification?.type || 'DNI'
+        let email = payer.email || ''
+
+        // Para transferencias: buscar el nombre real del usuario por su ID
+        if (payer.id && (!payer.first_name || payer.first_name === null)) {
+          const realName = await getUserName(payer.id)
+          if (realName) {
+            clienteNombre = realName
+          } else if (email) {
+            clienteNombre = email.split('@')[0]
           }
-        } catch (err) {
-          console.warn(`[Sync] Error al obtener la orden de MeLi ${payment.order.id}:`, err)
-        }
-      } else {
-        // En Mercado Pago, intentar sacar el nombre de 여러 lados
-        if (payment.point_of_interaction?.transaction_data?.bank_info?.payer_info?.name) {
-          // Transferencias bancarias CVU
-          clienteNombre = payment.point_of_interaction.transaction_data.bank_info.payer_info.name
         } else if (payer.first_name) {
-          // Pagos estándar MP
           clienteNombre = `${payer.first_name} ${payer.last_name || ''}`.trim()
-        } else if (payer.entity_type === 'individual' && payer.identification?.number) {
-          clienteNombre = `DNI ${payer.identification.number}`
-        } else if (payer.email) {
-          clienteNombre = payer.email.split('@')[0]
+        } else if (email) {
+          clienteNombre = email.split('@')[0]
+        }
+
+        // Forma de pago
+        const typeId = payment.payment_type_id || ''
+        const methodMap = {
+          'credit_card': 'Tarjeta de Crédito',
+          'debit_card': 'Tarjeta de Débito',
+          'account_money': 'Mercado Pago',
+          'ticket': 'Efectivo',
+          'bank_transfer': 'Transferencia',
+          'transfer': 'Transferencia'
+        }
+        const formaPago = methodMap[typeId] || payment.payment_method_id || 'Mercado Pago'
+
+        const ventaRecord = {
+          fecha: payment.date_approved || payment.date_created || new Date().toISOString(),
+          cliente: clienteNombre,
+          monto: payment.transaction_amount || 0,
+          status: 'pendiente',
+          mp_payment_id: paymentId,
+          datos_fiscales: {
+            email,
+            identification: { type: docType, number: docNumber },
+            cuit: docNumber,
+            forma_pago: formaPago,
+            mp_status: payment.status,
+            mp_method: payment.payment_method_id || '',
+            mp_type: payment.payment_type_id || '',
+            origen: 'mercadopago'
+          }
+        }
+
+        const { error: insertError } = await supabaseAdmin.from('ventas').insert([ventaRecord])
+        if (insertError) {
+          results.push({ paymentId, error: insertError.message })
+        } else {
+          inserted++
+          results.push({ paymentId, cliente: clienteNombre, monto: payment.transaction_amount, tipo: 'MP', formaPago })
         }
       }
+    }
 
-      // ─── Determinar forma de pago ───
-      const typeId = payment.payment_type_id || ''
-      const methodMap = {
-        'credit_card': 'Tarjeta de Crédito',
-        'debit_card': 'Tarjeta de Débito',
-        'account_money': 'Mercado Pago',
-        'ticket': 'Efectivo',
-        'bank_transfer': 'Transferencia',
-        'transfer': 'Transferencia'
-      }
-      const formaPago = methodMap[typeId] || payment.payment_method_id || 'Mercado Pago'
+    // ══════════════════════════════════════════════════════════
+    //  PARTE 2: Sincronizar ÓRDENES de Mercado Libre
+    //  (ventas del marketplace)
+    // ══════════════════════════════════════════════════════════
+    console.log('[Sync] ── Buscando órdenes de Mercado Libre ──')
 
-      const ventaRecord = {
-        fecha: payment.date_approved || payment.date_created || new Date().toISOString(),
-        cliente: clienteNombre,
-        monto: payment.transaction_amount || 0,
-        status: 'pendiente',
-        mp_payment_id: mpId,
-        datos_fiscales: {
-          email: email,
-          identification: { type: docType, number: docNumber },
-          cuit: docNumber,
-          forma_pago: formaPago,
-          mp_status: payment.status,
-          mp_method: payment.payment_method_id || '',
-          mp_type: payment.payment_type_id || '',
-          origen
+    if (myUserId) {
+      const ordersUrl = `https://api.mercadolibre.com/orders/search?seller=${myUserId}&sort=date_desc&limit=20`
+      const ordersRes = await fetch(ordersUrl, {
+        headers: { 'Authorization': `Bearer ${accessToken}` }
+      })
+
+      if (ordersRes.ok) {
+        const ordersData = await ordersRes.json()
+        const orders = ordersData.results || []
+        console.log(`[Sync] Encontradas ${orders.length} órdenes MeLi`)
+
+        for (const order of orders) {
+          const orderId = String(order.id)
+          const mpId = `order-${orderId}`
+
+          // Solo órdenes pagadas
+          if (order.status !== 'paid') {
+            continue
+          }
+
+          // Ya existe?
+          const { data: existing } = await supabaseAdmin
+            .from('ventas').select('id').eq('mp_payment_id', mpId).maybeSingle()
+          if (existing) { skipped++; continue }
+
+          // También verificar por payment IDs individuales
+          const orderPaymentIds = (order.payments || []).map(p => String(p.id))
+          if (orderPaymentIds.length > 0) {
+            const { data: existingByPayment } = await supabaseAdmin
+              .from('ventas').select('id').in('mp_payment_id', orderPaymentIds).limit(1)
+            if (existingByPayment && existingByPayment.length > 0) {
+              skipped++
+              continue
+            }
+          }
+
+          // ─── Datos del comprador ───
+          const buyer = order.buyer || {}
+          let clienteNombre = 'Consumidor Final'
+          let docNumber = ''
+          let docType = 'DNI'
+          let email = buyer.email || ''
+
+          if (buyer.first_name) {
+            clienteNombre = `${buyer.first_name} ${buyer.last_name || ''}`.trim()
+          } else if (buyer.nickname) {
+            clienteNombre = buyer.nickname
+          }
+
+          // Intentar obtener doc de billing_info
+          if (buyer.billing_info?.doc_number) {
+            docNumber = buyer.billing_info.doc_number
+            docType = buyer.billing_info.doc_type || 'DNI'
+          }
+
+          // Forma de pago
+          const firstPayment = order.payments?.[0]
+          const paymentTypeMap = {
+            'credit_card': 'Tarjeta de Crédito',
+            'debit_card': 'Tarjeta de Débito',
+            'account_money': 'Mercado Pago',
+            'ticket': 'Efectivo',
+            'bank_transfer': 'Transferencia'
+          }
+          const formaPago = paymentTypeMap[firstPayment?.payment_type] || firstPayment?.payment_type || 'Mercado Libre'
+
+          const ventaRecord = {
+            fecha: order.date_created || new Date().toISOString(),
+            cliente: clienteNombre,
+            monto: order.total_amount || 0,
+            status: 'pendiente',
+            mp_payment_id: mpId,
+            datos_fiscales: {
+              email,
+              identification: { type: docType, number: docNumber },
+              cuit: docNumber,
+              forma_pago: formaPago,
+              meli_order_id: orderId,
+              meli_payment_ids: orderPaymentIds,
+              meli_status: order.status,
+              origen: 'mercadolibre'
+            }
+          }
+
+          const { error: insertError } = await supabaseAdmin.from('ventas').insert([ventaRecord])
+          if (insertError) {
+            results.push({ orderId, error: insertError.message })
+          } else {
+            inserted++
+            results.push({ orderId, cliente: clienteNombre, monto: order.total_amount, tipo: 'MeLi', formaPago })
+          }
         }
-      }
-
-      const { error: insertError } = await supabaseAdmin.from('ventas').insert([ventaRecord])
-      if (insertError) {
-        console.error(`[Sync] Error insertando pago ${paymentId}:`, insertError.message)
-        results.push({ paymentId, error: insertError.message })
       } else {
-        inserted++
-        results.push({ paymentId, cliente: clienteNombre, monto: payment.transaction_amount, formaPago })
-        console.log(`[Sync] ✅ Pago ${paymentId} insertado (${clienteNombre} - $${payment.transaction_amount})`)
+        const errText = await ordersRes.text()
+        console.error('[Sync] Error buscando órdenes MeLi:', errText)
+        results.push({ meliOrdersError: errText })
       }
     }
 
@@ -192,7 +277,6 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       success: true,
-      total: payments.length,
       inserted,
       skipped,
       outgoing,
