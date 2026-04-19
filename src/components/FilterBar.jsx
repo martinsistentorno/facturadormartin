@@ -110,10 +110,11 @@ export default function FilterBar({ filters, onFilterChange, totalCount, filtere
               className="w-full bg-surface-alt border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent cursor-pointer"
             >
               <option value="">Todos</option>
-              <option value="Contado">Contado / Efectivo</option>
-              <option value="Mercado Pago">Mercado Pago</option>
+              <option value="mercadolibre">Mercado Libre</option>
+              <option value="mercadopago">Mercado Pago</option>
               <option value="Transferencia">Transferencia</option>
               <option value="Tarjeta">Tarjeta (Cred/Deb)</option>
+              <option value="Contado">Contado / Efectivo</option>
             </select>
           </div>
 

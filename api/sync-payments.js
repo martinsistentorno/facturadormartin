@@ -107,12 +107,29 @@ export default async function handler(req, res) {
       }
       const formaPago = methodMap[typeId] || payment.payment_method_id || 'Mercado Pago'
 
+      // ─── Detectar si viene de Mercado Libre ───
+      // Si el pago tiene un order.id, pertenece a una venta del marketplace
+      const isMeLiOrder = !!payment.order?.id
+      const origen = isMeLiOrder ? 'mercadolibre' : 'mercadopago'
+      // Prefijo "order-" para que la tabla lo muestre como "MeLi #xxx"
+      const mpId = isMeLiOrder ? `order-${payment.order.id}` : paymentId
+
+      // Si es de MeLi, verificar que no exista ya por el order ID
+      if (isMeLiOrder) {
+        const { data: existingOrder } = await supabaseAdmin
+          .from('ventas').select('id').eq('mp_payment_id', mpId).maybeSingle()
+        if (existingOrder) {
+          skipped++
+          continue
+        }
+      }
+
       const ventaRecord = {
         fecha: payment.date_approved || payment.date_created || new Date().toISOString(),
         cliente: clienteNombre,
         monto: payment.transaction_amount || 0,
         status: 'pendiente',
-        mp_payment_id: paymentId,
+        mp_payment_id: mpId,
         datos_fiscales: {
           email: payer.email || '',
           identification: { type: payer.identification?.type || 'DNI', number: payer.identification?.number || '' },
@@ -121,7 +138,7 @@ export default async function handler(req, res) {
           mp_status: payment.status,
           mp_method: payment.payment_method_id || '',
           mp_type: payment.payment_type_id || '',
-          origen: 'mercadopago-sync'
+          origen
         }
       }
 

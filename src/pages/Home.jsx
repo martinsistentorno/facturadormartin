@@ -93,11 +93,17 @@ export default function Home() {
 
       // Medio filter
       if (filters.medio) {
-        // Handle 'Contado', 'Mercado Pago', 'Tarjeta', 'Transferencia' logic
-        const formaPago = (v.datos_fiscales?.forma_pago || '').toLowerCase()
         const q = filters.medio.toLowerCase()
-        if (q === 'contado' && !formaPago.includes('efectivo') && !formaPago.includes('contado')) return false;
-        if (q !== 'contado' && !formaPago.includes(q)) return false;
+        const formaPago = (v.datos_fiscales?.forma_pago || '').toLowerCase()
+        const origen = (v.datos_fiscales?.origen || '').toLowerCase()
+        const isMeLi = origen.includes('mercadolibre') || v.mp_payment_id?.startsWith('order-')
+        const isMePa = origen.includes('mercadopago') || (v.mp_payment_id && !v.mp_payment_id.startsWith('order-'))
+
+        if (q === 'mercadolibre' && !isMeLi) return false
+        if (q === 'mercadopago' && !isMePa) return false
+        if (q === 'transferencia' && !formaPago.includes('transferencia')) return false
+        if (q === 'tarjeta' && !formaPago.includes('tarjeta')) return false
+        if (q === 'contado' && !formaPago.includes('efectivo') && !formaPago.includes('contado')) return false
       }
 
       return true

@@ -6,25 +6,27 @@ import { useConfig } from '../context/ConfigContext'
 
 const PAGE_SIZES = [25, 50, 100]
 
-const PaymentBadge = ({ method, mpId }) => {
-  if (!method) return <span className="text-text-muted text-xs">—</span>;
+const PaymentBadge = ({ method, mpId, origen }) => {
+  if (!method && !mpId) return <span className="text-text-muted text-xs">—</span>;
   let bg = 'bg-surface-alt/50';
   let text = 'text-text-secondary';
-  let label = method;
+  let label = method || '—';
 
-  // Clean order- prefix for display
-  const cleanId = mpId ? mpId.replace(/^order-/, '') : '';
+  // Detect origin from datos_fiscales.origen or mp_payment_id prefix
   const isOrder = mpId?.startsWith('order-');
+  const isMeLi = origen?.includes('mercadolibre') || isOrder;
+  const cleanId = mpId ? mpId.replace(/^order-/, '') : '';
 
-  if (isOrder) {
+  if (isMeLi) {
     // Mercado Libre marketplace order
     bg = 'bg-[#FFE600]/15';
     text = 'text-[#A68900]';
-    label = `MeLi #${cleanId}`;
-  } else if (method === 'Mercado Pago' || mpId) {
+    label = method && method !== 'Mercado Libre' ? `MeLi · ${method}` : `MeLi #${cleanId}`;
+  } else if (mpId) {
+    // Mercado Pago payment
     bg = 'bg-[#009EE3]/10';
     text = 'text-[#009EE3]';
-    label = mpId ? `MP #${cleanId}` : 'Mercado Pago';
+    label = method && method !== 'Mercado Pago' ? `MP · ${method}` : `MP #${cleanId}`;
   } else if (method.includes('Efectivo') || method.includes('Contado')) {
     bg = 'bg-accent/10';
     text = 'text-accent';
@@ -37,7 +39,7 @@ const PaymentBadge = ({ method, mpId }) => {
   }
 
   return (
-    <span className={`inline-block px-2 py-0.5 rounded-md text-[10px] font-semibold tracking-wide ${bg} ${text} truncate max-w-[120px]`} title={method}>
+    <span className={`inline-block px-2 py-0.5 rounded-md text-[10px] font-semibold tracking-wide ${bg} ${text} truncate max-w-[140px]`} title={`${origen || ''} — ${method || ''}`}>
       {label}
     </span>
   )
@@ -226,7 +228,7 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
                     <span className="text-text-primary font-semibold tabular-nums">{formatCurrency(venta.monto)}</span>
                   </td>
                   <td className="px-4 py-3">
-                    <PaymentBadge method={venta.datos_fiscales?.forma_pago} mpId={venta.mp_payment_id} />
+                    <PaymentBadge method={venta.datos_fiscales?.forma_pago} mpId={venta.mp_payment_id} origen={venta.datos_fiscales?.origen} />
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
