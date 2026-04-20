@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Save, Loader2, X, User, CreditCard, DollarSign, Edit2, Clock } from 'lucide-react';
+import { Save, Loader2, X, User, CreditCard, DollarSign, Edit2, FileText, Hash } from 'lucide-react';
 import StatusBadge from './StatusBadge';
 
 const FORMAS_PAGO = [
@@ -76,172 +76,182 @@ export default function EditSaleModal({ isOpen, onClose, venta, onSave }) {
   const fromApiHasCuit = origen !== 'Manual' && !!venta.datos_fiscales?.cuit;
 
   return (
-    <>
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 z-[150] bg-black/30 backdrop-blur-sm animate-fade-in"
-        onClick={onClose}
-      />
-
-      {/* Drawer */}
-      <div className="fixed right-0 top-0 bottom-0 z-[151] w-full max-w-sm bg-surface border-l border-border shadow-2xl animate-drawer-in overflow-y-auto">
-        {/* Header */}
-        <div className="sticky top-0 bg-surface/95 backdrop-blur-sm border-b border-border px-5 py-3 flex items-center justify-between z-10">
-          <div className="flex items-center gap-2.5">
-            <div className="p-1.5 rounded-lg bg-yellow-subtle">
-              <Edit2 size={14} className="text-yellow" />
-            </div>
-            <div>
-              <h3 className="text-[10px] font-bold uppercase tracking-[0.15em] text-text-primary" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+    <div 
+      className="fixed inset-0 z-[150] bg-black/20 backdrop-blur-sm flex items-center justify-center p-3 transition-opacity animate-fade-in"
+      onClick={onClose}
+    >
+      <div 
+        className="bg-[#F9F7F2] rounded-2xl shadow-xl border border-white/50 w-full max-w-[500px] max-h-[95vh] flex flex-col animate-slide-down relative z-[151]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header Minimalista */}
+        <div className="bg-white/60 backdrop-blur-sm px-6 py-4 flex items-center justify-between border-b border-border/40 shrink-0">
+          <div>
+            <span className="text-[9px] font-bold tracking-[0.2em] text-[#C0443C] uppercase mb-0.5 block" style={{ fontFamily: 'Inter' }}>
+              Operaciones
+            </span>
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-black uppercase text-[#000000] tracking-tight leading-none" style={{ fontFamily: 'Montserrat' }}>
                 Editar Venta
-              </h3>
-              <p className="text-[9px] text-text-muted mt-0.5 font-mono opacity-70">ID: {String(venta.id || '').slice(0, 8)}</p>
+              </h2>
+              <span className="bg-surface-alt border border-border text-text-muted text-[10px] font-mono px-2 py-0.5 rounded">
+                {String(venta.id || '').slice(0, 8)}
+              </span>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-full text-text-muted hover:text-text-primary hover:bg-surface-alt transition-colors cursor-pointer"
-          >
-            <X size={16} />
+          <button onClick={onClose} className="w-8 h-8 rounded-full bg-white border border-border flex items-center justify-center text-text-muted hover:text-[#C0443C] hover:border-[#C0443C] hover:-translate-y-0.5 transition-all cursor-pointer">
+            <X size={14} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-5 space-y-5">
-
-          {/* ─── Info Card ─── */}
-          <div className="flex items-center justify-between bg-surface-alt/30 border border-border/50 rounded-lg p-3">
-            <div className="flex items-center gap-2.5">
+        <form id="edit-sale-form" onSubmit={handleSubmit} className="overflow-y-auto p-6 scrollbar-hide flex flex-col gap-6">
+          
+          <div className="flex items-center justify-between bg-white border border-border/60 rounded-xl p-3 shadow-sm">
+            <div className="flex items-center gap-2">
               <StatusBadge status={venta.status || 'pendiente'} />
-              <div className="text-[10px] text-text-muted font-medium">
-                <Clock size={10} className="inline mr-1" />
+              <span className="text-xs text-text-muted font-medium ml-1">
                 {formatDate(venta.fecha)}
-              </div>
+              </span>
             </div>
-            <span className="text-[9px] font-bold uppercase tracking-wider text-text-muted px-2 py-0.5 rounded border border-border/60">
+            <span className="text-[9px] font-bold uppercase tracking-wider text-text-muted px-2 py-0.5 rounded border border-border/60 bg-surface-alt/30">
               {origen}
             </span>
           </div>
 
-          {/* ─── Cliente ─── */}
-          <Section title="Datos del Cliente" icon={User}>
-            <div className="px-4 py-2.5">
-              <label className="block text-[9px] font-medium text-text-muted uppercase tracking-wider mb-1.5" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
-                Nombre / Razón Social
-              </label>
+          {/* Cliente & CUIT */}
+          <div className="space-y-4">
+            <div className="flex flex-col gap-1">
+              <span className="text-[9px] font-bold uppercase tracking-widest text-[#C0443C] flex items-center gap-1" style={{ fontFamily: 'Inter' }}>
+                <User size={10} />
+                Nombre / Razón Social *
+              </span>
               <input
                 type="text"
                 required
-                className="w-full bg-base border border-border/80 rounded-md px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-accent/40 transition-colors"
                 value={formData.cliente}
                 onChange={(e) => setFormData({ ...formData, cliente: e.target.value })}
+                className="w-full px-4 py-3 rounded-xl border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#C0443C]/30 focus:border-[#C0443C] transition-all font-medium"
               />
             </div>
-            <div className="px-4 py-2.5 border-t border-border/40">
-              <label className="block text-[9px] font-medium text-text-muted uppercase tracking-wider mb-1.5" style={{ fontFamily: 'Space Grotesk' }}>
+
+            <div className="flex flex-col gap-1">
+              <span className="text-[9px] font-bold uppercase tracking-widest text-text-secondary flex items-center gap-1" style={{ fontFamily: 'Inter' }}>
+                <Hash size={10} />
                 CUIT / DNI
-              </label>
+              </span>
               <input
                 type="text"
                 disabled={fromApiHasCuit}
-                placeholder="Ej: 20-12345678-9"
-                className={`w-full border rounded-md px-3 py-2 text-xs text-text-primary focus:outline-none transition-colors ${fromApiHasCuit ? 'bg-surface-alt/70 border-transparent opacity-60 cursor-not-allowed' : 'bg-base border-border/80 focus:border-accent/40'}`}
                 value={formData.cuit}
                 onChange={(e) => setFormData({ ...formData, cuit: e.target.value })}
+                placeholder="Opcional. Vacío = Consumidor Final"
+                className={`w-full px-4 py-3 rounded-xl border border-border text-sm focus:outline-none transition-all font-medium ${fromApiHasCuit ? 'bg-surface-alt/70 text-text-muted opacity-80 cursor-not-allowed' : 'bg-white focus:ring-2 focus:ring-[#C0443C]/30 focus:border-[#C0443C]'}`}
               />
               {fromApiHasCuit ? (
-                <p className="text-[8px] text-accent/70 mt-1 flex items-center gap-1 font-medium italic">
-                   Dato automático por API (Bloqueado).
-                </p>
+                <span className="text-[10px] text-[#C0443C] mt-1 font-medium italic">
+                  Dato automático validado por {origen} (Bloqueado).
+                </span>
               ) : (
-                <p className="text-[9px] text-text-muted/60 mt-1">Consumidor Final si se deja vacío.</p>
+                <span className="text-[10px] text-text-muted mt-1 italic">
+                  Consumidor Final si se deja vacío.
+                </span>
               )}
             </div>
-          </Section>
+          </div>
 
-          {/* ─── Detalle ─── */}
-          <Section title="Detalle" icon={DollarSign}>
-            <div className="px-4 py-2.5">
-              <label className="block text-[9px] font-medium text-text-muted uppercase tracking-wider mb-1.5" style={{ fontFamily: 'Space Grotesk' }}>
+          <div className="h-px bg-border/40 w-full" />
+
+          {/* Detalle */}
+          <div className="space-y-4">
+            <div className="flex flex-col gap-1">
+              <span className="text-[9px] font-bold uppercase tracking-widest text-text-secondary flex items-center gap-1" style={{ fontFamily: 'Inter' }}>
+                <FileText size={10} />
                 Concepto / Descripción
-              </label>
+              </span>
               <textarea
-                className="w-full bg-base border border-border/80 rounded-md px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-accent/40 transition-colors resize-none leading-relaxed"
                 rows="2"
                 value={formData.descripcion}
                 onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
+                className="w-full px-4 py-3 rounded-xl border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#C0443C]/30 focus:border-[#C0443C] transition-all font-medium resize-none"
               />
-              <p className="text-[9px] text-text-muted/60 mt-1 italic">Aparecerá en el cuerpo de la factura.</p>
+              <span className="text-[10px] text-text-muted mt-0.5 italic">
+                Cuerpo de la factura PDF.
+              </span>
             </div>
-          </Section>
+          </div>
 
-          {/* ─── Monto ─── */}
-          <Section title="Importe" icon={DollarSign}>
-            <div className="px-4 py-2.5">
-              <label className="block text-[9px] font-medium text-text-muted uppercase tracking-wider mb-1.5" style={{ fontFamily: 'Space Grotesk' }}>
-                Monto Total (ARS)
-              </label>
+          <div className="h-px bg-border/40 w-full" />
+
+          {/* Monto & Forma de Pago */}
+          <div className="space-y-4">
+            <div className="flex flex-col gap-1">
+              <span className="text-[9px] font-bold uppercase tracking-widest text-[#C0443C] flex items-center gap-1" style={{ fontFamily: 'Inter' }}>
+                <DollarSign size={10} />
+                Monto Total (ARS) *
+              </span>
               <input
                 type="number"
                 required
                 step="0.01"
-                className="w-full bg-base border border-border/80 rounded-md px-3 py-2 text-lg font-bold text-text-primary focus:outline-none focus:border-accent/40 transition-colors tabular-nums"
+                min="1"
+                className="w-full px-4 py-3 rounded-xl border border-border bg-white text-xl font-bold text-text-primary focus:outline-none focus:ring-2 focus:ring-[#C0443C]/30 focus:border-[#C0443C] transition-all tabular-nums"
                 value={formData.monto}
                 onChange={(e) => setFormData({ ...formData, monto: e.target.value })}
               />
             </div>
-          </Section>
 
-          {/* ─── Forma de Pago ─── */}
-          <Section title="Forma de Pago" icon={CreditCard}>
-            <div className="px-4 py-3">
-              <div className="grid grid-cols-2 gap-1.5">
+            <div>
+              <span className="text-[9px] font-bold uppercase tracking-widest text-text-secondary flex items-center gap-1 mb-2" style={{ fontFamily: 'Inter' }}>
+                <CreditCard size={10} />
+                Forma de Pago
+              </span>
+              <div className="grid grid-cols-2 gap-2">
                 {FORMAS_PAGO.map(fp => (
                   <button
                     key={fp}
                     type="button"
                     onClick={() => setFormData({ ...formData, formaPago: fp })}
                     className={`
-                      px-2 py-2 rounded-md text-[10px] font-semibold text-left transition-all cursor-pointer border
+                      px-3 py-2.5 rounded-lg text-[11px] font-semibold text-center transition-all cursor-pointer border
                       ${formData.formaPago === fp
-                        ? 'bg-accent/10 border-accent/40 text-accent'
-                        : 'bg-surface-alt/40 border-border/40 text-text-secondary hover:border-accent/20'
+                        ? 'bg-[#C0443C]/10 border-[#C0443C]/30 text-[#C0443C]'
+                        : 'bg-white border-border text-text-secondary hover:border-[#C0443C]/30'
                       }
                     `}
+                    style={{ fontFamily: 'Inter' }}
                   >
                     {fp}
                   </button>
                 ))}
               </div>
             </div>
-          </Section>
-
-          {/* ─── Submit ─── */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full flex items-center justify-center gap-2 bg-[#000000] text-white py-3 rounded-lg text-xs font-bold uppercase tracking-[0.2em] hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 transition-all disabled:opacity-50 disabled:transform-none cursor-pointer"
-            style={{ fontFamily: 'Montserrat' }}
-          >
-            {loading ? <Loader2 className="animate-spin" size={14} /> : <Save size={14} />}
-            {loading ? 'GUARDANDO...' : 'GUARDAR CAMBIOS'}
-          </button>
+          </div>
         </form>
-      </div>
-    </>
-  );
-}
 
-function Section({ title, icon: Icon, children }) {
-  return (
-    <div className="animate-fade-in">
-      <div className="flex items-center gap-1.5 mb-2 px-1">
-        {Icon && <Icon size={11} className="text-text-muted opacity-60" />}
-        <h4 className="text-[9px] font-bold text-text-muted uppercase tracking-[0.1em]" style={{ fontFamily: 'Montserrat' }}>
-          {title}
-        </h4>
-      </div>
-      <div className="bg-surface border border-border/60 rounded-lg divide-y divide-border/40 overflow-hidden shadow-sm">
-        {children}
+        {/* Footer Minimalista */}
+        <div className="bg-white/80 backdrop-blur-md px-6 py-4 border-t border-border/40 shrink-0">
+          <div className="flex flex-col gap-3">
+            {/* Resumen */}
+            <div className="flex items-center justify-between px-2 text-xs font-medium" style={{ fontFamily: 'Inter' }}>
+               <span className="text-text-muted">Total modificado:</span>
+               <span className="text-base font-black text-[#C0443C]">
+                 {formData.monto ? `$ ${Number(formData.monto).toLocaleString('es-AR', { minimumFractionDigits: 2 })}` : '$ 0.00'}
+               </span>
+            </div>
+            {/* Submit */}
+            <button
+              form="edit-sale-form"
+              type="submit"
+              disabled={loading}
+              className="w-full h-11 rounded-xl bg-[#000000] text-white flex items-center justify-center gap-2 font-bold uppercase tracking-widest text-[11px] hover:-translate-y-1 hover:shadow-lg hover:shadow-black/20 transition-all duration-300 disabled:opacity-50 disabled:hover:translate-y-0 cursor-pointer"
+              style={{ fontFamily: 'Montserrat' }}
+            >
+              {loading ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
+              {loading ? 'Procesando...' : 'Guardar Cambios'}
+            </button>
+          </div>
+        </div>
+
       </div>
     </div>
   );
