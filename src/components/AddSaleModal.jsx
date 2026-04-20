@@ -1,4 +1,4 @@
-﻿import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Plus, Loader2, X, User, CreditCard, DollarSign, FileText, Hash } from 'lucide-react';
 
 const FORMAS_PAGO = [
@@ -151,7 +151,12 @@ export default function AddSaleModal({ isOpen, onClose, onSave, searchClientes }
           </button>
         </div>
 
-        <form id="add-sale-form" onSubmit={handleSubmit} className="overflow-y-auto p-6 scrollbar-hide flex flex-col gap-6">
+        <form 
+          id="add-sale-form" 
+          onSubmit={handleSubmit} 
+          onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}
+          className="overflow-y-auto p-6 scrollbar-hide flex flex-col gap-6"
+        >
           
           {/* Cliente & CUIT */}
           <div className="space-y-4">

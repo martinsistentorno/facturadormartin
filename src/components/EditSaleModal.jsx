@@ -104,7 +104,12 @@ export default function EditSaleModal({ isOpen, onClose, venta, onSave }) {
           </button>
         </div>
 
-        <form id="edit-sale-form" onSubmit={handleSubmit} className="overflow-y-auto p-5 scrollbar-hide flex flex-col gap-4">
+        <form 
+          id="edit-sale-form" 
+          onSubmit={handleSubmit} 
+          onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}
+          className="overflow-y-auto p-5 scrollbar-hide flex flex-col gap-4"
+        >
           
           <div className="flex items-center justify-between bg-white border border-border/60 rounded-xl p-3 shadow-sm">
             <div className="flex items-center gap-2">
