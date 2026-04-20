@@ -104,7 +104,7 @@ export default function EditSaleModal({ isOpen, onClose, venta, onSave }) {
           </button>
         </div>
 
-        <form id="edit-sale-form" onSubmit={handleSubmit} className="overflow-y-auto p-6 scrollbar-hide flex flex-col gap-6">
+        <form id="edit-sale-form" onSubmit={handleSubmit} className="overflow-y-auto p-5 scrollbar-hide flex flex-col gap-4">
           
           <div className="flex items-center justify-between bg-white border border-border/60 rounded-xl p-3 shadow-sm">
             <div className="flex items-center gap-2">
@@ -119,7 +119,7 @@ export default function EditSaleModal({ isOpen, onClose, venta, onSave }) {
           </div>
 
           {/* Cliente & CUIT */}
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="flex flex-col gap-1">
               <span className="text-[9px] font-bold uppercase tracking-widest text-[#C0443C] flex items-center gap-1" style={{ fontFamily: 'Inter' }}>
                 <User size={10} />
@@ -130,7 +130,7 @@ export default function EditSaleModal({ isOpen, onClose, venta, onSave }) {
                 required
                 value={formData.cliente}
                 onChange={(e) => setFormData({ ...formData, cliente: e.target.value })}
-                className="w-full px-4 py-3 rounded-xl border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#C0443C]/30 focus:border-[#C0443C] transition-all font-medium"
+                className="w-full px-3 py-2 rounded-lg border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#C0443C]/30 focus:border-[#C0443C] transition-all font-medium"
               />
             </div>
 
@@ -145,39 +145,28 @@ export default function EditSaleModal({ isOpen, onClose, venta, onSave }) {
                 value={formData.cuit}
                 onChange={(e) => setFormData({ ...formData, cuit: e.target.value })}
                 placeholder="Opcional. Vacío = Consumidor Final"
-                className={`w-full px-4 py-3 rounded-xl border border-border text-sm focus:outline-none transition-all font-medium ${fromApiHasCuit ? 'bg-surface-alt/70 text-text-muted opacity-80 cursor-not-allowed' : 'bg-white focus:ring-2 focus:ring-[#C0443C]/30 focus:border-[#C0443C]'}`}
+                className={`w-full px-3 py-2 rounded-lg border border-border text-sm focus:outline-none transition-all font-medium ${fromApiHasCuit ? 'bg-surface-alt/70 text-text-muted opacity-80 cursor-not-allowed' : 'bg-white focus:ring-2 focus:ring-[#C0443C]/30 focus:border-[#C0443C]'}`}
               />
-              {fromApiHasCuit ? (
-                <span className="text-[10px] text-[#C0443C] mt-1 font-medium italic">
-                  Dato automático validado por {origen} (Bloqueado).
-                </span>
-              ) : (
-                <span className="text-[10px] text-text-muted mt-1 italic">
-                  Consumidor Final si se deja vacío.
-                </span>
-              )}
+              <span className="text-[10px] text-text-muted mt-0.5 italic leading-tight">
+                {fromApiHasCuit ? `Validado por ${origen}.` : 'Consumidor Final si vacío.'}
+              </span>
             </div>
           </div>
 
           <div className="h-px bg-border/40 w-full" />
 
           {/* Detalle */}
-          <div className="space-y-4">
-            <div className="flex flex-col gap-1">
-              <span className="text-[9px] font-bold uppercase tracking-widest text-text-secondary flex items-center gap-1" style={{ fontFamily: 'Inter' }}>
-                <FileText size={10} />
-                Concepto / Descripción
-              </span>
-              <textarea
-                rows="2"
-                value={formData.descripcion}
-                onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
-                className="w-full px-4 py-3 rounded-xl border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#C0443C]/30 focus:border-[#C0443C] transition-all font-medium resize-none"
-              />
-              <span className="text-[10px] text-text-muted mt-0.5 italic">
-                Cuerpo de la factura PDF.
-              </span>
-            </div>
+          <div className="flex flex-col gap-1">
+            <span className="text-[9px] font-bold uppercase tracking-widest text-text-secondary flex items-center gap-1" style={{ fontFamily: 'Inter' }}>
+              <FileText size={10} />
+              Concepto / Descripción
+            </span>
+            <input
+              type="text"
+              value={formData.descripcion}
+              onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
+              className="w-full px-3 py-2 rounded-lg border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#C0443C]/30 focus:border-[#C0443C] transition-all font-medium"
+            />
           </div>
 
           <div className="h-px bg-border/40 w-full" />
@@ -194,25 +183,25 @@ export default function EditSaleModal({ isOpen, onClose, venta, onSave }) {
                 required
                 step="0.01"
                 min="1"
-                className="w-full px-4 py-3 rounded-xl border border-border bg-white text-xl font-bold text-text-primary focus:outline-none focus:ring-2 focus:ring-[#C0443C]/30 focus:border-[#C0443C] transition-all tabular-nums"
+                className="w-full px-4 py-2 rounded-lg border border-border bg-white text-lg font-bold text-text-primary focus:outline-none focus:ring-2 focus:ring-[#C0443C]/30 focus:border-[#C0443C] transition-all tabular-nums"
                 value={formData.monto}
                 onChange={(e) => setFormData({ ...formData, monto: e.target.value })}
               />
             </div>
 
             <div>
-              <span className="text-[9px] font-bold uppercase tracking-widest text-text-secondary flex items-center gap-1 mb-2" style={{ fontFamily: 'Inter' }}>
+              <span className="text-[9px] font-bold uppercase tracking-widest text-text-secondary flex items-center gap-1 mb-1.5" style={{ fontFamily: 'Inter' }}>
                 <CreditCard size={10} />
                 Forma de Pago
               </span>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
                 {FORMAS_PAGO.map(fp => (
                   <button
                     key={fp}
                     type="button"
                     onClick={() => setFormData({ ...formData, formaPago: fp })}
                     className={`
-                      px-3 py-2.5 rounded-lg text-[11px] font-semibold text-center transition-all cursor-pointer border
+                      px-2 py-1.5 rounded-md text-[10px] font-semibold text-center transition-all cursor-pointer border
                       ${formData.formaPago === fp
                         ? 'bg-[#C0443C]/10 border-[#C0443C]/30 text-[#C0443C]'
                         : 'bg-white border-border text-text-secondary hover:border-[#C0443C]/30'
