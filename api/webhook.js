@@ -27,7 +27,7 @@ async function getAfipRazonSocial(cuitNumber) {
 
   try {
     console.log(`[Webhook] Consultando AFIP para CUIT: ${cuitStr}`)
-    const data = await afipInstance.RegisterScopeFive.GetTaxpayerDetails(cuitStr)
+    const data = await afipInstance.RegisterScopeFive.getTaxpayerDetails(cuitStr)
     if (data && data.datosGenerales) {
       let name = data.datosGenerales.razonSocial || ''
       if (!name && data.datosGenerales.nombre) {
@@ -141,7 +141,7 @@ export default async function handler(req, res) {
         ? `${buyer.first_name} ${buyer.last_name || ''}`.trim()
         : buyer.nickname || `Venta MeLi #${orderId}`
 
-      const docNumber = buyer.billing_info?.doc_number || buyer.identification?.number || ''
+      const docNumber = String(buyer.billing_info?.doc_number || buyer.identification?.number || '')
 
       // 1. Prioridad: Consultar AFIP si es un CUIT válido
       if (docNumber && docNumber.length === 11) {
@@ -343,7 +343,7 @@ async function processPayment(supabaseAdmin, accessToken, paymentId, res) {
   // ─── Extraer datos completos del pagador ───
   const payer = payment.payer || {}
   let clienteNombre = 'Consumidor Final'
-  let docNumber = payer.identification?.number || ''
+  let docNumber = String(payer.identification?.number || '')
   let docType = payer.identification?.type || 'DNI'
 
   // 1. Prioridad: Consultar AFIP si es un CUIT válido

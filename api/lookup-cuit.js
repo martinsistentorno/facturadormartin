@@ -36,7 +36,7 @@ export default async function handler(req, res) {
 
     // Consultar el padron (Alcance 5)
     console.log(`[AFIP] Consultando CUIT: ${cuit}...`)
-    const data = await afip.RegisterScopeFive.GetTaxpayerDetails(cuit)
+    const data = await afip.RegisterScopeFive.getTaxpayerDetails(cuit)
     
     if (!data || !data.datosGenerales) {
       return res.status(404).json({ error: 'CUIT no encontrado o sin datos generales' })

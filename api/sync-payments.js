@@ -69,7 +69,7 @@ export default async function handler(req, res) {
 
       try {
         console.log(`[Sync] Consultando AFIP para CUIT: ${cuitStr}`)
-        const data = await afipInstance.RegisterScopeFive.GetTaxpayerDetails(cuitStr)
+        const data = await afipInstance.RegisterScopeFive.getTaxpayerDetails(cuitStr)
         if (data && data.datosGenerales) {
           let name = data.datosGenerales.razonSocial || ''
           if (!name && data.datosGenerales.nombre) {
