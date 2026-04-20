@@ -29,6 +29,23 @@ export function useVentas() {
   useEffect(() => {
     fetchVentas()
 
+    // ─── Auto-polling cada 15 segundos ───
+    // Esto asegura que la UI se actualice sola sin depender de F5 o del socket realtime si falla
+    const pollInterval = setInterval(() => {
+      // Background re-fetch sin mostrar cartel de loading si ya hay datos
+      supabase
+        .from('ventas')
+        .select('*')
+        .order('fecha', { ascending: false })
+        .then(({ data, error }) => {
+          if (!error && data) {
+            setVentas(data)
+          }
+        })
+        
+      // También podríamos disparar el sync silenciosamente, lo hacemos cada 30 min o si es necesario
+    }, 15000)
+
     // ─── Realtime subscription ───
     const channel = supabase
       .channel('ventas-realtime')
@@ -39,7 +56,11 @@ export function useVentas() {
           console.log('[Realtime] Cambio en ventas:', payload.eventType)
 
           if (payload.eventType === 'INSERT') {
-            setVentas(prev => [payload.new, ...prev])
+            setVentas(prev => {
+              // evitar duplicados si el fetch de polling ya lo trajo
+              if (prev.some(v => v.id === payload.new.id)) return prev;
+              return [payload.new, ...prev].sort((a,b) => new Date(b.fecha) - new Date(a.fecha))
+            })
           } else if (payload.eventType === 'UPDATE') {
             setVentas(prev =>
               prev.map(v => v.id === payload.new.id ? payload.new : v)
@@ -52,6 +73,7 @@ export function useVentas() {
       .subscribe()
 
     return () => {
+      clearInterval(pollInterval)
       supabase.removeChannel(channel)
     }
   }, [fetchVentas])

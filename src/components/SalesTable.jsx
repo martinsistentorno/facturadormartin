@@ -15,27 +15,29 @@ const PaymentBadge = ({ method, mpId, origen }) => {
   // Detect origin from datos_fiscales.origen or mp_payment_id prefix
   const isOrder = mpId?.startsWith('order-');
   const isMeLi = origen?.includes('mercadolibre') || isOrder;
-  const cleanId = mpId ? mpId.replace(/^order-/, '') : '';
 
   if (isMeLi) {
     // Mercado Libre marketplace order
     bg = 'bg-[#FFE600]/15';
     text = 'text-[#A68900]';
-    label = method && method !== 'Mercado Libre' ? `MeLi · ${method}` : `MeLi #${cleanId}`;
+    label = 'Mercado Libre';
   } else if (mpId) {
     // Mercado Pago payment
     bg = 'bg-[#009EE3]/10';
     text = 'text-[#009EE3]';
-    label = method && method !== 'Mercado Pago' ? `MP · ${method}` : `MP #${cleanId}`;
-  } else if (method.includes('Efectivo') || method.includes('Contado')) {
+    label = method || 'Mercado Pago';
+  } else if (method?.includes('Efectivo') || method?.includes('Contado')) {
     bg = 'bg-accent/10';
     text = 'text-accent';
-  } else if (method.includes('Transferencia')) {
+    label = 'Efectivo';
+  } else if (method?.includes('Transferencia')) {
     bg = 'bg-[#7C4DFF]/10';
     text = 'text-[#7C4DFF]';
-  } else if (method.includes('Tarjeta')) {
+    label = 'Transferencia';
+  } else if (method?.includes('Tarjeta')) {
     bg = 'bg-[#E8A34A]/10';
     text = 'text-[#9A641A]';
+    label = 'Tarjeta';
   }
 
   return (
