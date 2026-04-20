@@ -6,27 +6,28 @@ import { useConfig } from '../context/ConfigContext'
 
 const PAGE_SIZES = [25, 50, 100]
 
-const PaymentBadge = ({ method, mpId, origen }) => {
-  if (!method && !mpId) return <span className="text-text-muted text-xs">—</span>;
-  let bg = 'bg-surface-alt/50';
-  let text = 'text-text-secondary';
-  let label = method || '—';
-
-  // Detect origin from datos_fiscales.origen or mp_payment_id prefix
+const OrigenBadge = ({ origen, mpId }) => {
   const isOrder = mpId?.startsWith('order-');
   const isMeLi = origen?.includes('mercadolibre') || isOrder;
+  const isManual = origen === 'manual' || (!origen && !mpId);
 
   if (isMeLi) {
-    // Mercado Libre marketplace order
-    bg = 'bg-[#FFE600]/15';
-    text = 'text-[#A68900]';
-    label = 'Mercado Libre';
-  } else if (mpId) {
-    // Mercado Pago payment
-    bg = 'bg-[#009EE3]/10';
-    text = 'text-[#009EE3]';
-    label = method || 'Mercado Pago';
-  } else if (method?.includes('Efectivo') || method?.includes('Contado')) {
+    return <span className="text-[#A68900] font-medium text-xs">Mercado Libre</span>
+  } else if (isManual) {
+    return <span className="text-text-muted font-medium text-xs">Manual</span>
+  } else {
+    // Default to Mercado Pago if mpId exists and it's not MeLi
+    return <span className="text-[#009EE3] font-medium text-xs">Mercado Pago</span>
+  }
+}
+
+const PaymentBadge = ({ method }) => {
+  if (!method) return <span className="text-text-muted text-xs">—</span>;
+  let bg = 'bg-surface-alt/50';
+  let text = 'text-text-secondary';
+  let label = method;
+
+  if (method?.includes('Efectivo') || method?.includes('Contado')) {
     bg = 'bg-accent/10';
     text = 'text-accent';
     label = 'Efectivo';
@@ -38,10 +39,14 @@ const PaymentBadge = ({ method, mpId, origen }) => {
     bg = 'bg-[#E8A34A]/10';
     text = 'text-[#9A641A]';
     label = 'Tarjeta';
+  } else if (method?.includes('account_money') || method?.includes('Mercado Pago')) {
+    bg = 'bg-[#009EE3]/10';
+    text = 'text-[#009EE3]';
+    label = 'Dinero en Cuenta';
   }
 
   return (
-    <span className={`inline-block px-2 py-0.5 rounded-md text-[10px] font-semibold tracking-wide ${bg} ${text} truncate max-w-[140px]`} title={`${origen || ''} — ${method || ''}`}>
+    <span className={`inline-block px-3 py-1 rounded-full text-[11px] font-semibold tracking-wide ${bg} ${text} truncate max-w-[140px]`} title={method}>
       {label}
     </span>
   )
@@ -188,6 +193,7 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
               <SortHeader label="Fecha" sortField="fecha" />
               <SortHeader label="Cliente" sortField="cliente" />
               <SortHeader label="Monto" sortField="monto" align="right" />
+              <SortHeader label="Origen" sortField="origen" />
               <SortHeader label="Medio" sortField="medio" />
               <SortHeader label="Status" sortField="status" />
               <SortHeader label="Factura" sortField="factura" />
@@ -230,7 +236,10 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
                     <span className="text-text-primary font-semibold tabular-nums">{formatCurrency(venta.monto)}</span>
                   </td>
                   <td className="px-4 py-3">
-                    <PaymentBadge method={venta.datos_fiscales?.forma_pago} mpId={venta.mp_payment_id} origen={venta.datos_fiscales?.origen} />
+                    <OrigenBadge origen={venta.datos_fiscales?.origen} mpId={venta.mp_payment_id} />
+                  </td>
+                  <td className="px-4 py-3">
+                    <PaymentBadge method={venta.datos_fiscales?.forma_pago} />
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
