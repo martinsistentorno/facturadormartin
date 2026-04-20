@@ -70,6 +70,7 @@ export default function EditSaleModal({ isOpen, onClose, venta, onSave }) {
   const formatDate = (d) => d ? new Date(d).toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' }) : '—';
   const origenRaw = venta.datos_fiscales?.origen;
   const origen = origenRaw === 'mercadolibre' ? 'Mercado Libre' : origenRaw === 'mercadopago' ? 'Mercado Pago' : venta.mp_payment_id ? 'Mercado Libre' : 'Manual';
+  const fromApiHasCuit = origen !== 'Manual' && !!venta.datos_fiscales?.cuit;
 
   return (
     <>
@@ -127,7 +128,8 @@ export default function EditSaleModal({ isOpen, onClose, venta, onSave }) {
               <input
                 type="text"
                 required
-                className="w-full bg-base border border-border rounded-lg px-4 py-3 text-text-primary focus:outline-none focus:border-accent transition-colors"
+                disabled={fromApiHasCuit}
+                className={`w-full border rounded-lg px-4 py-3 text-text-primary focus:outline-none transition-colors ${fromApiHasCuit ? 'bg-surface-alt/50 border-transparent opacity-70 cursor-not-allowed' : 'bg-base border-border focus:border-accent'}`}
                 value={formData.cliente}
                 onChange={(e) => setFormData({ ...formData, cliente: e.target.value })}
               />
@@ -138,12 +140,19 @@ export default function EditSaleModal({ isOpen, onClose, venta, onSave }) {
               </label>
               <input
                 type="text"
+                disabled={fromApiHasCuit}
                 placeholder="Ej: 20-12345678-9"
-                className="w-full bg-base border border-border rounded-lg px-4 py-3 text-text-primary focus:outline-none focus:border-accent transition-colors"
+                className={`w-full border rounded-lg px-4 py-3 text-text-primary focus:outline-none transition-colors ${fromApiHasCuit ? 'bg-surface-alt/50 border-transparent opacity-70 cursor-not-allowed' : 'bg-base border-border focus:border-accent'}`}
                 value={formData.cuit}
                 onChange={(e) => setFormData({ ...formData, cuit: e.target.value })}
               />
-              <p className="text-[10px] text-text-muted mt-1.5">Si está vacío, AFIP lo tomará como Consumidor Final.</p>
+              {fromApiHasCuit ? (
+                <p className="text-[10px] text-accent/80 mt-1.5 flex items-center gap-1 font-medium">
+                   Dato obtenido automáticamente por API (No editable).
+                </p>
+              ) : (
+                <p className="text-[10px] text-text-muted mt-1.5">Si está vacío, AFIP lo tomará como Consumidor Final.</p>
+              )}
             </div>
           </Section>
 
