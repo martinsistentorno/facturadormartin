@@ -92,10 +92,10 @@ export default function EditSaleModal({ isOpen, onClose, venta, onSave }) {
               <Edit2 size={14} className="text-yellow" />
             </div>
             <div>
-              <h3 className="text-[10px] font-bold uppercase tracking-[0.15em] text-text-primary" style={{ fontFamily: 'Montserrat' }}>
+              <h3 className="text-[10px] font-bold uppercase tracking-[0.15em] text-text-primary" style={{ fontFamily: 'Montserrat, sans-serif' }}>
                 Editar Venta
               </h3>
-              <p className="text-[9px] text-text-muted mt-0.5 font-mono opacity-70">ID: {venta.id?.slice(0, 8)}</p>
+              <p className="text-[9px] text-text-muted mt-0.5 font-mono opacity-70">ID: {String(venta.id || '').slice(0, 8)}</p>
             </div>
           </div>
           <button
@@ -111,7 +111,7 @@ export default function EditSaleModal({ isOpen, onClose, venta, onSave }) {
           {/* ─── Info Card ─── */}
           <div className="flex items-center justify-between bg-surface-alt/30 border border-border/50 rounded-lg p-3">
             <div className="flex items-center gap-2.5">
-              <StatusBadge status={venta.status} className="scale-90 origin-left" />
+              <StatusBadge status={venta.status || 'pendiente'} />
               <div className="text-[10px] text-text-muted font-medium">
                 <Clock size={10} className="inline mr-1" />
                 {formatDate(venta.fecha)}
@@ -125,7 +125,7 @@ export default function EditSaleModal({ isOpen, onClose, venta, onSave }) {
           {/* ─── Cliente ─── */}
           <Section title="Datos del Cliente" icon={User}>
             <div className="px-4 py-2.5">
-              <label className="block text-[9px] font-medium text-text-muted uppercase tracking-wider mb-1.5" style={{ fontFamily: 'Space Grotesk' }}>
+              <label className="block text-[9px] font-medium text-text-muted uppercase tracking-wider mb-1.5" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
                 Nombre / Razón Social
               </label>
               <input
@@ -233,7 +233,7 @@ export default function EditSaleModal({ isOpen, onClose, venta, onSave }) {
 
 function Section({ title, icon: Icon, children }) {
   return (
-    <div className="animate-fade-in animation-delay-100">
+    <div className="animate-fade-in">
       <div className="flex items-center gap-1.5 mb-2 px-1">
         {Icon && <Icon size={11} className="text-text-muted opacity-60" />}
         <h4 className="text-[9px] font-bold text-text-muted uppercase tracking-[0.1em]" style={{ fontFamily: 'Montserrat' }}>
