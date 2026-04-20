@@ -128,8 +128,7 @@ export default function EditSaleModal({ isOpen, onClose, venta, onSave }) {
               <input
                 type="text"
                 required
-                disabled={fromApiHasCuit}
-                className={`w-full border rounded-lg px-4 py-3 text-text-primary focus:outline-none transition-colors ${fromApiHasCuit ? 'bg-surface-alt/50 border-transparent opacity-70 cursor-not-allowed' : 'bg-base border-border focus:border-accent'}`}
+                className="w-full bg-base border border-border rounded-lg px-4 py-3 text-text-primary focus:outline-none focus:border-accent transition-colors"
                 value={formData.cliente}
                 onChange={(e) => setFormData({ ...formData, cliente: e.target.value })}
               />
