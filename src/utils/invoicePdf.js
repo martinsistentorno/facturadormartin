@@ -98,7 +98,7 @@ export async function generateInvoicePdf(venta, emisor) {
   doc.text('Subtotal', pageWidth - 15, 100, { align: 'right' });
 
   doc.setFont('helvetica', 'normal');
-  doc.text('Productos varios', margin + 5, 110);
+  doc.text(venta.datos_fiscales?.descripcion || 'Productos varios', margin + 5, 110);
   doc.text('1.00', pageWidth - 80, 110);
   doc.text(Number(venta.monto).toFixed(2), pageWidth - 55, 110);
   doc.text(Number(venta.monto).toFixed(2), pageWidth - 15, 110, { align: 'right' });

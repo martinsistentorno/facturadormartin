@@ -213,7 +213,8 @@ export default async function handler(req, res) {
             mp_status: payment.status,
             mp_method: payment.payment_method_id || '',
             mp_type: payment.payment_type_id || '',
-            origen: 'mercadopago'
+            origen: 'mercadopago',
+            descripcion: payment.description || 'Venta Mercado Pago'
           }
         }
 
@@ -326,7 +327,8 @@ export default async function handler(req, res) {
               meli_order_id: orderId,
               meli_payment_ids: orderPaymentIds,
               meli_status: order.status,
-              origen: 'mercadolibre'
+              origen: 'mercadolibre',
+              descripcion: order.order_items?.[0]?.item?.title || `Venta MeLi #${orderId}`
             }
           }
 

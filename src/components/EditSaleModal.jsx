@@ -16,6 +16,7 @@ export default function EditSaleModal({ isOpen, onClose, venta, onSave }) {
   const [formData, setFormData] = useState({
     cliente: '',
     cuit: '',
+    descripcion: '',
     monto: 0,
     formaPago: 'Contado - Efectivo',
   });
@@ -25,6 +26,7 @@ export default function EditSaleModal({ isOpen, onClose, venta, onSave }) {
       setFormData({
         cliente: venta.cliente || '',
         cuit: venta.datos_fiscales?.cuit || '',
+        descripcion: venta.datos_fiscales?.descripcion || 'Productos varios',
         monto: venta.monto || 0,
         formaPago: venta.datos_fiscales?.forma_pago || 'Contado - Efectivo',
       });
@@ -54,6 +56,7 @@ export default function EditSaleModal({ isOpen, onClose, venta, onSave }) {
         datos_fiscales: {
           ...venta.datos_fiscales,
           cuit: formData.cuit,
+          descripcion: formData.descripcion,
           forma_pago: formData.formaPago,
         }
       });
@@ -152,6 +155,22 @@ export default function EditSaleModal({ isOpen, onClose, venta, onSave }) {
               ) : (
                 <p className="text-[10px] text-text-muted mt-1.5">Si está vacío, AFIP lo tomará como Consumidor Final.</p>
               )}
+            </div>
+          </Section>
+
+          {/* ─── Detalle ─── */}
+          <Section title="Detalle" icon={DollarSign}>
+            <div className="px-4 py-3">
+              <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-2" style={{ fontFamily: 'Inter' }}>
+                Concepto / Descripción
+              </label>
+              <textarea
+                className="w-full bg-base border border-border rounded-lg px-4 py-3 text-text-primary focus:outline-none focus:border-accent transition-colors resize-none"
+                rows="2"
+                value={formData.descripcion}
+                onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
+              />
+              <p className="text-[10px] text-text-muted mt-1.5">Es el texto que aparecerá en el cuerpo de la factura.</p>
             </div>
           </Section>
 
