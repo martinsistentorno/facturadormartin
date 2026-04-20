@@ -285,9 +285,23 @@ async function processPayment(supabaseAdmin, accessToken, paymentId, res) {
   const payer = payment.payer || {}
   let clienteNombre = 'Consumidor Final'
 
-  // Para transferencias: el first_name suele ser null, pero tenemos el payer.id
-  // Usamos la API de usuarios para buscar el nombre real
-  if (payer.id && (!payer.first_name || payer.first_name === null)) {
+  // Obtener myId para comparar (reutilizar si ya lo sacamos antes)
+  let ownerIdStr = ''
+  try {
+    const meCheck = await fetch('https://api.mercadopago.com/users/me', {
+      headers: { 'Authorization': `Bearer ${accessToken}` }
+    })
+    if (meCheck.ok) {
+      const meData = await meCheck.json()
+      ownerIdStr = String(meData.id)
+    }
+  } catch (_) {}
+
+  const payerIdStr = String(payer.id || '')
+
+  // Para transferencias: buscar el nombre real del usuario por su ID
+  // PERO si payer.id === dueño de la cuenta → es transferencia bancaria sin datos del remitente
+  if (payer.id && payerIdStr !== ownerIdStr && (!payer.first_name || payer.first_name === null)) {
     try {
       const userRes = await fetch(`https://api.mercadolibre.com/users/${payer.id}`, {
         headers: { 'Authorization': `Bearer ${accessToken}` }
@@ -305,7 +319,7 @@ async function processPayment(supabaseAdmin, accessToken, paymentId, res) {
     }
   } else if (payer.first_name) {
     clienteNombre = `${payer.first_name} ${payer.last_name || ''}`.trim()
-  } else if (payer.email) {
+  } else if (payer.email && payerIdStr !== ownerIdStr) {
     clienteNombre = payer.email.split('@')[0]
   }
 

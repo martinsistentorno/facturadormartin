@@ -115,7 +115,10 @@ export default async function handler(req, res) {
         let email = payer.email || ''
 
         // Para transferencias: buscar el nombre real del usuario por su ID
-        if (payer.id && (!payer.first_name || payer.first_name === null)) {
+        // PERO: si el payer.id es el mismo que el dueño de la cuenta,
+        // es una transferencia bancaria donde MP no sabe quién envió → dejar como Consumidor Final
+        const payerIdStr = String(payer.id || '')
+        if (payer.id && payerIdStr !== myId && (!payer.first_name || payer.first_name === null)) {
           const realName = await getUserName(payer.id)
           if (realName) {
             clienteNombre = realName
@@ -124,7 +127,7 @@ export default async function handler(req, res) {
           }
         } else if (payer.first_name) {
           clienteNombre = `${payer.first_name} ${payer.last_name || ''}`.trim()
-        } else if (email) {
+        } else if (email && payerIdStr !== myId) {
           clienteNombre = email.split('@')[0]
         }
 
