@@ -1,5 +1,48 @@
 import { createClient } from '@supabase/supabase-js'
+import Afip from '@afipsdk/afip.js'
 
+// ─── Configurar AFIP para consultas globales (si están las credenciales) ───
+let afipInstance = null
+const afipCuit = process.env.AFIP_CUIT
+const certBase64 = process.env.AFIP_CERT_BASE64
+const keyBase64 = process.env.AFIP_KEY_BASE64
+if (afipCuit && certBase64 && keyBase64) {
+  try {
+    afipInstance = new Afip({
+      CUIT: parseInt(afipCuit),
+      cert: Buffer.from(certBase64, 'base64').toString('utf-8'),
+      key: Buffer.from(keyBase64, 'base64').toString('utf-8'),
+      production: process.env.AFIP_PRODUCTION === 'true'
+    })
+  } catch (err) {
+    console.warn('[Webhook] No se pudo instanciar AFIP:', err.message)
+  }
+}
+
+const afipNameCache = {}
+async function getAfipRazonSocial(cuitNumber) {
+  if (!afipInstance || !cuitNumber || String(cuitNumber).length !== 11) return null
+  const cuitStr = String(cuitNumber)
+  if (afipNameCache[cuitStr]) return afipNameCache[cuitStr]
+
+  try {
+    console.log(`[Webhook] Consultando AFIP para CUIT: ${cuitStr}`)
+    const data = await afipInstance.RegisterScopeFive.GetTaxpayerDetails(cuitStr)
+    if (data && data.datosGenerales) {
+      let name = data.datosGenerales.razonSocial || ''
+      if (!name && data.datosGenerales.nombre) {
+        name = `${data.datosGenerales.nombre} ${data.datosGenerales.apellido || ''}`.trim()
+      }
+      if (name) {
+         afipNameCache[cuitStr] = name
+         return name
+      }
+    }
+  } catch (e) {
+    console.warn(`[Webhook] Error consultando AFIP para ${cuitStr}: ${e.message}`)
+  }
+  return null
+}
 export default async function handler(req, res) {
   // CORS
   res.setHeader('Access-Control-Allow-Origin', '*')
@@ -94,11 +137,27 @@ export default async function handler(req, res) {
 
       // Construir datos del cliente
       const buyer = order.buyer || {}
-      const clienteNombre = buyer.first_name
+      let clienteNombre = buyer.first_name
         ? `${buyer.first_name} ${buyer.last_name || ''}`.trim()
         : buyer.nickname || `Venta MeLi #${orderId}`
 
       const docNumber = buyer.billing_info?.doc_number || buyer.identification?.number || ''
+
+      // 1. Prioridad: Consultar AFIP si es un CUIT válido
+      if (docNumber && docNumber.length === 11) {
+        const afipName = await getAfipRazonSocial(docNumber)
+        if (afipName) {
+          clienteNombre = afipName
+        }
+      }
+
+      if (clienteNombre === 'Consumidor Final') {
+        if (buyer.first_name) {
+          clienteNombre = `${buyer.first_name} ${buyer.last_name || ''}`.trim()
+        } else if (buyer.nickname) {
+          clienteNombre = buyer.nickname
+        }
+      }
 
       // Forma de pago desde los pagos de la orden
       const firstPayment = order.payments?.[0]
@@ -284,6 +343,16 @@ async function processPayment(supabaseAdmin, accessToken, paymentId, res) {
   // ─── Extraer datos completos del pagador ───
   const payer = payment.payer || {}
   let clienteNombre = 'Consumidor Final'
+  let docNumber = payer.identification?.number || ''
+  let docType = payer.identification?.type || 'DNI'
+
+  // 1. Prioridad: Consultar AFIP si es un CUIT válido
+  if (docNumber && docNumber.length === 11) {
+    const afipName = await getAfipRazonSocial(docNumber)
+    if (afipName) {
+      clienteNombre = afipName
+    }
+  }
 
   // Obtener myId para comparar (reutilizar si ya lo sacamos antes)
   let ownerIdStr = ''
@@ -299,9 +368,10 @@ async function processPayment(supabaseAdmin, accessToken, paymentId, res) {
 
   const payerIdStr = String(payer.id || '')
 
-  // Para transferencias: buscar el nombre real del usuario por su ID
-  // PERO si payer.id === dueño de la cuenta → es transferencia bancaria sin datos del remitente
-  if (payer.id && payerIdStr !== ownerIdStr && (!payer.first_name || payer.first_name === null)) {
+  if (clienteNombre === 'Consumidor Final') {
+    // Para transferencias: buscar el nombre real del usuario por su ID
+    // PERO si payer.id === dueño de la cuenta → es transferencia bancaria sin datos del remitente
+    if (payer.id && payerIdStr !== ownerIdStr && (!payer.first_name || payer.first_name === null)) {
     try {
       const userRes = await fetch(`https://api.mercadolibre.com/users/${payer.id}`, {
         headers: { 'Authorization': `Bearer ${accessToken}` }
@@ -321,6 +391,7 @@ async function processPayment(supabaseAdmin, accessToken, paymentId, res) {
     clienteNombre = `${payer.first_name} ${payer.last_name || ''}`.trim()
   } else if (payer.email && payerIdStr !== ownerIdStr) {
     clienteNombre = payer.email.split('@')[0]
+  }
   }
 
   // Método de pago

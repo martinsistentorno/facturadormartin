@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import Afip from '@afipsdk/afip.js'
 
 /**
  * Endpoint de sincronización manual.
@@ -38,8 +39,52 @@ export default async function handler(req, res) {
       console.log(`[Sync] ID de la cuenta: ${myUserId}`)
     }
 
+    // ─── Configurar AFIP para consultas (si están las credenciales) ───
+    let afipInstance = null
+    const afipCuit = process.env.AFIP_CUIT
+    const certBase64 = process.env.AFIP_CERT_BASE64
+    const keyBase64 = process.env.AFIP_KEY_BASE64
+    if (afipCuit && certBase64 && keyBase64) {
+      try {
+        afipInstance = new Afip({
+          CUIT: parseInt(afipCuit),
+          cert: Buffer.from(certBase64, 'base64').toString('utf-8'),
+          key: Buffer.from(keyBase64, 'base64').toString('utf-8'),
+          production: process.env.AFIP_PRODUCTION === 'true'
+        })
+      } catch (err) {
+        console.warn('[Sync] No se pudo instanciar AFIP:', err.message)
+      }
+    }
+
     // Cache de nombres de usuarios para no repetir llamadas
     const userNameCache = {}
+    const afipNameCache = {}
+
+    // ─── Función helper: buscar Razón Social en AFIP a partir del CUIT ───
+    async function getAfipRazonSocial(cuitNumber) {
+      if (!afipInstance || !cuitNumber || String(cuitNumber).length !== 11) return null
+      const cuitStr = String(cuitNumber)
+      if (afipNameCache[cuitStr]) return afipNameCache[cuitStr]
+
+      try {
+        console.log(`[Sync] Consultando AFIP para CUIT: ${cuitStr}`)
+        const data = await afipInstance.RegisterScopeFive.GetTaxpayerDetails(cuitStr)
+        if (data && data.datosGenerales) {
+          let name = data.datosGenerales.razonSocial || ''
+          if (!name && data.datosGenerales.nombre) {
+            name = `${data.datosGenerales.nombre} ${data.datosGenerales.apellido || ''}`.trim()
+          }
+          if (name) {
+             afipNameCache[cuitStr] = name
+             return name
+          }
+        }
+      } catch (e) {
+        console.warn(`[Sync] Error consultando AFIP para ${cuitStr}: ${e.message}`)
+      }
+      return null
+    }
 
     // ─── Función helper: buscar nombre real de un usuario por su ID ───
     async function getUserName(userId) {
@@ -114,21 +159,32 @@ export default async function handler(req, res) {
         let docType = payer.identification?.type || 'DNI'
         let email = payer.email || ''
 
-        // Para transferencias: buscar el nombre real del usuario por su ID
-        // PERO: si el payer.id es el mismo que el dueño de la cuenta,
-        // es una transferencia bancaria donde MP no sabe quién envió → dejar como Consumidor Final
-        const payerIdStr = String(payer.id || '')
-        if (payer.id && payerIdStr !== myId && (!payer.first_name || payer.first_name === null)) {
-          const realName = await getUserName(payer.id)
-          if (realName) {
-            clienteNombre = realName
-          } else if (email) {
+        // 1. Prioridad: Consultar AFIP si es un CUIT válido (11 dígitos)
+        if (docNumber && docNumber.length === 11) {
+          const afipName = await getAfipRazonSocial(docNumber)
+          if (afipName) {
+            clienteNombre = afipName
+          }
+        }
+
+        // 2. Si no vino de AFIP, intentar procesar los demás datos del payer...
+        if (clienteNombre === 'Consumidor Final') {
+          // Para transferencias: buscar el nombre real del usuario por su ID
+          // PERO: si el payer.id es el mismo que el dueño de la cuenta,
+          // es una transferencia bancaria donde MP no sabe quién envió → dejar como Consumidor Final
+          const payerIdStr = String(payer.id || '')
+          if (payer.id && payerIdStr !== myId && (!payer.first_name || payer.first_name === null)) {
+            const realName = await getUserName(payer.id)
+            if (realName) {
+              clienteNombre = realName
+            } else if (email) {
+              clienteNombre = email.split('@')[0]
+            }
+          } else if (payer.first_name) {
+            clienteNombre = `${payer.first_name} ${payer.last_name || ''}`.trim()
+          } else if (email && payerIdStr !== myId) {
             clienteNombre = email.split('@')[0]
           }
-        } else if (payer.first_name) {
-          clienteNombre = `${payer.first_name} ${payer.last_name || ''}`.trim()
-        } else if (email && payerIdStr !== myId) {
-          clienteNombre = email.split('@')[0]
         }
 
         // Forma de pago
@@ -220,10 +276,20 @@ export default async function handler(req, res) {
           let docType = 'DNI'
           let email = buyer.email || ''
 
-          if (buyer.first_name) {
-            clienteNombre = `${buyer.first_name} ${buyer.last_name || ''}`.trim()
-          } else if (buyer.nickname) {
-            clienteNombre = buyer.nickname
+          // 1. Prioridad: Consultar AFIP si es un CUIT válido
+          if (docNumber && docNumber.length === 11) {
+            const afipName = await getAfipRazonSocial(docNumber)
+            if (afipName) {
+              clienteNombre = afipName
+            }
+          }
+
+          if (clienteNombre === 'Consumidor Final') {
+            if (buyer.first_name) {
+              clienteNombre = `${buyer.first_name} ${buyer.last_name || ''}`.trim()
+            } else if (buyer.nickname) {
+              clienteNombre = buyer.nickname
+            }
           }
 
           // Intentar obtener doc de billing_info
