@@ -155,7 +155,7 @@ export default async function handler(req, res) {
         // ─── Extraer nombre del cliente ───
         const payer = payment.payer || {}
         let clienteNombre = 'Consumidor Final'
-        let docNumber = payer.identification?.number || ''
+        let docNumber = String(payer.identification?.number || '')
         let docType = payer.identification?.type || 'DNI'
         let email = payer.email || ''
 
@@ -276,6 +276,15 @@ export default async function handler(req, res) {
           let docType = 'DNI'
           let email = buyer.email || ''
 
+          // Intentar obtener doc de billing_info
+          if (buyer.billing_info?.doc_number) {
+            docNumber = String(buyer.billing_info.doc_number)
+            docType = buyer.billing_info.doc_type || 'DNI'
+          } else if (buyer.identification?.number) {
+            docNumber = String(buyer.identification.number)
+            docType = buyer.identification.type || 'DNI'
+          }
+
           // 1. Prioridad: Consultar AFIP si es un CUIT válido
           if (docNumber && docNumber.length === 11) {
             const afipName = await getAfipRazonSocial(docNumber)
@@ -290,12 +299,6 @@ export default async function handler(req, res) {
             } else if (buyer.nickname) {
               clienteNombre = buyer.nickname
             }
-          }
-
-          // Intentar obtener doc de billing_info
-          if (buyer.billing_info?.doc_number) {
-            docNumber = buyer.billing_info.doc_number
-            docType = buyer.billing_info.doc_type || 'DNI'
           }
 
           // Forma de pago
