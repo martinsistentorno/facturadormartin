@@ -29,7 +29,7 @@ export default async function handler(req, res) {
     const hasCuit = !!cuit
 
     const baseStatus = {
-      connected: hasCert && hasCuit && !isSandbox,
+      connected: false,
       mode: isSandbox ? 'sandbox' : (isProduction ? 'production' : 'homologation'),
       ptoVta: parseInt(ptoVta),
       checks: { cuit: hasCuit, cert: hasCert },
@@ -38,6 +38,11 @@ export default async function handler(req, res) {
     }
 
     if (!hasCert || !hasCuit) {
+      return res.status(200).json(baseStatus)
+    }
+
+    if (isSandbox) {
+      baseStatus.connected = true
       return res.status(200).json(baseStatus)
     }
 
@@ -62,7 +67,8 @@ export default async function handler(req, res) {
     try {
       const afipHomo = await getAfipTestInstance(false)
       await afipHomo.ElectronicBilling.getServerStatus()
-      baseStatus.tests.homologacion = "EXITO - El certificado sirve para Homologación (Pruebas)"
+      baseStatus.tests.homologacion = "EXITO"
+      if (!isProduction) baseStatus.connected = true
     } catch (e) {
       baseStatus.tests.homologacion = `FALLO - ${e.message}`
     }
@@ -70,7 +76,8 @@ export default async function handler(req, res) {
     try {
       const afipProd = await getAfipTestInstance(true)
       await afipProd.ElectronicBilling.getServerStatus()
-      baseStatus.tests.produccion = "EXITO - El certificado sirve para Producción (Real)"
+      baseStatus.tests.produccion = "EXITO"
+      if (isProduction) baseStatus.connected = true
     } catch (e) {
       baseStatus.tests.produccion = `FALLO - ${e.message}`
     }

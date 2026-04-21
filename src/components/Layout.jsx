@@ -34,12 +34,17 @@ export default function Layout({ children, headerActions }) {
           <div className="flex items-center gap-4 bg-white px-5 py-2.5 rounded-full border border-border shadow-sm">
             {/* AFIP Status Indicator */}
             {afipStatus && (
-              <div className="flex items-center gap-2 pr-2 border-r border-border">
-                <div className={`w-2 h-2 rounded-full ${afipStatus.connected ? 'bg-green animate-pulse' : 'bg-red'}`} />
-                <span className="text-[10px] font-bold uppercase tracking-widest hidden sm:inline">
+              <div className="flex items-center gap-2 pr-2 border-r border-border min-w-max">
+                <div className={`w-2 h-2 rounded-full ${
+                  afipStatus.connected ? 'bg-green animate-pulse' : 
+                  (afipStatus.tests?.homologacion === 'EXITO' ? 'bg-yellow' : 'bg-red')
+                }`} />
+                <span className="text-[10px] font-bold uppercase tracking-widest">
                   {afipStatus.connected
                     ? `AFIP ${afipStatus.mode === 'production' ? 'PROD' : 'HOM'}`
-                    : afipStatus.mode === 'sandbox' ? 'SANDBOX' : 'AFIP ✗'
+                    : (afipStatus.tests?.homologacion === 'EXITO' && afipStatus.mode === 'production')
+                      ? 'CERT. PRUEBAS' 
+                      : afipStatus.mode === 'sandbox' ? 'SANDBOX' : 'SIN CONEXIÓN'
                   }
                 </span>
               </div>
