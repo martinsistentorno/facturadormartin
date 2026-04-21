@@ -1,3 +1,15 @@
+import tls from 'tls'
+import crypto from 'crypto'
+
+const _createSecureContext = tls.createSecureContext
+tls.createSecureContext = function(options) {
+  options = options || {}
+  options.ciphers = 'DEFAULT@SECLEVEL=0'
+  options.secureOptions = options.secureOptions | crypto.constants.SSL_OP_LEGACY_SERVER_CONNECT
+  options.minDHSize = 512
+  return _createSecureContext.call(tls, options)
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
