@@ -117,9 +117,16 @@ export default async function handler(req, res) {
         let docNumber = String(payer.identification?.number || '')
         let docType = payer.identification?.type || 'DNI'
         let email = payer.email || ''
+        const payerIdStr = String(payer.id || '')
+        const isOwnAccount = payerIdStr === myId
+
+        // Para transferencias bancarias: MP pone payer.id = dueño de la cuenta
+        // En ese caso, el nombre del payer es realmente el destinatario, no el remitente
+        // Lo detectamos y dejamos "Consumidor Final" + "Transferencia Bancaria"
 
         // 1. Prioridad: Consultar AFIP si es un CUIT válido (11 dígitos)
-        if (docNumber && docNumber.length === 11) {
+        //    PERO solo si el payer NO es el dueño de la cuenta (evitar auto-lookup)
+        if (!isOwnAccount && docNumber && docNumber.length === 11) {
           const afipName = await getAfipRazonSocial(docNumber)
           if (afipName) {
             clienteNombre = afipName
@@ -127,12 +134,8 @@ export default async function handler(req, res) {
         }
 
         // 2. Si no vino de AFIP, intentar procesar los demás datos del payer...
-        if (clienteNombre === 'Consumidor Final') {
-          // Para transferencias: buscar el nombre real del usuario por su ID
-          // PERO: si el payer.id es el mismo que el dueño de la cuenta,
-          // es una transferencia bancaria donde MP no sabe quién envió → dejar como Consumidor Final
-          const payerIdStr = String(payer.id || '')
-          if (payer.id && payerIdStr !== myId && (!payer.first_name || payer.first_name === null)) {
+        if (clienteNombre === 'Consumidor Final' && !isOwnAccount) {
+          if (payer.id && (!payer.first_name || payer.first_name === null)) {
             const realName = await getUserName(payer.id)
             if (realName) {
               clienteNombre = realName
@@ -141,7 +144,7 @@ export default async function handler(req, res) {
             }
           } else if (payer.first_name) {
             clienteNombre = `${payer.first_name} ${payer.last_name || ''}`.trim()
-          } else if (email && payerIdStr !== myId) {
+          } else if (email) {
             clienteNombre = email.split('@')[0]
           }
         }
@@ -190,6 +193,8 @@ export default async function handler(req, res) {
     // ══════════════════════════════════════════════════════════
     //  PARTE 2: Sincronizar ÓRDENES de Mercado Libre
     //  (ventas del marketplace)
+    //  Para cada orden, buscamos el billing_info del comprador
+    //  con una llamada extra a la API para obtener su CUIT real
     // ══════════════════════════════════════════════════════════
     console.log('[Sync] ── Buscando órdenes de Mercado Libre ──')
 
@@ -236,13 +241,50 @@ export default async function handler(req, res) {
           let docType = 'DNI'
           let email = buyer.email || ''
 
-          // Intentar obtener doc de billing_info
-          if (buyer.billing_info?.doc_number) {
-            docNumber = String(buyer.billing_info.doc_number)
-            docType = buyer.billing_info.doc_type || 'DNI'
-          } else if (buyer.identification?.number) {
-            docNumber = String(buyer.identification.number)
-            docType = buyer.identification.type || 'DNI'
+          // ─── LLAMADA EXTRA: obtener billing_info real del comprador ───
+          // La API de /orders/search NO trae billing_info completo,
+          // hay que pedirlo aparte para cada orden
+          try {
+            const billingRes = await fetch(
+              `https://api.mercadolibre.com/orders/${orderId}/billing_info`,
+              { headers: { 'Authorization': `Bearer ${accessToken}` } }
+            )
+            if (billingRes.ok) {
+              const billingData = await billingRes.json()
+              const billingInfo = billingData.billing_info || billingData
+              
+              // billing_info puede tener distintos formatos según la versión de la API
+              if (billingInfo.doc_number) {
+                docNumber = String(billingInfo.doc_number)
+                docType = billingInfo.doc_type || 'DNI'
+              } else if (billingInfo.additional_info) {
+                // A veces viene como array de {type, value}
+                const docField = billingInfo.additional_info.find(f => 
+                  f.type === 'DOC_NUMBER' || f.type === 'TAXPAYER_ID_NUMBER'
+                )
+                const docTypeField = billingInfo.additional_info.find(f => 
+                  f.type === 'DOC_TYPE' || f.type === 'TAXPAYER_ID_TYPE'
+                )
+                if (docField) docNumber = String(docField.value)
+                if (docTypeField) docType = docTypeField.value || 'DNI'
+              }
+              console.log(`[Sync] Billing info orden ${orderId}: doc=${docNumber}, type=${docType}`)
+            } else {
+              console.warn(`[Sync] No se pudo obtener billing_info para orden ${orderId}: ${billingRes.status}`)
+            }
+          } catch (billingErr) {
+            console.warn(`[Sync] Error obteniendo billing_info ${orderId}:`, billingErr.message)
+          }
+
+          // Fallback: intentar datos del buyer del search
+          if (!docNumber) {
+            if (buyer.billing_info?.doc_number) {
+              docNumber = String(buyer.billing_info.doc_number)
+              docType = buyer.billing_info.doc_type || 'DNI'
+            } else if (buyer.identification?.number) {
+              docNumber = String(buyer.identification.number)
+              docType = buyer.identification.type || 'DNI'
+            }
           }
 
           // 1. Prioridad: Consultar AFIP si es un CUIT válido
@@ -253,6 +295,7 @@ export default async function handler(req, res) {
             }
           }
 
+          // 2. Si AFIP no devolvió nada, usar nombre del buyer
           if (clienteNombre === 'Consumidor Final') {
             if (buyer.first_name) {
               clienteNombre = `${buyer.first_name} ${buyer.last_name || ''}`.trim()
