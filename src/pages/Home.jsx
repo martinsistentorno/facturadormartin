@@ -323,6 +323,11 @@ export default function Home() {
       });
 
       const data = await response.json()
+      
+      if (!response.ok || data.error || !data.success) {
+        throw new Error(data.error || `Error del servidor (${response.status})`)
+      }
+
       const resultados = data.resultados || []
       const successCount = resultados.filter(r => r.success).length
       
@@ -353,18 +358,23 @@ export default function Home() {
 
       setSelectedIds(new Set())
       
-      if (successCount === resultados.length) {
+      if (successCount === resultados.length && successCount > 0) {
         showToast(`✓ ${successCount} comprobante(s) emitido(s) con éxito`, 'success')
+      } else if (successCount > 0) {
+        showToast(`${successCount} de ${resultados.length} emitidas. Algunos fallaron.`, 'warning')
       } else {
-        showToast(`${successCount} de ${resultados.length} procesadas correctamente`, 'warning')
+        showToast('No se emitió ningún comprobante. Comprobá los errores en la tabla.', 'error')
       }
 
     } catch (err) {
       console.error('[handleInvoice] Error:', err.message)
       showToast('Error al procesar facturas: ' + err.message, 'error')
       
+      // Si falló el request entero, marcar las que estaban en proceso como error
       setVentas(prev => prev.map(v => 
-        v.status === 'procesando' ? { ...v, status: 'pendiente' } : v
+        v.status === 'procesando' 
+          ? { ...v, status: 'error', datos_fiscales: { ...v.datos_fiscales, error_detalle: err.message } } 
+          : v
       ))
     }
   }

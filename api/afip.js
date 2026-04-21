@@ -117,8 +117,8 @@ export default async function handler(req, res) {
       CUIT: parseInt(cuit),
       res_folder: tmpDir,
       ta_folder: tmpDir,
-      cert: 'afip_cert.crt',
-      key: 'afip_key.key',
+      cert: certPath,
+      key: keyPath,
       production: isProduction,
       access_token: sdkToken
     })
