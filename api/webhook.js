@@ -189,7 +189,8 @@ export default async function handler(req, res) {
         'debit_card': 'Tarjeta de Débito',
         'account_money': 'Mercado Pago',
         'ticket': 'Efectivo',
-        'bank_transfer': 'Transferencia'
+        'bank_transfer': 'Transferencia',
+        'prepaid_card': 'Tarjeta Prepaga'
       }
       const formaPago = paymentTypeMap[firstPayment?.payment_type] || firstPayment?.payment_type || 'Mercado Libre'
 
@@ -435,7 +436,8 @@ async function processPayment(supabaseAdmin, accessToken, paymentId, res) {
     'account_money': 'Mercado Pago',
     'ticket': 'Efectivo',
     'bank_transfer': 'Transferencia',
-    'transfer': 'Transferencia'
+    'transfer': 'Transferencia',
+    'prepaid_card': 'Tarjeta Prepaga'
   }
   const formaPago = methodMap[typeId] || payment.payment_method_id || 'Mercado Pago'
 

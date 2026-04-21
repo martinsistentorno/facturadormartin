@@ -162,7 +162,8 @@ export default async function handler(req, res) {
           'account_money': 'Mercado Pago',
           'ticket': 'Efectivo',
           'bank_transfer': 'Transferencia',
-          'transfer': 'Transferencia'
+          'transfer': 'Transferencia',
+          'prepaid_card': 'Tarjeta Prepaga'
         }
         const formaPago = methodMap[typeId] || payment.payment_method_id || 'Mercado Pago'
 

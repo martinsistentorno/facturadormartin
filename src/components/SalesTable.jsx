@@ -101,6 +101,10 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
         valA = a.datos_fiscales?.forma_pago || ''
         valB = b.datos_fiscales?.forma_pago || ''
         break
+      case 'origen':
+        valA = a.datos_fiscales?.origen || ''
+        valB = b.datos_fiscales?.origen || ''
+        break
       default:
         return 0
     }
