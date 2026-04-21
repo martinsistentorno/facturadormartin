@@ -187,10 +187,12 @@ export default async function handler(req, res) {
       const paymentTypeMap = {
         'credit_card': 'Tarjeta de Crédito',
         'debit_card': 'Tarjeta de Débito',
-        'account_money': 'Mercado Pago',
+        'account_money': 'Dinero en Cuenta',
         'ticket': 'Efectivo',
         'bank_transfer': 'Transferencia',
-        'prepaid_card': 'Tarjeta Prepaga'
+        'prepaid_card': 'Tarjeta Prepaga',
+        'digital_currency': 'Cripto / Digital',
+        'customer_credits': 'Crédito MP'
       }
       const formaPago = paymentTypeMap[firstPayment?.payment_type] || firstPayment?.payment_type || 'Mercado Libre'
 

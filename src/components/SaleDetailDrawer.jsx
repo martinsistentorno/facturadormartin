@@ -54,7 +54,22 @@ export default function SaleDetailDrawer({ venta, isOpen, onClose, onSave, onRet
 
   const cuitCliente = venta.datos_fiscales?.cuit || '';
   const condIva = cuitCliente && cuitCliente.length >= 10 ? 'IVA Responsable Inscripto' : 'Consumidor Final';
-  const formaPago = venta.datos_fiscales?.forma_pago || 'No especificada';
+  const formaPagoRaw = venta.datos_fiscales?.forma_pago || 'No especificada';
+  
+  // Translation map for Mercado Pago raw types
+  const methodMap = {
+    'credit_card': 'Tarjeta de Crédito',
+    'debit_card': 'Tarjeta de Débito',
+    'account_money': 'Dinero en Cuenta',
+    'ticket': 'Efectivo',
+    'bank_transfer': 'Transferencia',
+    'prepaid_card': 'Tarjeta Prepaga',
+    'digital_currency': 'Cripto / Digital',
+    'customer_credits': 'Crédito MP'
+  };
+
+  const formaPago = methodMap[formaPagoRaw] || formaPagoRaw;
+  
   const origenRaw = venta.datos_fiscales?.origen;
   const origen = origenRaw === 'mercadolibre' ? 'Mercado Libre' : origenRaw === 'mercadopago' ? 'Mercado Pago' : venta.mp_payment_id ? 'Mercado Libre' : 'Manual';
   const displayPaymentId = venta.mp_payment_id ? venta.mp_payment_id.replace(/^order-/, '') : '';
