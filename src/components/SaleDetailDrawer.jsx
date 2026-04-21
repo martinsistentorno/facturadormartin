@@ -3,13 +3,15 @@ import StatusBadge from './StatusBadge';
 import { generateInvoicePdf } from '../utils/invoicePdf';
 import { useEffect, useState } from 'react';
 import { useConfig } from '../context/ConfigContext';
+import { translatePaymentMethod } from '../utils/paymentMethods';
 
 const FORMAS_PAGO = [
   'Contado - Efectivo',
   'Transferencia Bancaria',
   'Tarjeta de Débito',
   'Tarjeta de Crédito',
-  'Mercado Pago',
+  'Dinero en Cuenta',
+  'Crédito MP',
   'Otro',
 ];
 
@@ -54,21 +56,7 @@ export default function SaleDetailDrawer({ venta, isOpen, onClose, onSave, onRet
 
   const cuitCliente = venta.datos_fiscales?.cuit || '';
   const condIva = cuitCliente && cuitCliente.length >= 10 ? 'IVA Responsable Inscripto' : 'Consumidor Final';
-  const formaPagoRaw = venta.datos_fiscales?.forma_pago || 'No especificada';
-  
-  // Translation map for Mercado Pago raw types
-  const methodMap = {
-    'credit_card': 'Tarjeta de Crédito',
-    'debit_card': 'Tarjeta de Débito',
-    'account_money': 'Dinero en Cuenta',
-    'ticket': 'Efectivo',
-    'bank_transfer': 'Transferencia',
-    'prepaid_card': 'Tarjeta Prepaga',
-    'digital_currency': 'Cripto / Digital',
-    'customer_credits': 'Crédito MP'
-  };
-
-  const formaPago = methodMap[formaPagoRaw.toLowerCase()] || formaPagoRaw;
+  const formaPago = translatePaymentMethod(venta.datos_fiscales?.forma_pago);
   
   const origenRaw = venta.datos_fiscales?.origen;
   const origen = origenRaw === 'mercadolibre' ? 'Mercado Libre' : origenRaw === 'mercadopago' ? 'Mercado Pago' : venta.mp_payment_id ? 'Mercado Libre' : 'Manual';

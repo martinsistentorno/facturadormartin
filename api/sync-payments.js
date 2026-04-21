@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { getValidAccessToken } from './lib/meli-token.js'
 import { getAfipRazonSocial } from './lib/afip-helper.js'
+import { translatePaymentMethod } from './lib/payment-methods.js'
 
 /**
  * Endpoint de sincronización manual.
@@ -155,19 +156,7 @@ export default async function handler(req, res) {
         }
 
         // Forma de pago
-        const typeId = payment.payment_type_id || ''
-        const methodMap = {
-          'credit_card': 'Tarjeta de Crédito',
-          'debit_card': 'Tarjeta de Débito',
-          'account_money': 'Dinero en Cuenta',
-          'ticket': 'Efectivo',
-          'bank_transfer': 'Transferencia',
-          'transfer': 'Transferencia',
-          'prepaid_card': 'Tarjeta Prepaga',
-          'digital_currency': 'Cripto / Digital',
-          'customer_credits': 'Crédito MP'
-        }
-        const formaPago = methodMap[typeId] || payment.payment_method_id || 'Mercado Pago'
+        const formaPago = translatePaymentMethod(payment.payment_type_id, payment.payment_method_id)
 
         // Si es Consumidor Final, NO guardar CUIT (ni el del dueño de la cuenta)
         const finalCuit = clienteNombre === 'Consumidor Final' ? '' : resolvedCuit

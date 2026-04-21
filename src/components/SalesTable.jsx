@@ -3,6 +3,7 @@ import { AlertCircle, Edit2, FileDown, RotateCcw, ChevronUp, ChevronDown, Chevro
 import { generateInvoicePdf } from '../utils/invoicePdf'
 import { useState, Fragment, useEffect, useRef } from 'react'
 import { useConfig } from '../context/ConfigContext'
+import { translatePaymentMethod, getPaymentBadgeStyle } from '../utils/paymentMethods'
 
 const PAGE_SIZES = [25, 50, 100]
 
@@ -11,7 +12,8 @@ const FORMAS_PAGO = [
   'Transferencia Bancaria',
   'Tarjeta de Débito',
   'Tarjeta de Crédito',
-  'Mercado Pago',
+  'Dinero en Cuenta',
+  'Crédito MP',
   'Otro',
 ];
 
@@ -39,45 +41,15 @@ const OrigenBadge = ({ origen, mpId }) => {
   } else if (isManual) {
     return <span className="text-text-muted font-medium text-xs">Manual</span>
   } else {
-    // Default to Mercado Pago if mpId exists and it's not MeLi
     return <span className="text-[#009EE3] font-medium text-xs">Mercado Pago</span>
   }
 }
 
 const PaymentBadge = ({ method }) => {
   if (!method) return <span className="text-text-muted text-xs">—</span>;
-  let bg = 'bg-surface-alt/50';
-  let text = 'text-text-secondary';
-  let label = method;
-
-  if (method?.includes('Efectivo') || method?.includes('Contado')) {
-    bg = 'bg-accent/10';
-    text = 'text-accent';
-    label = 'Efectivo';
-  } else if (method?.includes('Transferencia')) {
-    bg = 'bg-[#7C4DFF]/10';
-    text = 'text-[#7C4DFF]';
-    label = 'Transferencia';
-  } else if (method?.includes('Tarjeta')) {
-    bg = 'bg-[#E8A34A]/10';
-    text = 'text-[#9A641A]';
-    label = 'Tarjeta';
-  } else if (method?.toLowerCase().includes('account_money') || method?.toLowerCase().includes('mercado pago') || method === 'Dinero en Cuenta') {
-    bg = 'bg-[#009EE3]/10';
-    text = 'text-[#009EE3]';
-    label = 'Dinero en Cuenta';
-  } else if (method?.toLowerCase().includes('customer_credits') || method === 'Crédito MP') {
-    bg = 'bg-green-subtle';
-    text = 'text-green';
-    label = 'Crédito MP';
-  } else if (method?.toLowerCase().includes('digital_currency') || method === 'Cripto / Digital') {
-    bg = 'bg-purple-subtle';
-    text = 'text-purple';
-    label = 'Cripto / Digital';
-  }
-
+  const { bg, text, label } = getPaymentBadgeStyle(method);
   return (
-    <span className={`inline-block px-3 py-1 rounded-full text-[11px] font-semibold tracking-wide ${bg} ${text} truncate max-w-[140px]`} title={method}>
+    <span className={`inline-block px-3 py-1 rounded-full text-[11px] font-semibold tracking-wide ${bg} ${text} truncate max-w-[140px]`} title={translatePaymentMethod(method)}>
       {label}
     </span>
   )

@@ -6,7 +6,8 @@ const FORMAS_PAGO = [
   'Transferencia Bancaria',
   'Tarjeta de Débito',
   'Tarjeta de Crédito',
-  'Mercado Pago',
+  'Dinero en Cuenta',
+  'Crédito MP',
   'Otro',
 ];
 
