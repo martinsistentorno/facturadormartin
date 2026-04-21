@@ -13,12 +13,29 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Falta parametro cuit' })
   }
 
+  // Debug: verificar que las env vars de AFIP existan
+  const hasAfipCuit = !!process.env.AFIP_CUIT
+  const hasAfipCert = !!process.env.AFIP_CERT_BASE64
+  const hasAfipKey = !!process.env.AFIP_KEY_BASE64
+  const afipProd = process.env.AFIP_PRODUCTION
+
+  console.log(`[AFIP Debug] AFIP_CUIT: ${hasAfipCuit}, CERT: ${hasAfipCert}, KEY: ${hasAfipKey}, PRODUCTION: ${afipProd}`)
+
   try {
     console.log(`[AFIP] Consultando CUIT: ${cuit}...`)
     const razonSocial = await getAfipRazonSocial(cuit)
     
     if (!razonSocial) {
-      return res.status(404).json({ error: 'CUIT no encontrado o sin datos' })
+      return res.status(404).json({ 
+        error: 'CUIT no encontrado o sin datos',
+        debug: {
+          hasAfipCuit,
+          hasAfipCert,
+          hasAfipKey,
+          afipProd,
+          cuitQueried: cuit
+        }
+      })
     }
 
     return res.status(200).json({
@@ -29,6 +46,9 @@ export default async function handler(req, res) {
 
   } catch (err) {
     console.error('[AFIP] Error consultando CUIT:', err.message)
-    return res.status(500).json({ error: err.message })
+    return res.status(500).json({ 
+      error: err.message,
+      debug: { hasAfipCuit, hasAfipCert, hasAfipKey, afipProd }
+    })
   }
 }
