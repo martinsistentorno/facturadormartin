@@ -1,4 +1,4 @@
-import Afip from '@afipsdk/afip.js'
+import { getAfipRazonSocial } from './lib/afip-helper.js'
 
 export default async function handler(req, res) {
   // CORS
@@ -14,46 +14,17 @@ export default async function handler(req, res) {
   }
 
   try {
-    const afipCuit = process.env.AFIP_CUIT
-    const certBase64 = process.env.AFIP_CERT_BASE64
-    const keyBase64 = process.env.AFIP_KEY_BASE64
-    const isProduction = process.env.AFIP_PRODUCTION === 'true'
-
-    if (!afipCuit || !certBase64 || !keyBase64) {
-      return res.status(500).json({ error: 'Credenciales de AFIP no configuradas en el servidor' })
-    }
-
-    const cert = Buffer.from(certBase64, 'base64').toString('utf-8')
-    const key = Buffer.from(keyBase64, 'base64').toString('utf-8')
-
-    // Instanciar AFIP
-    const afip = new Afip({ 
-        CUIT: parseInt(afipCuit), 
-        cert, 
-        key, 
-        production: isProduction 
-    })
-
-    // Consultar el padron (Alcance 5)
     console.log(`[AFIP] Consultando CUIT: ${cuit}...`)
-    const data = await afip.RegisterScopeFive.getTaxpayerDetails(cuit)
+    const razonSocial = await getAfipRazonSocial(cuit)
     
-    if (!data || !data.datosGenerales) {
-      return res.status(404).json({ error: 'CUIT no encontrado o sin datos generales' })
-    }
-
-    // El Padron A5 devuelve diferentes propiedades segun sea Empresa o Persona fisica
-    let razonSocial = data.datosGenerales.razonSocial || ''
-    if (!razonSocial && data.datosGenerales.nombre) {
-         razonSocial = `${data.datosGenerales.nombre} ${data.datosGenerales.apellido || ''}`.trim()
+    if (!razonSocial) {
+      return res.status(404).json({ error: 'CUIT no encontrado o sin datos' })
     }
 
     return res.status(200).json({
       success: true,
       cuit,
-      razonSocial,
-      estado: data.datosGenerales.estadoClave,
-      tipoPersona: data.datosGenerales.tipoPersona
+      razonSocial
     })
 
   } catch (err) {

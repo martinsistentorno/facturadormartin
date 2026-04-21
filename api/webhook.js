@@ -1,49 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
-import Afip from '@afipsdk/afip.js'
 import { getValidAccessToken } from './lib/meli-token.js'
+import { getAfipRazonSocial } from './lib/afip-helper.js'
 
-// ─── Configurar AFIP para consultas globales (si están las credenciales) ───
-let afipInstance = null
-const afipCuit = process.env.AFIP_CUIT
-const certBase64 = process.env.AFIP_CERT_BASE64
-const keyBase64 = process.env.AFIP_KEY_BASE64
-if (afipCuit && certBase64 && keyBase64) {
-  try {
-    afipInstance = new Afip({
-      CUIT: parseInt(afipCuit),
-      cert: Buffer.from(certBase64, 'base64').toString('utf-8'),
-      key: Buffer.from(keyBase64, 'base64').toString('utf-8'),
-      production: process.env.AFIP_PRODUCTION === 'true'
-    })
-  } catch (err) {
-    console.warn('[Webhook] No se pudo instanciar AFIP:', err.message)
-  }
-}
-
-const afipNameCache = {}
-async function getAfipRazonSocial(cuitNumber) {
-  if (!afipInstance || !cuitNumber || String(cuitNumber).length !== 11) return null
-  const cuitStr = String(cuitNumber)
-  if (afipNameCache[cuitStr]) return afipNameCache[cuitStr]
-
-  try {
-    console.log(`[Webhook] Consultando AFIP para CUIT: ${cuitStr}`)
-    const data = await afipInstance.RegisterScopeFive.getTaxpayerDetails(cuitStr)
-    if (data && data.datosGenerales) {
-      let name = data.datosGenerales.razonSocial || ''
-      if (!name && data.datosGenerales.nombre) {
-        name = `${data.datosGenerales.nombre} ${data.datosGenerales.apellido || ''}`.trim()
-      }
-      if (name) {
-         afipNameCache[cuitStr] = name
-         return name
-      }
-    }
-  } catch (e) {
-    console.warn(`[Webhook] Error consultando AFIP para ${cuitStr}: ${e.message}`)
-  }
-  return null
-}
 export default async function handler(req, res) {
   // CORS
   res.setHeader('Access-Control-Allow-Origin', '*')
