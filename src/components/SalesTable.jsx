@@ -449,9 +449,9 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
                   onClick={() => handleRowClick(venta)}
                   className={`
                     transition-all duration-150 cursor-pointer
-                    ${isEditing ? 'border-b-0 bg-[#F9F7F2] relative z-10 font-medium' : 'border-b border-border hover:bg-surface-alt hover:opacity-90'}
-                    ${isError && !isEditing ? 'bg-red-subtle/20 hover:bg-red-subtle/40' : ''}
-                    ${isSelected ? 'bg-[#EAE4D3]' : ''}
+                    ${isEditing ? 'border-b-0 bg-white shadow-sm relative z-10 font-medium' : 'border-b border-border hover:bg-white/60'}
+                    ${isError && !isEditing ? 'bg-[#C0443C]/5 hover:bg-[#C0443C]/10' : ''}
+                    ${isSelected && !isEditing ? 'bg-[#3460A8]/8 border-l-2 border-l-[#3460A8]' : ''}
                   `}
                 >
                   <td className="px-4 py-3">
