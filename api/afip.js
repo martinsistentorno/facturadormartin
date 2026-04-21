@@ -3,11 +3,16 @@ import Afip from '@afipsdk/afip.js'
 import fs from 'fs'
 import path from 'path'
 import os from 'os'
-import https from 'https'
+import tls from 'tls'
 
 // AFIP servers use 1024-bit DH keys which OpenSSL 3.0+ (Node 18+) rejects.
-// Lower the security level for the global HTTPS agent so the SDK can connect.
-https.globalAgent.options.ciphers = 'DEFAULT@SECLEVEL=0'
+// Monkey-patch tls to force SECLEVEL=0 on ALL connections (the SDK creates its own).
+const _createSecureContext = tls.createSecureContext
+tls.createSecureContext = function(options) {
+  options = options || {}
+  options.ciphers = options.ciphers || 'DEFAULT@SECLEVEL=0'
+  return _createSecureContext.call(tls, options)
+}
 
 export default async function handler(req, res) {
   // CORS
