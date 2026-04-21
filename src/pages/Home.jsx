@@ -29,7 +29,6 @@ export default function Home() {
 
   // ─── Drawer State ───
   const [detailVenta, setDetailVenta] = useState(null)
-  const [startInEditMode, setStartInEditMode] = useState(false)
 
   // ─── Filters State ───
   const [filters, setFilters] = useState({
@@ -510,8 +509,8 @@ export default function Home() {
           onToggleAll={handleToggleAll}
           loading={loading}
           onShowError={(msg) => showToast(msg, 'error')}
-          onEdit={(venta) => { setDetailVenta(venta); setStartInEditMode(true); }}
           onRowClick={(venta) => setDetailVenta(venta)}
+          onSaveEdit={handleEditVenta}
           onRetry={handleRetry}
         />
       </div>
@@ -527,12 +526,11 @@ export default function Home() {
         onBulkRetry={handleBulkRetry}
       />
 
+      {/* ─── Detail Drawer ─── */}
       <SaleDetailDrawer
         venta={detailVenta}
         isOpen={!!detailVenta}
-        initialEditMode={startInEditMode}
-        onClose={() => { setDetailVenta(null); setStartInEditMode(false); }}
-        onSave={handleEditVenta}
+        onClose={() => setDetailVenta(null)}
         onRetry={handleRetry}
       />
 

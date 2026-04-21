@@ -1,10 +1,19 @@
 import StatusBadge from './StatusBadge'
-import { AlertCircle, Edit2, FileDown, RotateCcw, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react'
+import { AlertCircle, Edit2, FileDown, RotateCcw, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Save, Loader2, X } from 'lucide-react'
 import { generateInvoicePdf } from '../utils/invoicePdf'
-import { useState } from 'react'
+import { useState, Fragment } from 'react'
 import { useConfig } from '../context/ConfigContext'
 
 const PAGE_SIZES = [25, 50, 100]
+
+const FORMAS_PAGO = [
+  'Contado - Efectivo',
+  'Transferencia Bancaria',
+  'Tarjeta de Débito',
+  'Tarjeta de Crédito',
+  'Mercado Pago',
+  'Otro',
+];
 
 const OrigenBadge = ({ origen, mpId }) => {
   const isOrder = mpId?.startsWith('order-');
@@ -52,12 +61,58 @@ const PaymentBadge = ({ method }) => {
   )
 }
 
-export default function SalesTable({ ventas, selectedIds, onToggleSelect, onToggleAll, loading, onShowError, onEdit, onRowClick, onRetry }) {
+export default function SalesTable({ ventas, selectedIds, onToggleSelect, onToggleAll, loading, onShowError, onEdit, onRowClick, onRetry, onSaveEdit }) {
   const { emisor } = useConfig()
   const [sortKey, setSortKey] = useState('fecha')
   const [sortDir, setSortDir] = useState('desc')
   const [page, setPage] = useState(0)
   const [pageSize, setPageSize] = useState(25)
+
+  const [editingId, setEditingId] = useState(null)
+  const [editForm, setEditForm] = useState({})
+  const [savingEdit, setSavingEdit] = useState(false)
+
+  const handleStartEdit = (e, venta) => {
+    e.stopPropagation();
+    if (editingId === venta.id) {
+       setEditingId(null);
+    } else {
+       setEditingId(venta.id);
+       setEditForm({
+         cliente: venta.cliente || '',
+         cuit: venta.datos_fiscales?.cuit || '',
+         condicionIva: venta.datos_fiscales?.condicion_iva || (venta.datos_fiscales?.cuit?.length === 11 ? 'Responsable Inscripto' : 'Consumidor Final'),
+         descripcion: venta.datos_fiscales?.descripcion || 'Varios',
+         monto: venta.monto || '',
+         formaPago: venta.datos_fiscales?.forma_pago || 'Contado - Efectivo',
+       });
+    }
+  }
+
+  const submitEdit = async (e) => {
+    e.preventDefault();
+    if (!onSaveEdit) return;
+    setSavingEdit(true);
+    try {
+       const ventaOrig = ventas.find(v => v.id === editingId);
+       await onSaveEdit(editingId, {
+          cliente: editForm.cliente,
+          monto: parseFloat(editForm.monto),
+          datos_fiscales: {
+             ...ventaOrig?.datos_fiscales,
+             cuit: editForm.cuit,
+             condicion_iva: editForm.condicionIva,
+             descripcion: editForm.descripcion,
+             forma_pago: editForm.formaPago
+          }
+       });
+       setEditingId(null);
+    } catch (err) {
+       onShowError('Error al guardar: ' + err.message);
+    } finally {
+       setSavingEdit(false);
+    }
+  }
 
   // ─── Sorting ───
   const handleSort = (key) => {
@@ -209,12 +264,14 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
             {pagedVentas.map((venta, i) => {
               const isSelected = selectedIds.has(venta.id)
               const isError = venta.status === 'error'
+              const isEditing = editingId === venta.id
               return (
+                <Fragment key={venta.id}>
                 <tr
-                  key={venta.id}
                   onClick={() => handleRowClick(venta)}
                   className={`
-                    border-b border-border transition-colors duration-150 cursor-pointer
+                    transition-colors duration-150 cursor-pointer
+                    ${isEditing ? 'border-b-0 bg-surface-alt/20' : 'border-b border-border'}
                     ${isError ? 'bg-red-subtle/20 hover:bg-red-subtle/40' : ''}
                     hover:bg-surface-alt hover:opacity-90
                     ${isSelected ? 'bg-[#EAE4D3]' : ''}
@@ -288,11 +345,11 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
                     <div className="flex items-center justify-end gap-1">
                       {venta.status === 'pendiente' && (
                         <button
-                          onClick={(e) => { e.stopPropagation(); onEdit(venta) }}
-                          className="p-2 text-text-muted hover:text-blue hover:bg-blue/10 rounded-lg transition-all cursor-pointer"
-                          title="Editar datos fiscales"
+                          onClick={(e) => handleStartEdit(e, venta)}
+                          className={`p-2 transition-all cursor-pointer rounded-lg ${isEditing ? 'bg-accent text-white hover:bg-accent/80' : 'text-text-muted hover:text-blue hover:bg-blue/10'}`}
+                          title={isEditing ? "Cerrar edición" : "Editar datos fiscales"}
                         >
-                          <Edit2 size={16} />
+                          {isEditing ? <ChevronUp size={16} /> : <Edit2 size={16} />}
                         </button>
                       )}
                       {isError && onRetry && (
@@ -328,6 +385,65 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
                     </div>
                   </td>
                 </tr>
+                {isEditing && (
+                  <tr className="border-b border-border bg-surface-alt/10">
+                    <td colSpan="11" className="p-0">
+                      <div className="animate-fade-in pl-12 pr-6 py-5 border-l-4 border-accent">
+                        <form onSubmit={submitEdit} className="grid grid-cols-6 gap-4 items-end">
+                          
+                          <div className="col-span-2">
+                             <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1" style={{ fontFamily: 'Inter' }}>Cliente / Nombre</label>
+                             <input type="text" value={editForm.cliente} onChange={e => setEditForm({...editForm, cliente: e.target.value})} className="w-full bg-white border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:border-accent outline-none" />
+                          </div>
+
+                          <div className="col-span-1">
+                             <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1" style={{ fontFamily: 'Inter' }}>DNI / CUIT</label>
+                             <input type="text" value={editForm.cuit} onChange={e => setEditForm({...editForm, cuit: e.target.value})} className="w-full bg-white border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:border-accent outline-none font-mono" />
+                          </div>
+
+                          <div className="col-span-1">
+                             <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1" style={{ fontFamily: 'Inter' }}>IVA</label>
+                             <select value={editForm.condicionIva} onChange={e => setEditForm({...editForm, condicionIva: e.target.value})} className="w-full bg-white border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:border-accent outline-none">
+                               <option>Consumidor Final</option>
+                               <option>Responsable Inscripto</option>
+                               <option>Monotributista</option>
+                               <option>Exento</option>
+                             </select>
+                          </div>
+
+                          <div className="col-span-2">
+                             <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1" style={{ fontFamily: 'Inter' }}>Descripción Venta</label>
+                             <input type="text" value={editForm.descripcion} onChange={e => setEditForm({...editForm, descripcion: e.target.value})} className="w-full bg-white border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:border-accent outline-none" />
+                          </div>
+
+                          <div className="col-span-2 relative">
+                             <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1" style={{ fontFamily: 'Inter' }}>Monto a Procesar</label>
+                             <span className="absolute left-3 top-[28px] text-text-muted font-bold">$</span>
+                             <input type="number" step="0.01" value={editForm.monto} onChange={e => setEditForm({...editForm, monto: e.target.value})} className="w-full bg-white border border-border rounded-lg pl-7 pr-3 py-2 text-sm text-text-primary focus:border-accent outline-none font-bold" required />
+                          </div>
+
+                          <div className="col-span-2">
+                             <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1" style={{ fontFamily: 'Inter' }}>Forma de Pago</label>
+                             <select value={editForm.formaPago} onChange={e => setEditForm({...editForm, formaPago: e.target.value})} className="w-full bg-white border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:border-accent outline-none">
+                               {FORMAS_PAGO.map(fp => <option key={fp} value={fp}>{fp}</option>)}
+                             </select>
+                          </div>
+
+                          <div className="col-span-2 flex gap-2">
+                             <button type="button" onClick={() => setEditingId(null)} className="flex-1 px-3 py-2 rounded-lg text-xs font-bold text-text-muted hover:bg-surface-alt transition-colors border border-transparent">
+                               Cancelar
+                             </button>
+                             <button type="submit" disabled={savingEdit} className="flex-1 flex gap-2 items-center justify-center px-3 py-2 bg-accent text-white rounded-lg text-xs font-bold hover:bg-accent/90 transition-colors shadow-lg shadow-accent/20 cursor-pointer">
+                               {savingEdit ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                               Actualizar
+                             </button>
+                          </div>
+                        </form>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+                </Fragment>
               )
             })}
           </tbody>
