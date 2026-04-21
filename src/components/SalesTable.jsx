@@ -125,6 +125,21 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
     const ventaOrig = ventas.find(v => v.id === editingId);
     if (!ventaOrig) return;
 
+    // Extra safety check for changes
+    const hasChanges = (
+      editForm.cliente !== (ventaOrig.cliente || '') ||
+      parseFloat(editForm.monto || 0) !== parseFloat(ventaOrig.monto || 0) ||
+      editForm.cuit !== (ventaOrig.datos_fiscales?.cuit || '') ||
+      editForm.condicionIva !== (ventaOrig.datos_fiscales?.condicion_iva || (ventaOrig.datos_fiscales?.cuit?.length === 11 ? 'Responsable Inscripto' : 'Consumidor Final')) ||
+      editForm.descripcion !== (ventaOrig.datos_fiscales?.descripcion || 'Varios') ||
+      editForm.formaPago !== (ventaOrig.datos_fiscales?.forma_pago || 'Contado - Efectivo')
+    );
+
+    if (!hasChanges) {
+       setEditingId(null);
+       return;
+    }
+
     const origenVal = ventaOrig.datos_fiscales?.origen?.toLowerCase();
     const isManual = origenVal === 'manual' || (!origenVal && !ventaOrig.mp_payment_id);
 
@@ -308,6 +323,17 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
               const isEditing = editingId === venta.id
               const origenVal = venta.datos_fiscales?.origen?.toLowerCase()
               const isManual = origenVal === 'manual' || (!origenVal && !venta.mp_payment_id)
+
+              // Check for changes
+              const hasChanges = isEditing && (
+                editForm.cliente !== (venta.cliente || '') ||
+                parseFloat(editForm.monto || 0) !== parseFloat(venta.monto || 0) ||
+                editForm.cuit !== (venta.datos_fiscales?.cuit || '') ||
+                editForm.condicionIva !== (venta.datos_fiscales?.condicion_iva || (venta.datos_fiscales?.cuit?.length === 11 ? 'Responsable Inscripto' : 'Consumidor Final')) ||
+                editForm.descripcion !== (venta.datos_fiscales?.descripcion || 'Varios') ||
+                editForm.formaPago !== (venta.datos_fiscales?.forma_pago || 'Contado - Efectivo')
+              )
+
               return (
                 <Fragment key={venta.id}>
                 <tr
@@ -484,22 +510,27 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
                             <div className="flex gap-2 min-w-[250px] w-full md:w-auto">
                                {confirmingEdit ? (
                                  <>
-                                   <button type="button" onClick={() => setConfirmingEdit(false)} className="flex-1 md:flex-none px-6 py-2 rounded-lg text-xs font-bold text-text-muted hover:bg-[#EAE4D3]/60 transition-colors border border-transparent cursor-pointer">
+                                   <button type="button" onClick={() => setConfirmingEdit(false)} className="flex-1 md:flex-none px-6 py-2 rounded-lg text-xs font-bold text-text-muted hover:bg-[#EAE4D3]/60 transition-colors border border-transparent cursor-pointer uppercase tracking-widest" style={{ fontFamily: 'Montserrat' }}>
                                      Volver
                                    </button>
-                                   <button type="submit" disabled={savingEdit} className="flex-1 md:flex-none flex gap-2 items-center justify-center px-6 py-2 bg-[#C0443C] text-white rounded-lg text-xs font-bold hover:bg-[#C0443C]/90 transition-colors shadow-lg shadow-[#C0443C]/20 cursor-pointer animate-pulse-once">
+                                   <button type="submit" disabled={savingEdit} className="flex-1 md:flex-none flex gap-2 items-center justify-center px-8 py-3 bg-[#C0443C] text-white rounded-xl text-xs font-black uppercase tracking-[0.15em] hover:-translate-y-1 hover:shadow-[0_8px_20px_-5px_rgba(192,68,60,0.4)] transition-all cursor-pointer animate-pulse-once border-2 border-[#C0443C]" style={{ fontFamily: 'Montserrat' }}>
                                      {savingEdit ? <Loader2 size={14} className="animate-spin" /> : null}
-                                     Confirmar
+                                     CONFIRMAR
                                    </button>
                                  </>
                                ) : (
                                  <>
-                                   <button type="button" onClick={() => setEditingId(null)} className="flex-1 md:flex-none px-6 py-2 rounded-lg text-xs font-bold text-text-muted hover:bg-[#EAE4D3]/60 transition-colors border border-transparent cursor-pointer">
+                                   <button type="button" onClick={() => setEditingId(null)} className="flex-1 md:flex-none px-6 py-2 rounded-lg text-xs font-bold text-text-muted hover:bg-[#EAE4D3]/60 transition-colors border border-transparent cursor-pointer uppercase tracking-widest" style={{ fontFamily: 'Montserrat' }}>
                                      Cancelar
                                    </button>
-                                   <button type="submit" disabled={savingEdit} className="flex-1 md:flex-none flex gap-2 items-center justify-center px-6 py-2 bg-[#3460A8] text-white rounded-lg text-xs font-bold hover:bg-[#3460A8]/90 transition-colors shadow-lg shadow-[#3460A8]/20 cursor-pointer">
+                                   <button 
+                                     type="submit" 
+                                     disabled={savingEdit || !hasChanges} 
+                                     className={`flex-1 md:flex-none flex gap-2 items-center justify-center px-8 py-3 rounded-xl text-xs font-black uppercase tracking-[0.15em] transition-all cursor-pointer border-2 shadow-lg shadow-black/20 ${!hasChanges ? 'bg-text-muted/20 border-border text-text-muted/50 cursor-not-allowed opacity-70' : 'bg-[#000000] border-black text-white hover:-translate-y-1 hover:shadow-[0_8px_20px_-5px_rgba(0,0,0,0.3)]'}`}
+                                     style={{ fontFamily: 'Montserrat' }}
+                                   >
                                      {savingEdit ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-                                     Actualizar
+                                     ACTUALIZAR
                                    </button>
                                  </>
                                )}
