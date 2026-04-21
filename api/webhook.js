@@ -231,6 +231,7 @@ export default async function handler(req, res) {
     // ════════════════════════════════════════════════════
     if (
       topic === 'payment' ||
+      topic === 'payments' ||
       topic === 'merchant_order' ||
       action.includes('payment') ||
       body.data?.id
