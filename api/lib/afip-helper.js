@@ -3,12 +3,15 @@ import fs from 'fs'
 import path from 'path'
 import os from 'os'
 import tls from 'tls'
+import crypto from 'crypto'
 
 // AFIP servers use 1024-bit DH keys which OpenSSL 3.0+ (Node 18+) rejects.
 const _createSecureContext = tls.createSecureContext
 tls.createSecureContext = function(options) {
   options = options || {}
-  options.ciphers = options.ciphers || 'DEFAULT@SECLEVEL=0'
+  options.ciphers = 'DEFAULT@SECLEVEL=0'
+  options.secureOptions = options.secureOptions | crypto.constants.SSL_OP_LEGACY_SERVER_CONNECT
+  options.minDHSize = 512
   return _createSecureContext.call(tls, options)
 }
 
