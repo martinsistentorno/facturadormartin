@@ -99,10 +99,10 @@ export default function FilterBar({ filters, onFilterChange, totalCount, filtere
             </select>
           </div>
 
-          {/* Medio */}
+          {/* Medio / Origen */}
           <div>
             <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5" style={{ fontFamily: 'Inter' }}>
-              Medio de Pago
+              Medio / Origen
             </label>
             <select
               value={filters.medio || ''}
