@@ -36,6 +36,8 @@ export default function Home() {
   const [filters, setFilters] = useState({
     search: '',
     status: '',
+    medio: '',
+    origen: '',
     dateFrom: '',
     dateTo: '',
     montoMin: '',
@@ -91,16 +93,24 @@ export default function Home() {
       if (filters.montoMin && monto < Number(filters.montoMin)) return false
       if (filters.montoMax && monto > Number(filters.montoMax)) return false
 
+      // Origen filter
+      if (filters.origen) {
+        const q = filters.origen.toLowerCase()
+        const origen = (v.datos_fiscales?.origen || '').toLowerCase()
+        const isMeLi = origen.includes('mercadolibre') || v.mp_payment_id?.startsWith('order-')
+        const isMePa = origen.includes('mercadopago') || (v.mp_payment_id && !v.mp_payment_id.startsWith('order-'))
+        const isManual = origen.includes('manual') || (!v.mp_payment_id)
+
+        if (q === 'mercadolibre' && !isMeLi) return false
+        if (q === 'mercadopago' && !isMePa) return false
+        if (q === 'manual' && !isManual) return false
+      }
+
       // Medio filter
       if (filters.medio) {
         const q = filters.medio.toLowerCase()
         const formaPago = (v.datos_fiscales?.forma_pago || '').toLowerCase()
-        const origen = (v.datos_fiscales?.origen || '').toLowerCase()
-        const isMeLi = origen.includes('mercadolibre') || v.mp_payment_id?.startsWith('order-')
-        const isMePa = origen.includes('mercadopago') || (v.mp_payment_id && !v.mp_payment_id.startsWith('order-'))
 
-        if (q === 'mercadolibre' && !isMeLi) return false
-        if (q === 'mercadopago' && !isMePa) return false
         if (q === 'transferencia' && !formaPago.includes('transferencia')) return false
         if (q === 'tarjeta' && !formaPago.includes('tarjeta')) return false
         if (q === 'contado' && !formaPago.includes('efectivo') && !formaPago.includes('contado')) return false
@@ -108,7 +118,7 @@ export default function Home() {
 
       return true
     })
-  }, [ventas, debouncedSearch, filters.status, filters.medio, filters.dateFrom, filters.dateTo, filters.montoMin, filters.montoMax])
+  }, [ventas, debouncedSearch, filters.status, filters.medio, filters.origen, filters.dateFrom, filters.dateTo, filters.montoMin, filters.montoMax])
 
   // ─── Selected ventas data ───
   const selectedVentas = useMemo(() =>

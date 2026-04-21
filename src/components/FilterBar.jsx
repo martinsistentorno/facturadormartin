@@ -82,7 +82,7 @@ export default function FilterBar({ filters, onFilterChange, totalCount, filtere
 
       {/* Expanded filters */}
       {expanded && (
-        <div className="px-4 pb-4 pt-1 border-t border-border grid grid-cols-2 md:grid-cols-5 gap-3 animate-slide-down">
+        <div className="px-4 pb-4 pt-1 border-t border-border grid grid-cols-2 md:grid-cols-6 gap-3 animate-slide-down">
           {/* Estado */}
           <div>
             <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5" style={{ fontFamily: 'Inter' }}>
@@ -99,10 +99,27 @@ export default function FilterBar({ filters, onFilterChange, totalCount, filtere
             </select>
           </div>
 
-          {/* Medio / Origen */}
+          {/* Origen */}
           <div>
             <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5" style={{ fontFamily: 'Inter' }}>
-              Medio / Origen
+              Origen
+            </label>
+            <select
+              value={filters.origen || ''}
+              onChange={(e) => update('origen', e.target.value)}
+              className="w-full bg-surface-alt border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent cursor-pointer"
+            >
+              <option value="">Todos</option>
+              <option value="mercadolibre">Mercado Libre</option>
+              <option value="mercadopago">Mercado Pago</option>
+              <option value="manual">Manual</option>
+            </select>
+          </div>
+
+          {/* Medio de Pago */}
+          <div>
+            <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5" style={{ fontFamily: 'Inter' }}>
+              Medio de Pago
             </label>
             <select
               value={filters.medio || ''}
@@ -110,8 +127,6 @@ export default function FilterBar({ filters, onFilterChange, totalCount, filtere
               className="w-full bg-surface-alt border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent cursor-pointer"
             >
               <option value="">Todos</option>
-              <option value="mercadolibre">Mercado Libre</option>
-              <option value="mercadopago">Mercado Pago</option>
               <option value="Transferencia">Transferencia</option>
               <option value="Tarjeta">Tarjeta (Cred/Deb)</option>
               <option value="Contado">Contado / Efectivo</option>
