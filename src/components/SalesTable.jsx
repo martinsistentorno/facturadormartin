@@ -71,6 +71,7 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
   const [editingId, setEditingId] = useState(null)
   const [editForm, setEditForm] = useState({})
   const [savingEdit, setSavingEdit] = useState(false)
+  const [lookingUpAFIP, setLookingUpAFIP] = useState(false)
 
   const handleStartEdit = (e, venta) => {
     e.stopPropagation();
@@ -88,6 +89,31 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
        });
     }
   }
+
+  const handleCuitBlur = async () => {
+    const val = editForm.cuit?.replace(/\D/g, '');
+    if (!val || val.length < 8) return;
+
+    setLookingUpAFIP(true);
+    try {
+      const res = await fetch(`/api/lookup-cuit?cuit=${val}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.razonSocial) {
+           setEditForm(prev => ({
+              ...prev,
+              cliente: data.razonSocial,
+              condicionIva: val.length === 11 ? 'Responsable Inscripto' : 'Consumidor Final',
+              cuit: val
+           }));
+        }
+      }
+    } catch(err) {
+      console.error('Error fetching CUIT', err);
+    } finally {
+      setLookingUpAFIP(false);
+    }
+  };
 
   const submitEdit = async (e) => {
     e.preventDefault();
@@ -395,9 +421,10 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
                              <input type="text" value={editForm.cliente} onChange={e => setEditForm({...editForm, cliente: e.target.value})} className="w-full bg-white border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:border-accent outline-none" />
                           </div>
 
-                          <div className="col-span-1">
+                          <div className="col-span-1 relative">
                              <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1" style={{ fontFamily: 'Inter' }}>DNI / CUIT</label>
-                             <input type="text" value={editForm.cuit} onChange={e => setEditForm({...editForm, cuit: e.target.value})} className="w-full bg-white border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:border-accent outline-none font-mono" />
+                             <input type="text" value={editForm.cuit} onChange={e => setEditForm({...editForm, cuit: e.target.value})} onBlur={handleCuitBlur} className="w-full bg-white border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:border-accent outline-none font-mono" />
+                             {lookingUpAFIP && <Loader2 size={12} className="absolute right-2 top-[28px] animate-spin text-accent" />}
                           </div>
 
                           <div className="col-span-1">

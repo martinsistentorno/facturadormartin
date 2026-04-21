@@ -11,18 +11,19 @@ const FORMAS_PAGO = [
 ];
 
 // Reutilizamos el diseño del campo minimalista
-function MinimalField({ label, icon: Icon, type = "text", value, onChange, placeholder, required, full = false, onFocus, step, min }) {
+function MinimalField({ label, icon: Icon, type = "text", value, onChange, placeholder, required, full = false, onFocus, onBlur, step, min }) {
   return (
     <div className={`flex flex-col gap-1 ${!full && 'col-span-1'}`}>
       <span className="text-[9px] font-bold uppercase tracking-widest text-text-secondary flex items-center gap-1" style={{ fontFamily: 'Inter' }}>
         {Icon && <Icon size={10} />}
         {label} {required && '*'}
       </span>
-      <input
+        <input
         type={type}
         value={value}
         onChange={onChange}
         onFocus={onFocus}
+        onBlur={onBlur}
         placeholder={placeholder}
         required={required}
         step={step}
@@ -43,8 +44,8 @@ export default function AddSaleModal({ isOpen, onClose, onSave, searchClientes }
     condicionIva: 'Consumidor Final',
     formaPago: 'Contado - Efectivo',
   });
-  const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [lookingUp, setLookingUp] = useState(false);
   const suggestionsRef = useRef(null);
 
   const resetForm = () => {
@@ -101,6 +102,31 @@ export default function AddSaleModal({ isOpen, onClose, onSave, searchClientes }
       formaPago: cliente.formaPago || formData.formaPago,
     });
     setShowSuggestions(false);
+  };
+
+  const handleCuitBlur = async () => {
+    const val = formData.cuit.replace(/\D/g, '');
+    if (!val || val.length < 8) return;
+
+    setLookingUp(true);
+    try {
+      const res = await fetch(`/api/lookup-cuit?cuit=${val}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.razonSocial) {
+           setFormData(prev => ({
+              ...prev,
+              cliente: data.razonSocial,
+              condicionIva: val.length === 11 ? 'Responsable Inscripto' : 'Consumidor Final',
+              cuit: val
+           }));
+        }
+      }
+    } catch(err) {
+      console.error('Error fetching CUIT', err);
+    } finally {
+      setLookingUp(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -188,12 +214,16 @@ export default function AddSaleModal({ isOpen, onClose, onSave, searchClientes }
               )}
             </div>
 
-            <MinimalField 
-              label="CUIT / DNI" icon={Hash} full
-              value={formData.cuit}
-              onChange={(e) => setFormData({ ...formData, cuit: e.target.value })}
-              placeholder="Opcional. Vacío = Consumidor Final"
-            />
+            <div className="relative">
+              <MinimalField 
+                label="CUIT / DNI" icon={Hash} full
+                value={formData.cuit}
+                onChange={(e) => setFormData({ ...formData, cuit: e.target.value })}
+                onBlur={handleCuitBlur}
+                placeholder="Ingresá y deseleccioná para buscar..."
+              />
+              {lookingUp && <Loader2 size={14} className="absolute right-3 top-9 animate-spin text-accent" />}
+            </div>
 
             {/* Condición IVA */}
             <div className="flex flex-col gap-1 w-full mt-2">
