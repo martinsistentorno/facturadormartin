@@ -117,10 +117,9 @@ export default async function handler(req, res) {
       CUIT: parseInt(cuit),
       res_folder: tmpDir,
       ta_folder: tmpDir,
-      cert: certPath,
-      key: keyPath,
-      production: isProduction,
-      access_token: sdkToken
+      cert: 'afip_cert.crt',
+      key: 'afip_key.key',
+      production: isProduction
     })
 
     // Debug: mostrar info de diagnóstico
