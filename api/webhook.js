@@ -100,6 +100,7 @@ export default async function handler(req, res) {
       // ─── LLAMADA EXTRA: obtener billing_info real del comprador ───
       let docType = buyer.billing_info?.doc_type || buyer.identification?.type || 'DNI'
       let docNumber = String(buyer.billing_info?.doc_number || buyer.identification?.number || '')
+      let extractedBillingName = ''
       
       try {
         const billingRes = await fetch(
@@ -116,6 +117,25 @@ export default async function handler(req, res) {
             const afipField = billingInfo.additional_info.find(f => f.type === 'DOC_NUMBER' || f.type === 'TAXPAYER_ID_NUMBER')
             if (afipField) docNumber = String(afipField.value)
           }
+
+          // Intentar extraer el nombre real directamente de los datos de facturación
+          let bName = billingInfo.name || billingInfo.business_name || billingInfo.corporate_name || ''
+          let bLastName = billingInfo.last_name || ''
+          
+          if (!bName && billingInfo.additional_info) {
+            const bNameF = billingInfo.additional_info.find(f => f.type === 'BUSINESS_NAME' || f.type === 'CORPORATE_NAME')
+            const fNameF = billingInfo.additional_info.find(f => f.type === 'FIRST_NAME')
+            const lNameF = billingInfo.additional_info.find(f => f.type === 'LAST_NAME')
+            
+            if (bNameF) {
+              bName = String(bNameF.value)
+            } else if (fNameF) {
+              bName = String(fNameF.value)
+              if (lNameF) bLastName = String(lNameF.value)
+            }
+          }
+          
+          extractedBillingName = `${bName} ${bLastName}`.trim()
         }
       } catch (err) {}
 
@@ -130,7 +150,9 @@ export default async function handler(req, res) {
       }
 
       if (clienteNombre === 'Consumidor Final') {
-        if (buyer.first_name) {
+        if (extractedBillingName) {
+          clienteNombre = extractedBillingName
+        } else if (buyer.first_name) {
           clienteNombre = `${buyer.first_name} ${buyer.last_name || ''}`.trim()
         } else if (buyer.id) {
           try {
@@ -139,7 +161,9 @@ export default async function handler(req, res) {
             })
             if (userRes.ok) {
               const userData = await userRes.json()
-              if (userData.first_name) {
+              if (userData.company && userData.company.corporate_name) {
+                clienteNombre = userData.company.corporate_name
+              } else if (userData.first_name) {
                 clienteNombre = `${userData.first_name} ${userData.last_name || ''}`.trim()
               }
             }

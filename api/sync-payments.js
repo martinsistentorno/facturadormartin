@@ -245,6 +245,7 @@ export default async function handler(req, res) {
           let docNumber = ''
           let docType = 'DNI'
           let email = buyer.email || ''
+          let extractedBillingName = ''
 
           // ─── LLAMADA EXTRA: obtener billing_info real del comprador ───
           // La API de /orders/search NO trae billing_info completo,
@@ -273,7 +274,26 @@ export default async function handler(req, res) {
                 if (docField) docNumber = String(docField.value)
                 if (docTypeField) docType = docTypeField.value || 'DNI'
               }
-              console.log(`[Sync] Billing info orden ${orderId}: doc=${docNumber}, type=${docType}`)
+              
+              // Intentar extraer el nombre real directamente de los datos de facturación
+              let bName = billingInfo.name || billingInfo.business_name || billingInfo.corporate_name || ''
+              let bLastName = billingInfo.last_name || ''
+              
+              if (!bName && billingInfo.additional_info) {
+                const bNameF = billingInfo.additional_info.find(f => f.type === 'BUSINESS_NAME' || f.type === 'CORPORATE_NAME')
+                const fNameF = billingInfo.additional_info.find(f => f.type === 'FIRST_NAME')
+                const lNameF = billingInfo.additional_info.find(f => f.type === 'LAST_NAME')
+                
+                if (bNameF) {
+                  bName = String(bNameF.value)
+                } else if (fNameF) {
+                  bName = String(fNameF.value)
+                  if (lNameF) bLastName = String(lNameF.value)
+                }
+              }
+              
+              extractedBillingName = `${bName} ${bLastName}`.trim()
+              console.log(`[Sync] Billing info orden ${orderId}: doc=${docNumber}, type=${docType}, name=${extractedBillingName}`)
             } else {
               console.warn(`[Sync] No se pudo obtener billing_info para orden ${orderId}: ${billingRes.status}`)
             }
@@ -302,9 +322,11 @@ export default async function handler(req, res) {
             }
           }
 
-          // 2. Si AFIP no devolvió nada, usar nombre del buyer
+          // 2. Si AFIP no devolvió nada, intentar usar nombres extraídos
           if (clienteNombre === 'Consumidor Final') {
-            if (buyer.first_name) {
+            if (extractedBillingName) {
+              clienteNombre = extractedBillingName
+            } else if (buyer.first_name) {
               clienteNombre = `${buyer.first_name} ${buyer.last_name || ''}`.trim()
             } else if (buyer.id) {
               try {
@@ -314,7 +336,9 @@ export default async function handler(req, res) {
                 })
                 if (userRes.ok) {
                   const userData = await userRes.json()
-                  if (userData.first_name) {
+                  if (userData.company && userData.company.corporate_name) {
+                    clienteNombre = userData.company.corporate_name
+                  } else if (userData.first_name) {
                     clienteNombre = `${userData.first_name} ${userData.last_name || ''}`.trim()
                   }
                 }
