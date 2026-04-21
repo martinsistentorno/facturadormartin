@@ -36,8 +36,14 @@ function getAfipInstance() {
     const certPath = path.join(tmpDir, 'afip_cert.crt')
     const keyPath = path.join(tmpDir, 'afip_key.key')
 
-    fs.writeFileSync(certPath, Buffer.from(certBase64, 'base64').toString('utf-8'))
-    fs.writeFileSync(keyPath, Buffer.from(keyBase64, 'base64').toString('utf-8'))
+    const certContent = Buffer.from(certBase64, 'base64').toString('utf-8')
+    const keyContent = Buffer.from(keyBase64, 'base64').toString('utf-8')
+    
+    fs.writeFileSync(certPath, certContent)
+    fs.writeFileSync(keyPath, keyContent)
+
+    console.log(`[AFIP Helper] Cert escrito en ${certPath} (${certContent.length} chars)`)
+    console.log(`[AFIP Helper] Key escrito en ${keyPath} (${keyContent.length} chars)`)
 
     afipInstance = new Afip({
       CUIT: parseInt(afipCuit),
@@ -48,7 +54,7 @@ function getAfipInstance() {
       production: isProduction
     })
 
-    console.log('[AFIP Helper] Instancia creada OK (producción:', isProduction, ')')
+    console.log('[AFIP Helper] Instancia creada OK (producción:', isProduction, ', CUIT:', afipCuit, ')')
     return afipInstance
   } catch (err) {
     console.error('[AFIP Helper] Error creando instancia:', err.message)
@@ -67,36 +73,47 @@ const nameCache = {}
 export async function getAfipRazonSocial(cuit) {
   const cuitStr = String(cuit).replace(/[-\s]/g, '')
   
-  if (!cuitStr || cuitStr.length !== 11) return null
+  if (!cuitStr || cuitStr.length !== 11) {
+    console.log(`[AFIP Helper] CUIT inválido: "${cuitStr}" (largo: ${cuitStr.length})`)
+    return null
+  }
   if (nameCache[cuitStr]) return nameCache[cuitStr]
 
   const afip = getAfipInstance()
-  if (!afip) return null
+  if (!afip) {
+    console.log('[AFIP Helper] No hay instancia AFIP disponible')
+    return null
+  }
 
   try {
-    console.log(`[AFIP Helper] Consultando CUIT: ${cuitStr} via ${AFIP_SERVICE}`)
+    console.log(`[AFIP Helper] Paso 1: Obteniendo TA para ${AFIP_SERVICE}...`)
 
     // Obtener Token de Autorización para ws_sr_constancia_inscripcion
-    const { token, sign } = await afip.GetServiceTA(AFIP_SERVICE)
+    const ta = await afip.GetServiceTA(AFIP_SERVICE)
+    console.log(`[AFIP Helper] Paso 1 OK: TA obtenido (token: ${ta.token?.substring(0, 30)}...)`)
 
-    // Llamar al endpoint SOAP (mismo que usa RegisterScopeFive)
+    // Preparar parámetros SOAP (misma estructura que RegisterScopeFive.getTaxpayerDetails)
     const soapParams = {
-      token,
-      sign,
+      token: ta.token,
+      sign: ta.sign,
       cuitRepresentada: afip.CUIT,
       idPersona: parseInt(cuitStr)
     }
 
-    // Usar el RegisterScopeFive pero con nuestro TA
-    // El truco: ejecutamos la request SOAP directamente en el mismo WSDL
-    const result = await afip.RegisterScopeFive.executeRequest('getPersona_v2', soapParams)
-      .catch(err => {
-        if (err.message.indexOf('No existe') !== -1) return null
-        throw err
-      })
+    console.log(`[AFIP Helper] Paso 2: Llamando getPersona_v2 para CUIT ${cuitStr}...`)
+
+    // Ejecutar la request SOAP directamente usando el cliente SOAP de RegisterScopeFive
+    // que apunta al endpoint personaServiceA5 (el mismo que usa ws_sr_constancia_inscripcion)
+    const rawResult = await afip.RegisterScopeFive.executeRequest('getPersona_v2', soapParams)
+
+    console.log(`[AFIP Helper] Paso 2 resultado crudo:`, JSON.stringify(rawResult)?.substring(0, 500))
+
+    // RegisterScopeFive.executeRequest wraps the result already,
+    // extracting personaReturn from the raw SOAP response
+    const result = rawResult
 
     if (!result || !result.datosGenerales) {
-      console.log(`[AFIP Helper] CUIT ${cuitStr} no encontrado o sin datos`)
+      console.log(`[AFIP Helper] CUIT ${cuitStr} no tiene datosGenerales`)
       return null
     }
 
@@ -113,7 +130,9 @@ export async function getAfipRazonSocial(cuit) {
 
     return razonSocial || null
   } catch (err) {
-    console.error(`[AFIP Helper] Error consultando ${cuitStr}:`, err.message)
+    console.error(`[AFIP Helper] ❌ Error consultando ${cuitStr}:`, err.message)
+    // Log stack trace for debugging
+    if (err.stack) console.error('[AFIP Helper] Stack:', err.stack.substring(0, 500))
     return null
   }
 }
