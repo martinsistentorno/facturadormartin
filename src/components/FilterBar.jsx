@@ -127,6 +127,9 @@ export default function FilterBar({ filters, onFilterChange, totalCount, filtere
               <option value="Transferencia">Transferencia</option>
               <option value="Tarjeta">Tarjeta (Cred/Deb)</option>
               <option value="Contado">Contado / Efectivo</option>
+              <option value="Dinero en Cuenta">Dinero en Cuenta</option>
+              <option value="Crédito MP">Crédito MP</option>
+              <option value="Cripto / Digital">Cripto / Digital</option>
             </select>
           </div>
 

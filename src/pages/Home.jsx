@@ -110,11 +110,23 @@ export default function Home() {
       // Medio filter
       if (filters.medio) {
         const q = filters.medio.toLowerCase()
-        const formaPago = (v.datos_fiscales?.forma_pago || '').toLowerCase()
+        const formaPagoRaw = (v.datos_fiscales?.forma_pago || '').toLowerCase()
 
-        if (q === 'transferencia' && !formaPago.includes('transferencia')) return false
-        if (q === 'tarjeta' && !formaPago.includes('tarjeta')) return false
-        if (q === 'contado' && !formaPago.includes('efectivo') && !formaPago.includes('contado')) return false
+        // Normalize raw string to unified terms just like the UI does
+        let mappedPago = formaPagoRaw
+        if (formaPagoRaw.includes('account_money') || formaPagoRaw.includes('mercado pago')) mappedPago = 'dinero en cuenta'
+        else if (formaPagoRaw.includes('customer_credits')) mappedPago = 'crédito mp'
+        else if (formaPagoRaw.includes('digital_currency')) mappedPago = 'cripto / digital'
+        else if (formaPagoRaw.includes('ticket')) mappedPago = 'efectivo'
+        else if (formaPagoRaw.includes('bank_transfer') || formaPagoRaw.includes('transfer')) mappedPago = 'transferencia'
+        else if (formaPagoRaw.includes('credit_card') || formaPagoRaw.includes('debit_card') || formaPagoRaw.includes('prepaid_card')) mappedPago = 'tarjeta'
+
+        if (q === 'transferencia' && !mappedPago.includes('transferencia')) return false
+        if (q === 'tarjeta' && !mappedPago.includes('tarjeta')) return false
+        if (q === 'contado' && !mappedPago.includes('efectivo') && !mappedPago.includes('contado')) return false
+        if (q === 'dinero en cuenta' && !mappedPago.includes('dinero en cuenta')) return false
+        if (q === 'crédito mp' && !mappedPago.includes('crédito mp')) return false
+        if (q === 'cripto / digital' && !mappedPago.includes('cripto / digital')) return false
       }
 
       return true
