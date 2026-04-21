@@ -73,7 +73,7 @@ export default function EditSaleModal({ isOpen, onClose, venta, onSave }) {
   const formatDate = (d) => d ? new Date(d).toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' }) : '—';
   const origenRaw = venta.datos_fiscales?.origen;
   const origen = origenRaw === 'mercadolibre' ? 'Mercado Libre' : origenRaw === 'mercadopago' ? 'Mercado Pago' : venta.mp_payment_id ? 'Mercado Libre' : 'Manual';
-  const fromApiHasCuit = origen !== 'Manual' && !!venta.datos_fiscales?.cuit;
+  const fromApiHasCuit = false; // CUIT siempre editable
 
   return (
     <div 
@@ -146,14 +146,13 @@ export default function EditSaleModal({ isOpen, onClose, venta, onSave }) {
               </span>
               <input
                 type="text"
-                disabled={fromApiHasCuit}
                 value={formData.cuit}
                 onChange={(e) => setFormData({ ...formData, cuit: e.target.value })}
                 placeholder="Opcional. Vacío = Consumidor Final"
-                className={`w-full px-3 py-2 rounded-lg border border-border text-sm focus:outline-none transition-all font-medium ${fromApiHasCuit ? 'bg-surface-alt/70 text-text-muted opacity-80 cursor-not-allowed' : 'bg-white focus:ring-2 focus:ring-[#C0443C]/30 focus:border-[#C0443C]'}`}
+                className="w-full px-3 py-2 rounded-lg border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#C0443C]/30 focus:border-[#C0443C] transition-all font-medium"
               />
               <span className="text-[10px] text-text-muted mt-0.5 italic leading-tight">
-                {fromApiHasCuit ? `Validado por ${origen}.` : 'Consumidor Final si vacío.'}
+                Consumidor Final si vacío.
               </span>
             </div>
           </div>

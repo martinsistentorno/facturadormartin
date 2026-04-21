@@ -99,13 +99,35 @@ export default async function handler(req, res) {
         ? `${buyer.first_name} ${buyer.last_name || ''}`.trim()
         : buyer.nickname || `Venta MeLi #${orderId}`
 
-      const docNumber = String(buyer.billing_info?.doc_number || buyer.identification?.number || '')
+      // ─── LLAMADA EXTRA: obtener billing_info real del comprador ───
+      let docType = buyer.billing_info?.doc_type || buyer.identification?.type || 'DNI'
+      let docNumber = String(buyer.billing_info?.doc_number || buyer.identification?.number || '')
+      
+      try {
+        const billingRes = await fetch(
+          `https://api.mercadolibre.com/orders/${orderId}/billing_info`,
+          { headers: { 'Authorization': `Bearer ${accessToken}` } }
+        )
+        if (billingRes.ok) {
+          const billingData = await billingRes.json()
+          const billingInfo = billingData.billing_info || billingData
+          if (billingInfo.doc_number) {
+            docNumber = String(billingInfo.doc_number)
+            docType = billingInfo.doc_type || 'DNI'
+          } else if (billingInfo.additional_info) {
+            const afipField = billingInfo.additional_info.find(f => f.type === 'DOC_NUMBER' || f.type === 'TAXPAYER_ID_NUMBER')
+            if (afipField) docNumber = String(afipField.value)
+          }
+        }
+      } catch (err) {}
 
-      // 1. Prioridad: Consultar AFIP si es un CUIT válido
-      if (docNumber && docNumber.length === 11) {
-        const afipName = await getAfipRazonSocial(docNumber)
-        if (afipName) {
-          clienteNombre = afipName
+      // 1. Prioridad: Consultar AFIP si es un CUIT o DNI
+      let resolvedCuit = ''
+      if (docNumber && docNumber.length >= 7) {
+        const afipResult = await getAfipRazonSocial(docNumber)
+        if (afipResult) {
+          clienteNombre = afipResult.razonSocial
+          resolvedCuit = afipResult.cuit
         }
       }
 
@@ -128,6 +150,8 @@ export default async function handler(req, res) {
       }
       const formaPago = paymentTypeMap[firstPayment?.payment_type] || firstPayment?.payment_type || 'Mercado Libre'
 
+      const finalCuit = clienteNombre === 'Consumidor Final' || clienteNombre.includes('Venta MeLi') ? '' : resolvedCuit
+
       const ventaRecord = {
         fecha: order.date_created || new Date().toISOString(),
         cliente: clienteNombre,
@@ -137,8 +161,8 @@ export default async function handler(req, res) {
         mp_payment_id: `order-${orderId}`,
         datos_fiscales: {
           email: buyer.email || '',
-          identification: { type: buyer.billing_info?.doc_type || 'DNI', number: docNumber },
-          cuit: docNumber,
+          identification: { type: docType, number: docNumber },
+          cuit: finalCuit,
           forma_pago: formaPago,
           meli_order_id: orderId,
           meli_payment_ids: orderPaymentIds,
@@ -305,15 +329,7 @@ async function processPayment(supabaseAdmin, accessToken, paymentId, res) {
   let docNumber = String(payer.identification?.number || '')
   let docType = payer.identification?.type || 'DNI'
 
-  // 1. Prioridad: Consultar AFIP si es un CUIT válido
-  if (docNumber && docNumber.length === 11) {
-    const afipName = await getAfipRazonSocial(docNumber)
-    if (afipName) {
-      clienteNombre = afipName
-    }
-  }
-
-  // Obtener myId para comparar (reutilizar si ya lo sacamos antes)
+  // Obtener myId para comparar
   let ownerIdStr = ''
   try {
     const meCheck = await fetch('https://api.mercadopago.com/users/me', {
@@ -327,10 +343,20 @@ async function processPayment(supabaseAdmin, accessToken, paymentId, res) {
 
   const payerIdStr = String(payer.id || '')
 
-  if (clienteNombre === 'Consumidor Final') {
-    // Para transferencias: buscar el nombre real del usuario por su ID
-    // PERO si payer.id === dueño de la cuenta → es transferencia bancaria sin datos del remitente
-    if (payer.id && payerIdStr !== ownerIdStr && (!payer.first_name || payer.first_name === null)) {
+  // 1. Prioridad: Consultar AFIP si es un CUIT o DNI
+  let resolvedCuit = ''
+  let isOwnAccount = payerIdStr === ownerIdStr
+
+  if (!isOwnAccount && docNumber && docNumber.length >= 7) {
+    const afipResult = await getAfipRazonSocial(docNumber)
+    if (afipResult) {
+      clienteNombre = afipResult.razonSocial
+      resolvedCuit = afipResult.cuit
+    }
+  }
+
+  if (clienteNombre === 'Consumidor Final' && !isOwnAccount) {
+    if (payer.id && (!payer.first_name || payer.first_name === null)) {
     try {
       const userRes = await fetch(`https://api.mercadolibre.com/users/${payer.id}`, {
         headers: { 'Authorization': `Bearer ${accessToken}` }
@@ -346,11 +372,11 @@ async function processPayment(supabaseAdmin, accessToken, paymentId, res) {
     } catch (e) {
       if (payer.email) clienteNombre = payer.email.split('@')[0]
     }
-  } else if (payer.first_name) {
-    clienteNombre = `${payer.first_name} ${payer.last_name || ''}`.trim()
-  } else if (payer.email && payerIdStr !== ownerIdStr) {
-    clienteNombre = payer.email.split('@')[0]
-  }
+    } else if (payer.first_name) {
+      clienteNombre = `${payer.first_name} ${payer.last_name || ''}`.trim()
+    } else if (payer.email) {
+      clienteNombre = payer.email.split('@')[0]
+    }
   }
 
   // Método de pago
