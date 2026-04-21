@@ -125,6 +125,8 @@ export default async function handler(req, res) {
         // En ese caso, el nombre del payer es realmente el destinatario, no el remitente
         // Lo detectamos y dejamos "Consumidor Final" + sin CUIT
 
+        let condicionIvaFallback = null
+
         // 1. Consultar AFIP SOLO si es un CUIT (11 dígitos)
         //    y el payer NO es el dueño de la cuenta
         if (!isOwnAccount && docNumber && docNumber.length === 11) {
@@ -132,6 +134,7 @@ export default async function handler(req, res) {
           if (afipResult) {
             clienteNombre = afipResult.razonSocial
             resolvedCuit = afipResult.cuit
+            if (afipResult.condicion_iva) condicionIvaFallback = afipResult.condicion_iva
           }
         }
 
@@ -165,7 +168,7 @@ export default async function handler(req, res) {
 
         // Si es Consumidor Final, NO guardar CUIT (ni el del dueño de la cuenta)
         const finalCuit = clienteNombre === 'Consumidor Final' ? '' : resolvedCuit
-        const condicionIva = (finalCuit && finalCuit.length === 11) ? 'Responsable Inscripto' : 'Consumidor Final'
+        const condicionIva = condicionIvaFallback || ((finalCuit && finalCuit.length === 11) ? 'Responsable Inscripto' : 'Consumidor Final')
 
         const ventaRecord = {
           fecha: payment.date_approved || payment.date_created || new Date().toISOString(),
@@ -316,11 +319,13 @@ export default async function handler(req, res) {
 
           // 1. Consultar AFIP SOLO si es un CUIT (11 dígitos)
           let resolvedCuit = docNumber
+          let condicionIvaFallback = null
           if (docNumber && docNumber.length === 11) {
             const afipResult = await getAfipRazonSocial(docNumber)
             if (afipResult) {
               clienteNombre = afipResult.razonSocial
               resolvedCuit = afipResult.cuit
+              if (afipResult.condicion_iva) condicionIvaFallback = afipResult.condicion_iva
             }
           }
 
@@ -366,7 +371,7 @@ export default async function handler(req, res) {
 
           // Si es Consumidor Final, NO guardar CUIT
           const finalCuit = clienteNombre === 'Consumidor Final' ? '' : resolvedCuit
-          const condicionIva = (finalCuit && finalCuit.length === 11) ? 'Responsable Inscripto' : 'Consumidor Final'
+          const condicionIva = condicionIvaFallback || ((finalCuit && finalCuit.length === 11) ? 'Responsable Inscripto' : 'Consumidor Final')
 
           const ventaRecord = {
             fecha: order.date_created || new Date().toISOString(),

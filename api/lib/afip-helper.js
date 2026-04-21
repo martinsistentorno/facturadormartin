@@ -91,8 +91,24 @@ async function queryAfipByCuit(cuitStr) {
     if (!razonSocial && result.datosGenerales.nombre) {
       razonSocial = `${result.datosGenerales.nombre} ${result.datosGenerales.apellido || ''}`.trim()
     }
+    
+    // Extraer condición frente al IVA
+    let condicionIva = 'Responsable Inscripto' // fallback
+    if (result.datosMonotributo) {
+      condicionIva = 'Monotributista'
+    } else if (result.datosRegimenGeneral) {
+      const impuestos = result.datosRegimenGeneral.impuesto || []
+      const impuestosArr = Array.isArray(impuestos) ? impuestos : [impuestos]
+      
+      const hasExento = impuestosArr.find(i => String(i.idImpuesto) === '32')
+      if (hasExento) {
+        condicionIva = 'Exento'
+      } else {
+        condicionIva = 'Responsable Inscripto'
+      }
+    }
 
-    return razonSocial || null
+    return { razonSocial: razonSocial || null, condicionIva }
   } catch (err) {
     console.error(`[AFIP Helper] Error SOAP para ${cuitStr}:`, err.message)
     return null
@@ -116,11 +132,11 @@ export async function getAfipRazonSocial(docNumber) {
   if (nameCache[cleaned]) return nameCache[cleaned]
 
   console.log(`[AFIP Helper] Consultando CUIT directo: ${cleaned}`)
-  const name = await queryAfipByCuit(cleaned)
-  if (name) {
-    const result = { razonSocial: name, cuit: cleaned }
+  const data = await queryAfipByCuit(cleaned)
+  if (data && data.razonSocial) {
+    const result = { razonSocial: data.razonSocial, cuit: cleaned, condicion_iva: data.condicionIva }
     nameCache[cleaned] = result
-    console.log(`[AFIP Helper] ✅ ${cleaned} → ${name}`)
+    console.log(`[AFIP Helper] ✅ ${cleaned} → ${data.razonSocial} (${data.condicionIva})`)
     return result
   }
   return null

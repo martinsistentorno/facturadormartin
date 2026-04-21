@@ -141,11 +141,13 @@ export default async function handler(req, res) {
 
       // 1. Consultar AFIP SOLO si es un CUIT (11 dígitos)
       let resolvedCuit = docNumber
+      let condicionIvaFallback = null
       if (docNumber && docNumber.length === 11) {
         const afipResult = await getAfipRazonSocial(docNumber)
         if (afipResult) {
           clienteNombre = afipResult.razonSocial
           resolvedCuit = afipResult.cuit
+          if (afipResult.condicion_iva) condicionIvaFallback = afipResult.condicion_iva
         }
       }
 
@@ -192,7 +194,7 @@ export default async function handler(req, res) {
       const formaPago = paymentTypeMap[firstPayment?.payment_type] || firstPayment?.payment_type || 'Mercado Libre'
 
       const finalCuit = clienteNombre === 'Consumidor Final' || clienteNombre.includes('Venta MeLi') ? '' : resolvedCuit
-      const condicionIva = (finalCuit && finalCuit.length === 11) ? 'Responsable Inscripto' : 'Consumidor Final'
+      const condicionIva = condicionIvaFallback || ((finalCuit && finalCuit.length === 11) ? 'Responsable Inscripto' : 'Consumidor Final')
 
       const ventaRecord = {
         fecha: order.date_created || new Date().toISOString(),
@@ -388,6 +390,7 @@ async function processPayment(supabaseAdmin, accessToken, paymentId, res) {
 
   // 1. Consultar AFIP SOLO si es un CUIT (11 dígitos)
   let resolvedCuit = docNumber
+  let condicionIvaFallback = null
   let isOwnAccount = payerIdStr === ownerIdStr
 
   if (!isOwnAccount && docNumber && docNumber.length === 11) {
@@ -395,6 +398,7 @@ async function processPayment(supabaseAdmin, accessToken, paymentId, res) {
     if (afipResult) {
       clienteNombre = afipResult.razonSocial
       resolvedCuit = afipResult.cuit
+      if (afipResult.condicion_iva) condicionIvaFallback = afipResult.condicion_iva
     }
   }
 
@@ -436,7 +440,7 @@ async function processPayment(supabaseAdmin, accessToken, paymentId, res) {
 
   // Si es Consumidor Final y fue transferencia ajena o no pudimos sacarlo, vaciamos CUIT
   const finalCuit = clienteNombre === 'Consumidor Final' ? '' : resolvedCuit
-  const condicionIva = (finalCuit && finalCuit.length === 11) ? 'Responsable Inscripto' : 'Consumidor Final'
+  const condicionIva = condicionIvaFallback || ((finalCuit && finalCuit.length === 11) ? 'Responsable Inscripto' : 'Consumidor Final')
 
   const ventaRecord = {
     fecha: payment.date_approved || payment.date_created || new Date().toISOString(),
