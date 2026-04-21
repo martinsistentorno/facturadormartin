@@ -291,6 +291,8 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
               const isSelected = selectedIds.has(venta.id)
               const isError = venta.status === 'error'
               const isEditing = editingId === venta.id
+              const origenVal = venta.datos_fiscales?.origen?.toLowerCase()
+              const isManual = origenVal === 'manual' || (!origenVal && !venta.mp_payment_id)
               return (
                 <Fragment key={venta.id}>
                 <tr
@@ -442,27 +444,37 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
                              <input type="text" value={editForm.descripcion} onChange={e => setEditForm({...editForm, descripcion: e.target.value})} className="w-full bg-white border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:border-accent outline-none" />
                           </div>
 
-                          <div className="col-span-2 relative">
+                          <div className="col-span-3 relative">
                              <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1" style={{ fontFamily: 'Inter' }}>Monto a Procesar</label>
                              <span className="absolute left-3 top-[28px] text-text-muted font-bold">$</span>
                              <input type="number" step="0.01" value={editForm.monto} onChange={e => setEditForm({...editForm, monto: e.target.value})} className="w-full bg-white border border-border rounded-lg pl-7 pr-3 py-2 text-sm text-text-primary focus:border-accent outline-none font-bold" required />
                           </div>
 
-                          <div className="col-span-2">
+                          <div className="col-span-3">
                              <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1" style={{ fontFamily: 'Inter' }}>Forma de Pago</label>
                              <select value={editForm.formaPago} onChange={e => setEditForm({...editForm, formaPago: e.target.value})} className="w-full bg-white border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:border-accent outline-none">
                                {FORMAS_PAGO.map(fp => <option key={fp} value={fp}>{fp}</option>)}
                              </select>
                           </div>
 
-                          <div className="col-span-2 flex gap-2">
-                             <button type="button" onClick={() => setEditingId(null)} className="flex-1 px-3 py-2 rounded-lg text-xs font-bold text-text-muted hover:bg-surface-alt transition-colors border border-transparent">
-                               Cancelar
-                             </button>
-                             <button type="submit" disabled={savingEdit} className="flex-1 flex gap-2 items-center justify-center px-3 py-2 bg-accent text-white rounded-lg text-xs font-bold hover:bg-accent/90 transition-colors shadow-lg shadow-accent/20 cursor-pointer">
-                               {savingEdit ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-                               Actualizar
-                             </button>
+                          <div className="col-span-6 flex flex-col md:flex-row gap-4 items-center justify-between mt-2 pt-4 border-t border-border/60">
+                            <div className="flex-1">
+                               {!isManual && (
+                                 <div className="flex items-center gap-2 text-[10px] text-[#C0443C] leading-tight max-w-[420px] font-medium p-2 bg-[#C0443C]/5 border border-[#C0443C]/20 rounded-lg">
+                                   <AlertCircle size={16} className="shrink-0" />
+                                   <p><strong>Cuidado:</strong> Esta venta proviene de plataformas externas. Modificar la información de origen puede traer inconsistencias. Actuá bajo tu propia responsabilidad.</p>
+                                 </div>
+                               )}
+                            </div>
+                            <div className="flex gap-2 min-w-[250px] w-full md:w-auto">
+                               <button type="button" onClick={() => setEditingId(null)} className="flex-1 md:flex-none px-6 py-2 rounded-lg text-xs font-bold text-text-muted hover:bg-[#EAE4D3]/60 transition-colors border border-transparent cursor-pointer">
+                                 Cancelar
+                               </button>
+                               <button type="submit" disabled={savingEdit} className="flex-1 md:flex-none flex gap-2 items-center justify-center px-6 py-2 bg-[#3460A8] text-white rounded-lg text-xs font-bold hover:bg-[#3460A8]/90 transition-colors shadow-lg shadow-[#3460A8]/20 cursor-pointer">
+                                 {savingEdit ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                                 Actualizar
+                               </button>
+                            </div>
                           </div>
                         </form>
                       </div>
