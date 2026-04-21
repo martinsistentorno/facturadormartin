@@ -95,9 +95,7 @@ export default async function handler(req, res) {
 
       // Construir datos del cliente
       const buyer = order.buyer || {}
-      let clienteNombre = buyer.first_name
-        ? `${buyer.first_name} ${buyer.last_name || ''}`.trim()
-        : buyer.nickname || `Venta MeLi #${orderId}`
+      let clienteNombre = 'Consumidor Final'
 
       // ─── LLAMADA EXTRA: obtener billing_info real del comprador ───
       let docType = buyer.billing_info?.doc_type || buyer.identification?.type || 'DNI'
@@ -134,8 +132,27 @@ export default async function handler(req, res) {
       if (clienteNombre === 'Consumidor Final') {
         if (buyer.first_name) {
           clienteNombre = `${buyer.first_name} ${buyer.last_name || ''}`.trim()
-        } else if (buyer.nickname) {
-          clienteNombre = buyer.nickname
+        } else if (buyer.id) {
+          try {
+            const userRes = await fetch(`https://api.mercadolibre.com/users/${buyer.id}`, {
+              headers: { 'Authorization': `Bearer ${accessToken}` }
+            })
+            if (userRes.ok) {
+              const userData = await userRes.json()
+              if (userData.first_name) {
+                clienteNombre = `${userData.first_name} ${userData.last_name || ''}`.trim()
+              }
+            }
+          } catch (e) {}
+        }
+        
+        // Fallback final
+        if (clienteNombre === 'Consumidor Final') {
+          if (buyer.nickname) {
+            clienteNombre = buyer.nickname
+          } else {
+            clienteNombre = `Venta MeLi #${orderId}`
+          }
         }
       }
 

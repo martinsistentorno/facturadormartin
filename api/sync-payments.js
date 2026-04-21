@@ -306,7 +306,23 @@ export default async function handler(req, res) {
           if (clienteNombre === 'Consumidor Final') {
             if (buyer.first_name) {
               clienteNombre = `${buyer.first_name} ${buyer.last_name || ''}`.trim()
-            } else if (buyer.nickname) {
+            } else if (buyer.id) {
+              try {
+                // Consultar el nombre real del usuario (evitar el nickname)
+                const userRes = await fetch(`https://api.mercadolibre.com/users/${buyer.id}`, {
+                  headers: { 'Authorization': `Bearer ${accessToken}` }
+                })
+                if (userRes.ok) {
+                  const userData = await userRes.json()
+                  if (userData.first_name) {
+                    clienteNombre = `${userData.first_name} ${userData.last_name || ''}`.trim()
+                  }
+                }
+              } catch (e) {}
+            }
+            
+            // Fallback final
+            if (clienteNombre === 'Consumidor Final' && buyer.nickname) {
               clienteNombre = buyer.nickname
             }
           }
