@@ -554,8 +554,8 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
                       {venta.status === 'pendiente' && (
                         <button
                           onClick={(e) => handleStartEdit(e, venta)}
-                          className={`p-2 transition-all cursor-pointer rounded-lg ${isEditing ? 'bg-accent text-white hover:bg-accent/80' : 'text-text-muted hover:text-blue hover:bg-blue/10'}`}
-                          title={isEditing ? "Cerrar edición" : "Editar datos fiscales"}
+                          className={`p-2 transition-all cursor-pointer rounded-lg ${isEditing ? 'bg-accent text-white hover:bg-accent/80' : 'text-text-muted hover:text-accent hover:bg-accent/5'}`}
+                          title={isEditing ? "Cerrar edición" : "Editar datos"}
                         >
                           {isEditing ? <ChevronUp size={16} /> : <Edit2 size={16} />}
                         </button>
@@ -593,25 +593,26 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
                     </div>
                   </td>
                 </tr>
+
                 {isEditing && (
-                <td colSpan="11" className="p-0">
-                      <div className="animate-fade-in pl-10 pr-6 py-6 border-l-[4px] border-accent shadow-[0_15px_40px_-20px_rgba(0,0,0,0.1)] relative z-0">
-                        <form onSubmit={submitEdit} className="grid grid-cols-6 gap-4 items-end">
-                          
+                  <tr className="border-b border-border bg-surface-alt/10">
+                    <td colSpan="12" className="p-0">
+                      <div className="animate-fade-in pl-10 pr-6 py-8 border-l-[4px] border-accent shadow-[inset_0_20px_40px_-20px_rgba(0,0,0,0.05)] relative z-0">
+                        <form onSubmit={submitEdit} className="grid grid-cols-6 gap-6 items-end">
                           <div className="col-span-2">
-                             <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5 opacity-70">Cliente / Nombre</label>
-                             <input type="text" value={editForm.cliente} onChange={e => setEditForm({...editForm, cliente: e.target.value})} className="w-full bg-white border border-border rounded-xl px-4 py-2.5 text-sm text-text-primary focus:border-accent focus:ring-4 focus:ring-accent/5 transition-all outline-none" />
+                             <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-2 opacity-60">Cliente / Nombre</label>
+                             <input type="text" value={editForm.cliente} onChange={e => setEditForm({...editForm, cliente: e.target.value})} className="w-full bg-white border border-border rounded-xl px-4 py-3 text-sm text-text-primary focus:border-accent focus:ring-4 focus:ring-accent/5 transition-all outline-none" />
                           </div>
 
                           <div className="col-span-1 relative">
-                             <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5 opacity-70">DNI / CUIT</label>
-                             <input type="text" value={editForm.cuit} onChange={e => setEditForm({...editForm, cuit: e.target.value})} onBlur={handleCuitBlur} className="w-full bg-white border border-border rounded-xl px-4 py-2.5 text-sm text-text-primary focus:border-accent focus:ring-4 focus:ring-accent/5 transition-all outline-none font-mono" />
-                             {lookingUpAFIP && <Loader2 size={12} className="absolute right-3 top-[34px] animate-spin text-accent" />}
+                             <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-2 opacity-60">DNI / CUIT</label>
+                             <input type="text" value={editForm.cuit} onChange={e => setEditForm({...editForm, cuit: e.target.value})} onBlur={handleCuitBlur} className="w-full bg-white border border-border rounded-xl px-4 py-3 text-sm text-text-primary focus:border-accent focus:ring-4 focus:ring-accent/5 transition-all outline-none font-mono" />
+                             {lookingUpAFIP && <Loader2 size={12} className="absolute right-3 top-[42px] animate-spin text-accent" />}
                           </div>
 
                           <div className="col-span-1">
-                             <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5 opacity-70">IVA</label>
-                             <select value={editForm.condicionIva} onChange={e => setEditForm({...editForm, condicionIva: e.target.value})} className="w-full bg-white border border-border rounded-xl px-4 py-2.5 text-sm text-text-primary focus:border-accent focus:ring-4 focus:ring-accent/5 transition-all outline-none appearance-none cursor-pointer">
+                             <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-2 opacity-60">IVA</label>
+                             <select value={editForm.condicionIva} onChange={e => setEditForm({...editForm, condicionIva: e.target.value})} className="w-full bg-white border border-border rounded-xl px-4 py-3 text-sm text-text-primary focus:border-accent focus:ring-4 focus:ring-accent/5 transition-all outline-none appearance-none cursor-pointer">
                                <option>Consumidor Final</option>
                                <option>Responsable Inscripto</option>
                                <option>Monotributista</option>
@@ -620,55 +621,55 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
                           </div>
 
                           <div className="col-span-2">
-                             <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5 opacity-70">Descripción Venta</label>
-                             <input type="text" value={editForm.descripcion} onChange={e => setEditForm({...editForm, descripcion: e.target.value})} className="w-full bg-white border border-border rounded-xl px-4 py-2.5 text-sm text-text-primary focus:border-accent focus:ring-4 focus:ring-accent/5 transition-all outline-none" />
+                             <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-2 opacity-60">Descripción Venta</label>
+                             <input type="text" value={editForm.descripcion} onChange={e => setEditForm({...editForm, descripcion: e.target.value})} className="w-full bg-white border border-border rounded-xl px-4 py-3 text-sm text-text-primary focus:border-accent focus:ring-4 focus:ring-accent/5 transition-all outline-none" />
                           </div>
 
                           <div className="col-span-3 relative">
-                             <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5 opacity-70">Monto a Procesar</label>
+                             <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-2 opacity-60">Monto a Procesar</label>
                              <div className="relative">
                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted font-bold">$</span>
-                               <input type="number" step="0.01" value={editForm.monto} onChange={e => setEditForm({...editForm, monto: e.target.value})} className="w-full bg-white border border-border rounded-xl pl-9 pr-4 py-3 text-lg font-bold text-text-primary focus:border-accent focus:ring-4 focus:ring-accent/5 transition-all outline-none" required />
+                               <input type="number" step="0.01" value={editForm.monto} onChange={e => setEditForm({...editForm, monto: e.target.value})} className="w-full bg-white border border-border rounded-xl pl-9 pr-4 py-4 text-xl font-bold text-text-primary focus:border-accent focus:ring-4 focus:ring-accent/5 transition-all outline-none" required />
                              </div>
                           </div>
 
                           <div className="col-span-3">
-                             <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5 opacity-70">Forma de Pago</label>
-                             <select value={editForm.formaPago} onChange={e => setEditForm({...editForm, formaPago: e.target.value})} className="w-full bg-white border border-border rounded-xl px-4 py-3 text-sm text-text-primary focus:border-accent focus:ring-4 focus:ring-accent/5 transition-all outline-none appearance-none cursor-pointer">
+                             <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-2 opacity-60">Forma de Pago</label>
+                             <select value={editForm.formaPago} onChange={e => setEditForm({...editForm, formaPago: e.target.value})} className="w-full bg-white border border-border rounded-xl px-4 py-4 text-sm text-text-primary focus:border-accent focus:ring-4 focus:ring-accent/5 transition-all outline-none appearance-none cursor-pointer">
                                {FORMAS_PAGO.map(fp => <option key={fp} value={fp}>{fp}</option>)}
                              </select>
                           </div>
 
-                          <div className="col-span-6 flex flex-col md:flex-row gap-4 items-center justify-between mt-2 pt-4 border-t border-border/60 min-h-[50px]">
+                          <div className="col-span-6 flex flex-col md:flex-row gap-6 items-center justify-between mt-4 pt-6 border-t border-border/60 min-h-[60px]">
                             <div className="flex-1 w-full relative">
                                {confirmingEdit && (
-                                 <div className="flex items-center gap-2 text-[11px] text-[#C0443C] leading-tight max-w-[420px] font-medium p-2 bg-[#C0443C]/5 border border-[#C0443C]/20 rounded-lg animate-fade-in mx-auto md:mx-0">
+                                 <div className="flex items-center gap-2 text-[11px] text-[#C0443C] leading-tight max-w-[420px] font-medium p-3 bg-[#C0443C]/5 border border-[#C0443C]/20 rounded-xl animate-fade-in mx-auto md:mx-0">
                                    <AlertCircle size={16} className="shrink-0" />
-                                   <p><strong>Cuidado:</strong> Estás por alterar datos automáticos. Podría generar inconsistencias de conciliación. ¿Confirmás?</p>
+                                   <p><strong>Atención:</strong> Estás por alterar datos automáticos. Podría generar inconsistencias de conciliación. ¿Confirmás?</p>
                                  </div>
                                )}
                             </div>
-                            <div className="flex gap-2 min-w-[250px] w-full md:w-auto">
+                            
+                            <div className="flex gap-3 min-w-[280px] w-full md:w-auto">
                                {confirmingEdit ? (
                                  <>
-                                   <button type="button" onClick={() => setConfirmingEdit(false)} className="flex-1 md:flex-none px-6 py-2 rounded-lg text-xs font-bold text-text-muted hover:bg-[#EAE4D3]/60 transition-colors border border-transparent cursor-pointer uppercase tracking-widest" style={{ fontFamily: 'var(--font-montserrat)' }}>
+                                   <button type="button" onClick={() => setConfirmingEdit(false)} className="flex-1 md:flex-none px-6 py-3 rounded-xl text-xs font-bold text-text-muted hover:bg-surface-alt transition-all cursor-pointer uppercase tracking-widest">
                                      Volver
                                    </button>
-                                   <button type="submit" disabled={savingEdit} className="flex-1 md:flex-none flex gap-2 items-center justify-center px-8 py-3 bg-[#C0443C] text-white rounded-xl text-xs font-black uppercase tracking-[0.15em] hover:-translate-y-1 hover:shadow-[0_8px_20px_-5px_rgba(192,68,60,0.4)] transition-all cursor-pointer animate-pulse-once border-2 border-[#C0443C]" style={{ fontFamily: 'var(--font-montserrat)' }}>
+                                   <button type="submit" disabled={savingEdit} className="flex-1 md:flex-none flex gap-2 items-center justify-center px-8 py-3 bg-[#C0443C] text-white rounded-xl text-xs font-black uppercase tracking-[0.15em] hover:-translate-y-1 hover:shadow-lg hover:shadow-accent/30 transition-all cursor-pointer animate-pulse-once">
                                      {savingEdit ? <Loader2 size={14} className="animate-spin" /> : null}
                                      CONFIRMAR
                                    </button>
                                  </>
                                ) : (
                                  <>
-                                   <button type="button" onClick={() => setEditingId(null)} className="flex-1 md:flex-none px-6 py-2 rounded-lg text-xs font-bold text-text-muted hover:bg-[#EAE4D3]/60 transition-colors border border-transparent cursor-pointer uppercase tracking-widest" style={{ fontFamily: 'var(--font-montserrat)' }}>
+                                   <button type="button" onClick={() => setEditingId(null)} className="flex-1 md:flex-none px-6 py-3 rounded-xl text-xs font-bold text-text-muted hover:bg-surface-alt transition-all cursor-pointer uppercase tracking-widest">
                                      Cancelar
                                    </button>
                                    <button 
                                      type="submit" 
                                      disabled={savingEdit || !hasChanges} 
-                                     className={`flex-1 md:flex-none flex gap-2 items-center justify-center px-8 py-3 rounded-xl text-xs font-black uppercase tracking-[0.15em] transition-all cursor-pointer border-2 shadow-lg shadow-black/20 ${!hasChanges ? 'bg-text-muted/20 border-border text-text-muted/50 cursor-not-allowed opacity-70' : 'bg-[#000000] border-black text-white hover:-translate-y-1 hover:shadow-[0_8px_20px_-5px_rgba(0,0,0,0.3)]'}`}
-                                     style={{ fontFamily: 'var(--font-montserrat)' }}
+                                     className={`flex-1 md:flex-none flex gap-2 items-center justify-center px-8 py-3 rounded-xl text-xs font-black uppercase tracking-[0.15em] transition-all cursor-pointer ${!hasChanges ? 'bg-text-muted/10 text-text-muted/50 cursor-not-allowed' : 'bg-text-primary text-white hover:-translate-y-1 hover:shadow-xl hover:shadow-black/20'}`}
                                    >
                                      {savingEdit ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
                                      ACTUALIZAR
