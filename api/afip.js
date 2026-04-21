@@ -3,6 +3,11 @@ import Afip from '@afipsdk/afip.js'
 import fs from 'fs'
 import path from 'path'
 import os from 'os'
+import https from 'https'
+
+// AFIP servers use 1024-bit DH keys which OpenSSL 3.0+ (Node 18+) rejects.
+// Lower the security level for the global HTTPS agent so the SDK can connect.
+https.globalAgent.options.ciphers = 'DEFAULT@SECLEVEL=0'
 
 export default async function handler(req, res) {
   // CORS

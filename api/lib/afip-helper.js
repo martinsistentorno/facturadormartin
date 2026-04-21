@@ -2,6 +2,10 @@ import Afip from '@afipsdk/afip.js'
 import fs from 'fs'
 import path from 'path'
 import os from 'os'
+import https from 'https'
+
+// AFIP servers use 1024-bit DH keys which OpenSSL 3.0+ (Node 18+) rejects.
+https.globalAgent.options.ciphers = 'DEFAULT@SECLEVEL=0'
 
 /**
  * Helper para consultar datos de contribuyentes en AFIP.
