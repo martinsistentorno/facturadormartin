@@ -62,15 +62,15 @@ const PaymentBadge = ({ method }) => {
     bg = 'bg-[#E8A34A]/10';
     text = 'text-[#9A641A]';
     label = 'Tarjeta';
-  } else if (method?.includes('account_money') || method?.includes('Mercado Pago') || method === 'Dinero en Cuenta') {
+  } else if (method?.toLowerCase().includes('account_money') || method?.toLowerCase().includes('mercado pago') || method === 'Dinero en Cuenta') {
     bg = 'bg-[#009EE3]/10';
     text = 'text-[#009EE3]';
     label = 'Dinero en Cuenta';
-  } else if (method?.includes('customer_credits') || method === 'Crédito MP') {
+  } else if (method?.toLowerCase().includes('customer_credits') || method === 'Crédito MP') {
     bg = 'bg-green-subtle';
     text = 'text-green';
     label = 'Crédito MP';
-  } else if (method?.includes('digital_currency') || method === 'Cripto / Digital') {
+  } else if (method?.toLowerCase().includes('digital_currency') || method === 'Cripto / Digital') {
     bg = 'bg-purple-subtle';
     text = 'text-purple';
     label = 'Cripto / Digital';

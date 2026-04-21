@@ -68,7 +68,7 @@ export default function SaleDetailDrawer({ venta, isOpen, onClose, onSave, onRet
     'customer_credits': 'Crédito MP'
   };
 
-  const formaPago = methodMap[formaPagoRaw] || formaPagoRaw;
+  const formaPago = methodMap[formaPagoRaw.toLowerCase()] || formaPagoRaw;
   
   const origenRaw = venta.datos_fiscales?.origen;
   const origen = origenRaw === 'mercadolibre' ? 'Mercado Libre' : origenRaw === 'mercadopago' ? 'Mercado Pago' : venta.mp_payment_id ? 'Mercado Libre' : 'Manual';
