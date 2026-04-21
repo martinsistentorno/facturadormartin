@@ -73,28 +73,38 @@ export default function StatsCards({ ventas, onCardClick }) {
         </select>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {cards.map((card, i) => (
-          <button
-            key={card.id}
-            onClick={() => onCardClick(card.label, card.ventas, timeframe)}
-            className="text-left bg-surface border border-border rounded-xl p-5 animate-slide-up hover:-translate-y-1 hover:shadow-lg hover:border-border-subtle transition-all duration-200 cursor-pointer block w-full outline-none focus:ring-2 focus:ring-accent/50"
-            style={{ animationDelay: `${i * 60}ms` }}
-          >
-            <div className="flex items-start justify-between mb-3">
-              <span className="text-xs font-medium text-text-secondary uppercase tracking-wider">
-                {card.label}
-              </span>
-              <div className={`p-2 rounded-lg ${card.accentBg}`}>
-                <card.icon size={16} className={card.accent} />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        {cards.map((card, i) => {
+          const isHero = card.id === 'total'
+          return (
+            <button
+              key={card.id}
+              onClick={() => onCardClick(card.label, card.ventas, timeframe)}
+              className={`
+                text-left bg-surface border border-border rounded-xl animate-slide-up hover:-translate-y-1 hover:shadow-xl hover:border-border-subtle transition-all duration-300 cursor-pointer block w-full outline-none focus:ring-4 focus:ring-accent/5
+                ${isHero ? 'lg:col-span-2 p-6 shadow-sm ring-1 ring-black/5' : 'lg:col-span-1 p-4 shadow-sm'}
+              `}
+              style={{ animationDelay: `${i * 60}ms` }}
+            >
+              <div className="flex items-start justify-between mb-3">
+                <span className={`font-bold uppercase tracking-widest ${isHero ? 'text-[11px] text-text-primary' : 'text-[9px] text-text-muted'}`}>
+                  {card.label}
+                </span>
+                <div className={`rounded-xl transition-colors ${isHero ? 'p-3 ' + card.accentBg : 'p-2 ' + card.accentBg}`}>
+                  <card.icon size={isHero ? 20 : 14} className={card.accent} />
+                </div>
               </div>
-            </div>
-            <div className={`text-2xl font-semibold mb-1 ${card.accent}`}>
-              {card.value}
-            </div>
-            <div className="text-xs text-text-muted">{card.sub}</div>
-          </button>
-        ))}
+              
+              <div className={`font-bold tracking-tight mb-1 ${card.accent} ${isHero ? 'text-4xl' : 'text-xl'}`}>
+                {card.value}
+              </div>
+              
+              <div className={`font-medium ${isHero ? 'text-sm text-text-secondary' : 'text-[11px] text-text-muted'}`}>
+                {card.sub}
+              </div>
+            </button>
+          )
+        })}
       </div>
     </div>
   )
