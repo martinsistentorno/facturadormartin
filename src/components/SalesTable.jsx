@@ -1,7 +1,7 @@
 import StatusBadge from './StatusBadge'
-import { AlertCircle, Edit2, FileDown, RotateCcw, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Save, Loader2, X } from 'lucide-react'
+import { AlertCircle, Edit2, FileDown, RotateCcw, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Save, Loader2, X, Settings2, Check } from 'lucide-react'
 import { generateInvoicePdf } from '../utils/invoicePdf'
-import { useState, Fragment } from 'react'
+import { useState, Fragment, useEffect, useRef } from 'react'
 import { useConfig } from '../context/ConfigContext'
 
 const PAGE_SIZES = [25, 50, 100]
@@ -13,6 +13,20 @@ const FORMAS_PAGO = [
   'Tarjeta de Crédito',
   'Mercado Pago',
   'Otro',
+];
+
+const COLUMN_CONFIG = [
+  { id: 'fecha', label: 'Fecha', default: true },
+  { id: 'cliente', label: 'Cliente', default: true },
+  { id: 'cuit', label: 'CUIT / DNI', default: false },
+  { id: 'monto', label: 'Monto', default: true, align: 'right' },
+  { id: 'iva', label: 'Cond. IVA', default: false },
+  { id: 'descripcion', label: 'Descripción', default: false },
+  { id: 'origen', label: 'Origen', default: true },
+  { id: 'medio', label: 'Medio', default: true },
+  { id: 'status', label: 'Status', default: true },
+  { id: 'factura', label: 'Factura', default: true },
+  { id: 'cae', label: 'CAE', default: true },
 ];
 
 const OrigenBadge = ({ origen, mpId }) => {
@@ -73,6 +87,46 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
   const [savingEdit, setSavingEdit] = useState(false)
   const [lookingUpAFIP, setLookingUpAFIP] = useState(false)
   const [confirmingEdit, setConfirmingEdit] = useState(false)
+
+  // ─── Column visibility state ───
+  const [visibleColumns, setVisibleColumns] = useState(() => {
+    const saved = localStorage.getItem('salesTableVisibleColumns');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        return COLUMN_CONFIG.filter(c => c.default).map(c => c.id);
+      }
+    }
+    return COLUMN_CONFIG.filter(c => c.default).map(c => c.id);
+  });
+
+  const [showColumnPicker, setShowColumnPicker] = useState(false);
+  const pickerRef = useRef(null);
+
+  useEffect(() => {
+    localStorage.setItem('salesTableVisibleColumns', JSON.stringify(visibleColumns));
+  }, [visibleColumns]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (pickerRef.current && !pickerRef.current.contains(event.target)) {
+        setShowColumnPicker(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const toggleColumn = (columnId) => {
+    setVisibleColumns(prev => 
+      prev.includes(columnId) 
+        ? prev.filter(id => id !== columnId) 
+        : [...prev, columnId]
+    );
+  };
+
+  const isVisible = (columnId) => visibleColumns.includes(columnId);
 
   const handleStartEdit = (e, venta) => {
     e.stopPropagation();
@@ -291,7 +345,60 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
   )
 
   return (
-    <div className="bg-surface border border-border rounded-xl overflow-hidden animate-fade-in">
+    <div className="bg-surface border border-border rounded-xl overflow-hidden animate-fade-in relative">
+      
+      {/* Table Toolbar / Column Picker */}
+      <div className="flex items-center justify-end px-4 py-2 bg-surface-alt/30 border-b border-border gap-2 relative">
+        <div className="relative" ref={pickerRef}>
+          <button
+            onClick={() => setShowColumnPicker(!showColumnPicker)}
+            className={`
+              flex items-center gap-2 px-3 py-1.5 rounded-lg border text-[10px] font-bold uppercase tracking-widest transition-all cursor-pointer
+              ${showColumnPicker 
+                ? 'bg-[#000000] text-white border-black shadow-lg shadow-black/20' 
+                : 'bg-white border-border text-text-muted hover:text-text-primary hover:border-black/20'
+              }
+            `}
+            style={{ fontFamily: 'Montserrat' }}
+          >
+            <Settings2 size={12} />
+            Mostrar
+          </button>
+
+          {showColumnPicker && (
+            <div className="absolute right-0 mt-2 w-64 bg-[#F9F7F2] border-2 border-black rounded-xl shadow-[8px_8px_0px_0px_rgba(0,0,0,0.1)] z-50 py-3 animate-slide-down">
+              <div className="px-4 pb-2 mb-2 border-b border-black/5">
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-black" style={{ fontFamily: 'Montserrat' }}>
+                  Columnas de la Tabla
+                </span>
+              </div>
+              <div className="max-h-[300px] overflow-y-auto px-2 space-y-1">
+                {COLUMN_CONFIG.map(col => (
+                  <button
+                    key={col.id}
+                    onClick={() => toggleColumn(col.id)}
+                    className={`
+                      w-full flex items-center justify-between px-3 py-2 rounded-lg transition-all text-xs font-bold
+                      ${isVisible(col.id) 
+                        ? 'bg-[#3460A8]/10 text-[#3460A8]' 
+                        : 'text-text-muted hover:bg-white hover:text-text-primary'
+                      }
+                    `}
+                    style={{ fontFamily: 'Space Grotesk' }}
+                  >
+                    <span>{col.label}</span>
+                    {isVisible(col.id) && <Check size={14} className="text-[#3460A8]" />}
+                  </button>
+                ))}
+              </div>
+              <div className="px-4 pt-2 mt-2 border-t border-black/5">
+                <p className="text-[9px] text-text-muted italic">Las preferencias se guardan automáticamente.</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
@@ -305,15 +412,18 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
                   id="select-all-checkbox"
                 />
               </th>
-              <SortHeader label="Fecha" sortField="fecha" />
-              <SortHeader label="Cliente" sortField="cliente" />
-              <SortHeader label="Monto" sortField="monto" align="right" />
-              <SortHeader label="Origen" sortField="origen" />
-              <SortHeader label="Medio" sortField="medio" />
-              <SortHeader label="Status" sortField="status" />
-              <SortHeader label="Factura" sortField="factura" />
-              <SortHeader label="CAE" sortField="cae" />
-              <th className="px-4 py-3 text-right"></th>
+              {isVisible('fecha') && <SortHeader label="Fecha" sortField="fecha" />}
+              {isVisible('cliente') && <SortHeader label="Cliente" sortField="cliente" />}
+              {isVisible('cuit') && <SortHeader label="CUIT / DNI" sortField="cuit" />}
+              {isVisible('monto') && <SortHeader label="Monto" sortField="monto" align="right" />}
+              {isVisible('iva') && <SortHeader label="Cond. IVA" sortField="iva" />}
+              {isVisible('descripcion') && <SortHeader label="Descripción" sortField="descripcion" />}
+              {isVisible('origen') && <SortHeader label="Origen" sortField="origen" />}
+              {isVisible('medio') && <SortHeader label="Medio" sortField="medio" />}
+              {isVisible('status') && <SortHeader label="Status" sortField="status" />}
+              {isVisible('factura') && <SortHeader label="Factura" sortField="factura" />}
+              {isVisible('cae') && <SortHeader label="CAE" sortField="cae" />}
+              <th className="px-4 py-3 text-right bg-surface-alt/30"></th>
             </tr>
           </thead>
           <tbody>
@@ -354,61 +464,92 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
                       className="w-4 h-4 rounded border-border bg-surface-alt accent-accent cursor-pointer"
                     />
                   </td>
-                  <td className="px-4 py-3">
-                    <div className="text-text-primary font-medium">{formatDate(venta.fecha)}</div>
-                    <div className="text-text-muted text-xs">{formatTime(venta.fecha)}</div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="text-text-primary">{venta.cliente || '—'}</div>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <span className="text-text-primary font-semibold tabular-nums">{formatCurrency(venta.monto)}</span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <OrigenBadge origen={venta.datos_fiscales?.origen} mpId={venta.mp_payment_id} />
-                  </td>
-                  <td className="px-4 py-3">
-                    <PaymentBadge method={venta.datos_fiscales?.forma_pago} />
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <StatusBadge status={venta.status} />
-                      {isError && venta.datos_fiscales?.error_detalle && (
-                        <div className="relative group">
-                          <button
-                            onClick={(e) => { e.stopPropagation(); onShowError(venta.datos_fiscales.error_detalle) }}
-                            className="text-red hover:text-red-400 transition-colors p-1"
-                            title="Ver motivo de rechazo"
-                          >
-                            <AlertCircle size={15} />
-                          </button>
-                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-50">
-                            <div className="bg-text-primary text-white text-xs rounded-lg px-3 py-2 max-w-[250px] shadow-lg whitespace-normal">
-                              {venta.datos_fiscales.error_detalle}
-                              <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-text-primary" />
+                  {isVisible('fecha') && (
+                    <td className="px-4 py-3">
+                      <div className="text-text-primary font-medium">{formatDate(venta.fecha)}</div>
+                      <div className="text-text-muted text-xs">{formatTime(venta.fecha)}</div>
+                    </td>
+                  )}
+                  {isVisible('cliente') && (
+                    <td className="px-4 py-3">
+                      <div className="text-text-primary uppercase" style={{ fontFamily: 'Space Grotesk' }}>{venta.cliente || '—'}</div>
+                    </td>
+                  )}
+                  {isVisible('cuit') && (
+                    <td className="px-4 py-3">
+                      <div className="text-text-muted font-mono text-xs">{venta.datos_fiscales?.cuit || '—'}</div>
+                    </td>
+                  )}
+                  {isVisible('monto') && (
+                    <td className="px-4 py-3 text-right">
+                      <span className="text-text-primary font-semibold tabular-nums">{formatCurrency(venta.monto)}</span>
+                    </td>
+                  )}
+                  {isVisible('iva') && (
+                    <td className="px-4 py-3">
+                      <div className="text-text-secondary text-xs">{venta.datos_fiscales?.condicion_iva || '—'}</div>
+                    </td>
+                  )}
+                  {isVisible('descripcion') && (
+                    <td className="px-4 py-3">
+                      <div className="text-text-secondary text-xs italic truncate max-w-[150px]" title={venta.datos_fiscales?.descripcion}>{venta.datos_fiscales?.descripcion || '—'}</div>
+                    </td>
+                  )}
+                  {isVisible('origen') && (
+                    <td className="px-4 py-3">
+                      <OrigenBadge origen={venta.datos_fiscales?.origen} mpId={venta.mp_payment_id} />
+                    </td>
+                  )}
+                  {isVisible('medio') && (
+                    <td className="px-4 py-3">
+                      <PaymentBadge method={venta.datos_fiscales?.forma_pago} />
+                    </td>
+                  )}
+                  {isVisible('status') && (
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <StatusBadge status={venta.status} />
+                        {isError && venta.datos_fiscales?.error_detalle && (
+                          <div className="relative group">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); onShowError(venta.datos_fiscales.error_detalle) }}
+                              className="text-red hover:text-red-400 transition-colors p-1"
+                              title="Ver motivo de rechazo"
+                            >
+                              <AlertCircle size={15} />
+                            </button>
+                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-50">
+                              <div className="bg-text-primary text-white text-xs rounded-lg px-3 py-2 max-w-[250px] shadow-lg whitespace-normal">
+                                {venta.datos_fiscales.error_detalle}
+                                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-text-primary" />
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="text-text-primary text-xs font-mono whitespace-nowrap">
-                      {venta.nro_comprobante || <span className="text-text-muted">—</span>}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    {venta.cae ? (
-                      <div>
-                        <div className="text-text-primary text-xs font-mono">{venta.cae}</div>
-                        {venta.vto_cae && (
-                          <div className="text-text-muted text-xs">Vto: {formatDate(venta.vto_cae)}</div>
                         )}
                       </div>
-                    ) : (
-                      <span className="text-text-muted text-xs">—</span>
-                    )}
-                  </td>
+                    </td>
+                  )}
+                  {isVisible('factura') && (
+                    <td className="px-4 py-3">
+                      <div className="text-text-primary text-xs font-mono whitespace-nowrap">
+                        {venta.nro_comprobante || <span className="text-text-muted">—</span>}
+                      </div>
+                    </td>
+                  )}
+                  {isVisible('cae') && (
+                    <td className="px-4 py-3">
+                      {venta.cae ? (
+                        <div>
+                          <div className="text-text-primary text-xs font-mono">{venta.cae}</div>
+                          {venta.vto_cae && (
+                            <div className="text-text-muted text-xs">Vto: {formatDate(venta.vto_cae)}</div>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-text-muted text-xs">—</span>
+                      )}
+                    </td>
+                  )}
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-1">
                       {venta.status === 'pendiente' && (
