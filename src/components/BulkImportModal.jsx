@@ -3,7 +3,7 @@ import { Upload, FileDown, CheckCircle, AlertCircle, Loader2, X, FileSpreadsheet
 import * as XLSX from 'xlsx';
 
 const FORMAS_PAGO_VALIDAS = [
-  'Contado - Efectivo', 'Transferencia Bancaria', 'Tarjeta de Débito', 'Tarjeta de Crédito', 'Mercado Pago', 'Otro'
+  'Contado - Efectivo', 'Transferencia Bancaria', 'Tarjeta de Dï¿½bito', 'Tarjeta de Crï¿½dito', 'Mercado Pago', 'Otro'
 ];
 
 export default function BulkImportModal({ isOpen, onClose, onSave }) {
@@ -63,7 +63,7 @@ export default function BulkImportModal({ isOpen, onClose, onSave }) {
         const foundErrors = [];
 
         rows.forEach((row, index) => {
-          const rowNum = index + 2; // +1 de índice, +1 del header
+          const rowNum = index + 2; // +1 de ï¿½ndice, +1 del header
           
           const cliente = String(row.Cliente || '').trim();
           const cuit = String(row.CUIT || '').trim();
@@ -77,7 +77,7 @@ export default function BulkImportModal({ isOpen, onClose, onSave }) {
           
           const monto = parseFloat(montoRaw);
           if (isNaN(monto) || monto <= 0) {
-             foundErrors.push(`Fila ${rowNum}: Monto inválido para ${cliente}.`);
+             foundErrors.push(`Fila ${rowNum}: Monto invï¿½lido para ${cliente}.`);
              return;
           }
 
@@ -100,7 +100,7 @@ export default function BulkImportModal({ isOpen, onClose, onSave }) {
         setParsedData(validVentas);
         setErrors(foundErrors);
       } catch (err) {
-        setErrors(["Error al leer el archivo. Verificá que sea un archivo válido (.xlsx, .csv)."]);
+        setErrors(["Error al leer el archivo. Verificï¿½ que sea un archivo vï¿½lido (.xlsx, .csv)."]);
       } finally {
         setLoading(false);
       }
@@ -139,7 +139,7 @@ export default function BulkImportModal({ isOpen, onClose, onSave }) {
         <div className="bg-white/60 backdrop-blur-sm px-6 py-4 flex items-center justify-between border-b border-border/40 shrink-0">
           <div>
             <span className="text-[10px] font-medium text-[#3460A8] mb-0.5 block">
-              Importación Masiva
+              Importaciï¿½n Masiva
             </span>
             <h2 className="text-base font-semibold text-[#000000] leading-none">
               Cargar Ventas
@@ -159,7 +159,7 @@ export default function BulkImportModal({ isOpen, onClose, onSave }) {
               <div className="bg-white border border-border/50 rounded-xl px-4 py-3 flex items-center justify-between shadow-sm">
                 <div>
                   <h4 className="text-sm font-medium text-[#000000]">Plantilla requerida</h4>
-                  <p className="text-[10px] text-text-muted mt-0.5">Descargá el formato oficial</p>
+                  <p className="text-[10px] text-text-muted mt-0.5">Descargï¿½ el formato oficial</p>
                 </div>
                 <button 
                   onClick={handleDownloadTemplate}
@@ -180,7 +180,7 @@ export default function BulkImportModal({ isOpen, onClose, onSave }) {
                   <Upload size={18} />
                 </div>
                 <h3 className="text-sm font-medium text-[#000000] mb-1">Subir archivo (.xlsx o .csv)</h3>
-                <p className="text-[11px] text-text-muted max-w-[200px]">Arrastrá acá o hacé clic para explorar tus carpetas.</p>
+                <p className="text-[11px] text-text-muted max-w-[200px]">Arrastrï¿½ acï¿½ o hacï¿½ clic para explorar tus carpetas.</p>
                 <input 
                   type="file" 
                   ref={fileInputRef} 
@@ -203,7 +203,7 @@ export default function BulkImportModal({ isOpen, onClose, onSave }) {
                   <div className="flex-1 overflow-hidden">
                     <h4 className="text-xs font-medium text-[#000000] truncate">{file.name}</h4>
                     <p className="text-[10px] text-text-muted mt-0.5">
-                       {loading ? 'Procesando...' : `${parsedData.length} filas leídas`}
+                       {loading ? 'Procesando...' : `${parsedData.length} filas leï¿½das`}
                     </p>
                   </div>
                 </div>
@@ -224,7 +224,7 @@ export default function BulkImportModal({ isOpen, onClose, onSave }) {
               {parsedData.length > 0 && !loading && (
                 <div className="grid grid-cols-2 gap-2 mt-1">
                   <div className="bg-white border border-border/50 rounded-xl p-4 shadow-sm flex flex-col justify-center">
-                    <span className="text-[10px] text-text-muted mb-0.5">Ventas válidas</span>
+                    <span className="text-[10px] text-text-muted mb-0.5">Ventas vï¿½lidas</span>
                     <span className="text-lg font-medium text-[#000000]">{parsedData.length}</span>
                   </div>
                   <div className="bg-white border border-border/50 rounded-xl p-4 shadow-sm flex flex-col justify-center">

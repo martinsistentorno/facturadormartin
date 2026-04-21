@@ -139,8 +139,8 @@ export default function EmisorSetupModal({ isOpen, onClose, onSave, currentData,
     e.preventDefault()
     setError('')
 
-    if (!form.razon_social.trim()) return setError('La Razón Social es obligatoria')
-    if (form.cuit.length !== 11) return setError('El CUIT debe tener 11 dígitos')
+    if (!form.razon_social.trim()) return setError('La Razï¿½n Social es obligatoria')
+    if (form.cuit.length !== 11) return setError('El CUIT debe tener 11 dï¿½gitos')
 
     setSaving(true)
     try {
@@ -201,11 +201,11 @@ export default function EmisorSetupModal({ isOpen, onClose, onSave, currentData,
                 </div>
               )}
 
-              {/* Razón Social & CUIT (Compacto a 2 columnas) */}
+              {/* Razï¿½n Social & CUIT (Compacto a 2 columnas) */}
               <div className="grid grid-cols-5 gap-3">
                 <div className="col-span-3">
                   <MinimalField 
-                    label="Razón Social" icon={Building2} full
+                    label="Razï¿½n Social" icon={Building2} full
                     value={form.razon_social}
                     onChange={(e) => setForm(p => ({ ...p, razon_social: e.target.value.toUpperCase() }))}
                     locked={lockRazon} placeholder="Empresa S.A." required
@@ -239,11 +239,11 @@ export default function EmisorSetupModal({ isOpen, onClose, onSave, currentData,
                  />
               </div>
 
-              {/* Facturación (3 columnas compactas) */}
+              {/* Facturaciï¿½n (3 columnas compactas) */}
               <div className="grid grid-cols-12 gap-3 items-end">
                 <div className="col-span-5">
                   <MinimalField 
-                    label="Condición IVA" icon={Receipt} isSelect full
+                    label="Condiciï¿½n IVA" icon={Receipt} isSelect full
                     value={form.condicion_iva}
                     onChange={(e) => setForm(p => ({ ...p, condicion_iva: e.target.value }))}
                     options={CONDICION_IVA_OPTIONS}

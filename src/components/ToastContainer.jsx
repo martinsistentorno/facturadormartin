@@ -65,7 +65,7 @@ export default function ToastContainer({ toasts, onRemove }) {
   );
 }
 
-/** Helper para crear un toast con ID único */
+/** Helper para crear un toast con ID ï¿½nico */
 export function createToast(message, type = 'success', duration = 4000) {
   return { id: ++toastIdCounter, message, type, duration };
 }
