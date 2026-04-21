@@ -1,5 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
 import Afip from '@afipsdk/afip.js'
+import fs from 'fs'
+import path from 'path'
+import os from 'os'
 
 export default async function handler(req, res) {
   // CORS
@@ -98,20 +101,24 @@ export default async function handler(req, res) {
       })
     }
 
-    const cert = Buffer.from(certBase64, 'base64').toString('utf8')
-    const key = Buffer.from(keyBase64, 'base64').toString('utf8')
+    const certContent = Buffer.from(certBase64, 'base64').toString('utf8')
+    const keyContent = Buffer.from(keyBase64, 'base64').toString('utf8')
     const sdkToken = process.env.AFIP_SDK_TOKEN
 
-    if (!sdkToken) {
-      return res.status(500).json({
-        error: 'Falta la variable AFIP_SDK_TOKEN en Vercel. Registrate en app.afipsdk.com para obtener tu token.'
-      })
-    }
+    // Escribir certs a /tmp para evitar ENAMETOOLONG (afip.js v0.7.6 en Vercel)
+    const tmpDir = os.tmpdir()
+    const certPath = path.join(tmpDir, 'afip_cert.crt')
+    const keyPath = path.join(tmpDir, 'afip_key.key')
+    
+    fs.writeFileSync(certPath, certContent)
+    fs.writeFileSync(keyPath, keyContent)
 
     const afip = new Afip({
       CUIT: parseInt(cuit),
-      cert: cert,
-      key: key,
+      res_folder: tmpDir,
+      ta_folder: tmpDir,
+      cert: 'afip_cert.crt',
+      key: 'afip_key.key',
       production: isProduction,
       access_token: sdkToken
     })

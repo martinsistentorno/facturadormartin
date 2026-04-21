@@ -13,14 +13,14 @@ export default function StatsCards({ ventas, onCardClick }) {
 
   const cards = [
     {
-      id: 'facturadas',
-      label: 'Facturadas',
-      value: facturadas.length,
-      sub: formatCurrency(facturadas.reduce((s, v) => s + (Number(v.monto) || 0), 0)),
-      icon: FileCheck,
-      accent: 'text-[var(--color-cmd-green)]',
-      accentBg: 'bg-[var(--color-cmd-green)]/10',
-      ventas: facturadas
+      id: 'total',
+      label: 'Total Ventas',
+      value: formatCurrency(activas.reduce((s, v) => s + (Number(v.monto) || 0), 0)),
+      sub: `${activas.length} operaciones`,
+      icon: TrendingUp,
+      accent: 'text-[#2D8F5E]',
+      accentBg: 'bg-[#2D8F5E]/10',
+      ventas: activas
     },
     {
       id: 'pendientes',
@@ -28,28 +28,28 @@ export default function StatsCards({ ventas, onCardClick }) {
       value: pendientes.length,
       sub: formatCurrency(pendientes.reduce((s, v) => s + (Number(v.monto) || 0), 0)),
       icon: Clock,
-      accent: 'text-[var(--color-cmd-yellow)]',
-      accentBg: 'bg-[var(--color-cmd-yellow)]/10',
+      accent: 'text-[#CC9F2F]',
+      accentBg: 'bg-[#CC9F2F]/10',
       ventas: pendientes
     },
     {
-      id: 'total',
-      label: 'Total General',
-      value: formatCurrency(activas.reduce((s, v) => s + (Number(v.monto) || 0), 0)),
-      sub: `${activas.length} operaciones activas`,
-      icon: TrendingUp,
-      accent: 'text-[var(--color-cmd-blue)]',
-      accentBg: 'bg-[var(--color-cmd-blue)]/10',
-      ventas: activas
+      id: 'facturadas',
+      label: 'Facturadas',
+      value: facturadas.length,
+      sub: formatCurrency(facturadas.reduce((s, v) => s + (Number(v.monto) || 0), 0)),
+      icon: FileCheck,
+      accent: 'text-[#2D8F5E]',
+      accentBg: 'bg-[#2D8F5E]/10',
+      ventas: facturadas
     },
     {
       id: 'borradas',
-      label: 'Borradas',
+      label: 'Con Error',
       value: borradas.length,
-      sub: borradas.length > 0 ? 'Ver papelera' : 'Papelera vacía',
+      sub: borradas.length > 0 ? 'Ver detalles' : 'Sin errores',
       icon: Trash2,
-      accent: 'text-[var(--color-cmd-red)]',
-      accentBg: 'bg-[var(--color-cmd-red)]/10',
+      accent: 'text-[#C0443C]',
+      accentBg: 'bg-[#C0443C]/10',
       ventas: borradas
     },
   ]
@@ -81,25 +81,25 @@ export default function StatsCards({ ventas, onCardClick }) {
               key={card.id}
               onClick={() => onCardClick(card.label, card.ventas, timeframe)}
               className={`
-                text-left bg-surface border border-border rounded-xl animate-slide-up hover:-translate-y-1 hover:shadow-xl hover:border-border-subtle transition-all duration-300 cursor-pointer block w-full outline-none focus:ring-4 focus:ring-accent/5
-                ${isHero ? 'lg:col-span-2 p-6 shadow-sm ring-1 ring-black/5' : 'lg:col-span-1 p-4 shadow-sm'}
+                text-left bg-white border border-border rounded-xl animate-slide-up hover:-translate-y-1 hover:shadow-[0_8px_20px_-10px_rgba(0,0,0,0.1)] transition-all duration-300 cursor-pointer block w-full outline-none focus:ring-4 focus:ring-accent/5 p-5 shadow-[0_2px_10px_rgba(0,0,0,0.02)]
+                ${isHero ? 'lg:col-span-2' : 'lg:col-span-1'}
               `}
               style={{ animationDelay: `${i * 60}ms` }}
             >
-              <div className="flex items-start justify-between mb-3">
-                <span className={`font-bold uppercase tracking-widest ${isHero ? 'text-[11px] text-text-primary' : 'text-[9px] text-text-muted'}`}>
+              <div className="flex items-start justify-between mb-4">
+                <span className="font-bold uppercase tracking-widest text-[11px] text-text-primary">
                   {card.label}
                 </span>
-                <div className={`rounded-xl transition-colors ${isHero ? 'p-3 ' + card.accentBg : 'p-2 ' + card.accentBg}`}>
-                  <card.icon size={isHero ? 20 : 14} className={card.accent} />
+                <div className={`rounded-xl p-2.5 transition-colors ${card.accentBg}`}>
+                  <card.icon size={16} className={card.accent} />
                 </div>
               </div>
               
-              <div className={`font-bold tracking-tight mb-1 ${card.accent} ${isHero ? 'text-4xl' : 'text-xl'}`}>
+              <div className={`font-bold tracking-tight mb-1 text-2xl ${card.accent}`}>
                 {card.value}
               </div>
               
-              <div className={`font-medium ${isHero ? 'text-sm text-text-secondary' : 'text-[11px] text-text-muted'}`}>
+              <div className="font-medium text-[11px] text-text-muted mt-1">
                 {card.sub}
               </div>
             </button>
