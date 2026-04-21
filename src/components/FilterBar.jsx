@@ -41,7 +41,7 @@ export default function FilterBar({ filters, onFilterChange, totalCount, filtere
             value={filters.search}
             onChange={(e) => update('search', e.target.value)}
             className="w-full pl-10 pr-4 py-2 bg-surface-alt border border-border rounded-lg text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-accent transition-colors"
-            style={{ fontFamily: 'var(--font-outfit)' }}
+            style={{ fontFamily: 'var(--font-jakarta)' }}
           />
         </div>
 
@@ -55,7 +55,7 @@ export default function FilterBar({ filters, onFilterChange, totalCount, filtere
               : 'bg-surface-alt border-border text-text-secondary hover:border-accent/30'
             }
           `}
-          style={{ fontFamily: 'var(--font-outfit)' }}
+          style={{ fontFamily: 'var(--font-jakarta)' }}
         >
           <Filter size={14} />
           Filtros
@@ -68,14 +68,14 @@ export default function FilterBar({ filters, onFilterChange, totalCount, filtere
           <button
             onClick={clearAll}
             className="flex items-center gap-1 px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wider bg-red-subtle border border-red/20 text-red hover:bg-red/10 transition-colors cursor-pointer"
-            style={{ fontFamily: 'var(--font-outfit)' }}
+            style={{ fontFamily: 'var(--font-jakarta)' }}
           >
             <X size={14} />
             Limpiar
           </button>
         )}
 
-        <span className="text-xs text-text-muted whitespace-nowrap hidden sm:block" style={{ fontFamily: 'var(--font-outfit)' }}>
+        <span className="text-xs text-text-muted whitespace-nowrap hidden sm:block" style={{ fontFamily: 'var(--font-jakarta)' }}>
           {hasActiveFilters ? `${filteredCount} de ${totalCount}` : `${totalCount} registros`}
         </span>
       </div>
@@ -85,7 +85,7 @@ export default function FilterBar({ filters, onFilterChange, totalCount, filtere
         <div className="px-4 pb-4 pt-1 border-t border-border grid grid-cols-2 md:grid-cols-6 gap-3 animate-slide-down">
           {/* Estado */}
           <div>
-            <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5" style={{ fontFamily: 'var(--font-outfit)' }}>
+            <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5" style={{ fontFamily: 'var(--font-jakarta)' }}>
               Estado
             </label>
             <select
@@ -101,7 +101,7 @@ export default function FilterBar({ filters, onFilterChange, totalCount, filtere
 
           {/* Origen */}
           <div>
-            <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5" style={{ fontFamily: 'var(--font-outfit)' }}>
+            <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5" style={{ fontFamily: 'var(--font-jakarta)' }}>
               Origen
             </label>
             <select
@@ -118,7 +118,7 @@ export default function FilterBar({ filters, onFilterChange, totalCount, filtere
 
           {/* Medio de Pago */}
           <div>
-            <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5" style={{ fontFamily: 'var(--font-outfit)' }}>
+            <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5" style={{ fontFamily: 'var(--font-jakarta)' }}>
               Medio de Pago
             </label>
             <select
@@ -135,7 +135,7 @@ export default function FilterBar({ filters, onFilterChange, totalCount, filtere
 
           {/* Fecha Desde */}
           <div>
-            <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5" style={{ fontFamily: 'var(--font-outfit)' }}>
+            <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5" style={{ fontFamily: 'var(--font-jakarta)' }}>
               <Calendar size={10} className="inline mr-1" />Desde
             </label>
             <input
@@ -148,7 +148,7 @@ export default function FilterBar({ filters, onFilterChange, totalCount, filtere
 
           {/* Fecha Hasta */}
           <div>
-            <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5" style={{ fontFamily: 'var(--font-outfit)' }}>
+            <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5" style={{ fontFamily: 'var(--font-jakarta)' }}>
               <Calendar size={10} className="inline mr-1" />Hasta
             </label>
             <input
@@ -161,7 +161,7 @@ export default function FilterBar({ filters, onFilterChange, totalCount, filtere
 
           {/* Monto */}
           <div>
-            <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5" style={{ fontFamily: 'var(--font-outfit)' }}>
+            <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5" style={{ fontFamily: 'var(--font-jakarta)' }}>
               <DollarSign size={10} className="inline mr-1" />Rango Monto
             </label>
             <div className="flex gap-2">

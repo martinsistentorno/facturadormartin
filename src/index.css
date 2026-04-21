@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600&family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 
 /* ───────────────────────────────────────────
@@ -7,36 +7,23 @@
    ─────────────────────────────────────────── */
 
 @theme {
-  --color-base: #F8F3E9;  /* Fondo marfil/crema cálido */
+  --color-base: #FDFCFB;  /* Un marfil mucho más claro y aireado */
   --color-surface: #FFFFFF;
-  --color-surface-alt: #F0EDE1;
+  --color-surface-alt: #F8F6F2;
   --color-border: #E8E2D5;
+  --color-border-subtle: #F1EFE9;
 
-  --color-text-primary: #1A1A1A;
-  --color-text-secondary: #333333;
-  --color-text-muted: #737373;
+  --color-text-primary: #121212;
+  --color-text-secondary: #4A4A4A;
+  --color-text-muted: #8E8E8E;
 
-  /* Colores principales de las tarjetas (Screenshot) */
-  --color-card-green: #2B5745;
-  --color-card-blue: #2F6474;
-  --color-card-red: #C54B4B; 
-  --color-card-yellow: #C8AC3E;
-
-  --color-accent: #C54B4B; /* Rojo COMMAND como acento */
-  --color-accent-hover: #D15B5B;
-
-  /* Colores Funcionales (antiguos mantenidos para compatibilidad) */
-  --color-green: #2D8F5E;
-  --color-green-subtle: #dcfce7;
-  --color-yellow: #D4A843;
-  --color-yellow-subtle: #fef08a;
-  --color-red: #C0443C;
-  --color-red-subtle: #fee2e2;
+  /* Colores de Marca Command (Refinados) */
+  --color-accent: #C0443C;
+  --color-accent-hover: #D64F46;
 
   --font-montserrat: 'Montserrat', sans-serif;
+  --font-jakarta: 'Plus Jakarta Sans', sans-serif;
   --font-space: 'Space Grotesk', sans-serif;
-  --font-outfit: 'Outfit', sans-serif;
-  --font-inter: 'Inter', sans-serif;
 }
 
 /* ─── Base ─── */
@@ -54,24 +41,24 @@ html {
 body {
   margin: 0;
   padding: 0;
-  font-family: var(--font-outfit), var(--font-inter);
+  font-family: var(--font-jakarta), sans-serif;
   background-color: var(--color-base);
   color: var(--color-text-primary);
-  line-height: 1.5;
-  letter-spacing: -0.01em;
+  line-height: 1.6;
+  letter-spacing: -0.015em;
 }
 
 /* ─── Typography Fluid Clamps ─── */
 h1, h2, h3, h4, h5, h6, .display-text {
   font-family: var(--font-montserrat);
-  font-weight: 700;
+  font-weight: 600; /* Peso más delicado que el 700 anterior */
   color: var(--color-text-primary);
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
 }
 
-h1 { font-size: clamp(1.75rem, 4vw, 2.25rem); line-height: 1.1; }
-h2 { font-size: clamp(1.5rem, 3vw, 1.75rem); line-height: 1.15; }
-h3 { font-size: clamp(1.25rem, 2.5vw, 1.5rem); line-height: 1.2; }
+h1 { font-size: clamp(1.5rem, 3.5vw, 2rem); line-height: 1.1; font-weight: 700; }
+h2 { font-size: clamp(1.25rem, 2.5vw, 1.5rem); line-height: 1.2; font-weight: 600; }
+h3 { font-size: clamp(1.1rem, 2vw, 1.25rem); line-height: 1.3; font-weight: 500; }
 
 /* ─── Botones tipo Cápsula ─── */
 .btn-primary {
@@ -79,24 +66,25 @@ h3 { font-size: clamp(1.25rem, 2.5vw, 1.5rem); line-height: 1.2; }
   align-items: center;
   justify-content: center;
   background-color: #ffffff;
-  color: #1A1A1A;
-  font-family: var(--font-space);
+  color: #121212;
+  font-family: var(--font-jakarta);
   font-weight: 600;
   font-size: 0.8rem;
-  letter-spacing: 0.03em;
-  padding: 0.75rem 1.75rem;
-  border-radius: 9999px; /* Pill shaped */
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-  border: 1px solid #F0EDE1;
-  transition: all 0.2s ease-in-out;
+  letter-spacing: 0.02em;
+  padding: 0.65rem 1.5rem;
+  border-radius: 12px; /* Smooth corners instead of pill */
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--color-border);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
   gap: 0.5rem;
 }
 
 .btn-primary:hover {
-  box-shadow: 0 8px 15px -3px rgba(0, 0, 0, 0.08);
+  background-color: #fafafa;
+  border-color: #d1ccbf;
   transform: translateY(-1px);
-  border-color: #E8E2D5;
+  box-shadow: 0 10px 20px -10px rgba(0, 0, 0, 0.1);
 }
 
 .btn-primary:active {

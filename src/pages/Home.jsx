@@ -395,14 +395,13 @@ export default function Home() {
       onClick={refetch}
       disabled={loading}
       className="
-        flex items-center gap-2 px-3 py-1.5 rounded-full
+        flex items-center gap-2 px-4 py-2 rounded-xl
         bg-surface border border-border mr-2
         text-text-secondary text-[11px] font-bold tracking-widest uppercase
-        hover:bg-surface-alt hover:text-text-primary
+        hover:bg-surface-alt hover:text-text-primary hover:shadow-sm
         transition-all duration-200
         disabled:opacity-50 cursor-pointer
       "
-      style={{fontFamily: 'Inter'}}
     >
       <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
       <span className="hidden sm:inline">ACTUALIZAR</span>
@@ -433,8 +432,8 @@ export default function Home() {
 
       {/* ─── Table section ─── */}
       <div>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-xl font-black text-text-secondary uppercase tracking-wider" style={{fontFamily: 'Montserrat'}}>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold text-text-primary uppercase tracking-tight">
             Lista Facturas
           </h2>
           <div className="flex items-center gap-3">
@@ -455,16 +454,14 @@ export default function Home() {
                   <div className="absolute right-0 mt-2 bg-[#F9F7F2] border border-white/50 rounded-xl shadow-xl shadow-black/10 z-50 min-w-[160px] overflow-hidden animate-slide-down">
                     <button
                       onClick={() => handleExportAll('csv')}
-                      className="w-full text-left px-5 py-3 text-[11px] font-bold uppercase tracking-widest text-[#000000] hover:bg-[#3460A8]/10 hover:text-[#3460A8] transition-colors cursor-pointer"
-                      style={{ fontFamily: 'var(--font-outfit)' }}
+                      className="w-full text-left px-5 py-3.5 text-[11px] font-bold uppercase tracking-widest text-text-primary hover:bg-accent/5 hover:text-accent transition-colors cursor-pointer"
                     >
                       Archivo CSV
                     </button>
                     <div className="h-px bg-border/40 mx-2" />
                     <button
                       onClick={() => handleExportAll('xlsx')}
-                      className="w-full text-left px-5 py-3 text-[11px] font-bold uppercase tracking-widest text-[#000000] hover:bg-[#2D8F5E]/10 hover:text-[#2D8F5E] transition-colors cursor-pointer"
-                      style={{ fontFamily: 'var(--font-outfit)' }}
+                      className="w-full text-left px-5 py-3.5 text-[11px] font-bold uppercase tracking-widest text-text-primary hover:bg-accent/5 hover:text-accent transition-colors cursor-pointer"
                     >
                       Excel (.xlsx)
                     </button>
@@ -476,12 +473,12 @@ export default function Home() {
             <button
               onClick={() => setBulkImportModalOpen(true)}
               className="
-                flex items-center gap-2 px-5 py-2.5 rounded-xl
-                bg-[#3460A8]/10 text-[#3460A8] text-[11px] font-bold uppercase tracking-widest
-                hover:-translate-y-1 hover:bg-[#3460A8]/20
+                flex items-center gap-2 px-6 py-3 rounded-xl
+                bg-accent/5 text-accent text-[11px] font-bold uppercase tracking-widest
+                border border-accent/10
+                hover:-translate-y-1 hover:bg-accent/10 hover:shadow-lg hover:shadow-accent/5
                 transition-all duration-300 cursor-pointer
               "
-              style={{ fontFamily: 'var(--font-montserrat)' }}
             >
               <Download size={16} />
               Carga Masiva
@@ -490,14 +487,13 @@ export default function Home() {
             <button
               onClick={() => setAddModalOpen(true)}
               className="
-                flex items-center gap-2 px-5 py-2.5 rounded-xl
-                bg-[#3460A8] text-white text-[11px] font-bold uppercase tracking-widest
-                hover:-translate-y-1 hover:shadow-xl hover:shadow-black/20 hover:bg-[#2F528F]
+                flex items-center gap-2 px-6 py-3 rounded-xl
+                bg-text-primary text-white text-[11px] font-bold uppercase tracking-widest
+                hover:-translate-y-1 hover:shadow-xl hover:shadow-black/20
                 transition-all duration-300 cursor-pointer
               "
-              style={{ fontFamily: 'var(--font-montserrat)' }}
             >
-              <Plus size={16} className="text-[#FFE100]" />
+              <Plus size={16} className="text-yellow" />
               Nueva Venta
             </button>
           </div>

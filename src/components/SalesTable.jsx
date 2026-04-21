@@ -349,27 +349,27 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
       
       {/* Table Toolbar / Column Picker */}
       <div className="flex items-center justify-end px-4 py-2 bg-surface-alt/30 border-b border-border gap-2 relative">
-            <div className="relative" ref={pickerRef}>
+        <div className="relative" ref={pickerRef}>
           <button
             onClick={() => setShowColumnPicker(!showColumnPicker)}
             className={`
-              flex items-center gap-2 px-3 py-1.5 rounded-lg border text-[10px] font-bold uppercase tracking-widest transition-all cursor-pointer
+              flex items-center gap-2 px-3 py-2 rounded-xl border text-[10px] font-bold uppercase tracking-widest transition-all cursor-pointer
+              shadow-sm
               ${showColumnPicker 
-                ? 'bg-[#000000] text-white border-black shadow-lg shadow-black/20' 
-                : 'bg-white border-border text-text-muted hover:text-text-primary hover:border-black/20'
+                ? 'bg-[#121212] text-white border-black shadow-lg shadow-black/10' 
+                : 'bg-white border-border text-text-muted hover:text-text-primary hover:border-black/20 hover:shadow-md'
               }
             `}
-            style={{ fontFamily: 'var(--font-montserrat)' }}
           >
             <Settings2 size={12} />
             Mostrar
           </button>
 
           {showColumnPicker && (
-            <div className="absolute right-0 mt-2 w-64 bg-[#F9F7F2] border-2 border-black rounded-xl shadow-[8px_8px_0px_0px_rgba(0,0,0,0.1)] z-50 py-3 animate-slide-down">
-              <div className="px-4 pb-2 mb-2 border-b border-black/5">
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-black" style={{ fontFamily: 'var(--font-montserrat)' }}>
-                  Columnas de la Tabla
+            <div className="absolute right-0 mt-3 w-64 bg-white border border-border rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.1)] z-50 py-4 animate-slide-down">
+              <div className="px-5 pb-3 mb-2 border-b border-border/50">
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-text-primary opacity-60">
+                  Configurar Tabla
                 </span>
               </div>
               <div className="max-h-[300px] overflow-y-auto px-2 space-y-1">
@@ -378,21 +378,20 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
                     key={col.id}
                     onClick={() => toggleColumn(col.id)}
                     className={`
-                      w-full flex items-center justify-between px-3 py-2 rounded-lg transition-all text-xs font-bold
+                      w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all text-[11px] font-semibold
                       ${isVisible(col.id) 
-                        ? 'bg-[#3460A8]/10 text-[#3460A8]' 
-                        : 'text-text-muted hover:bg-white hover:text-text-primary'
+                        ? 'bg-accent/5 text-accent' 
+                        : 'text-text-secondary hover:bg-surface-alt hover:text-text-primary'
                       }
                     `}
-                    style={{ fontFamily: 'var(--font-outfit)' }}
                   >
                     <span>{col.label}</span>
-                    {isVisible(col.id) && <Check size={14} className="text-[#3460A8]" />}
+                    {isVisible(col.id) && <Check size={14} className="text-accent" />}
                   </button>
                 ))}
               </div>
-              <div className="px-4 pt-2 mt-2 border-t border-black/5">
-                <p className="text-[9px] text-text-muted italic">Las preferencias se guardan automáticamente.</p>
+              <div className="px-5 pt-3 mt-2 border-t border-border/50">
+                <p className="text-[9px] text-text-muted italic leading-relaxed">Las preferencias se guardan para tu próxima sesión.</p>
               </div>
             </div>
           )}
@@ -595,25 +594,24 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
                   </td>
                 </tr>
                 {isEditing && (
-                  <tr className="bg-[#F9F7F2] border-b-2 border-[#EAE4D3]">
-                    <td colSpan="11" className="p-0">
-                      <div className="animate-fade-in pl-10 pr-6 py-6 border-l-[6px] border-[#3460A8] shadow-[inset_0px_8px_15px_-8px_rgba(0,0,0,0.06)] relative z-0">
+                <td colSpan="11" className="p-0">
+                      <div className="animate-fade-in pl-10 pr-6 py-6 border-l-[4px] border-accent shadow-[0_15px_40px_-20px_rgba(0,0,0,0.1)] relative z-0">
                         <form onSubmit={submitEdit} className="grid grid-cols-6 gap-4 items-end">
                           
                           <div className="col-span-2">
-                             <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1" style={{ fontFamily: 'var(--font-outfit)' }}>Cliente / Nombre</label>
-                             <input type="text" value={editForm.cliente} onChange={e => setEditForm({...editForm, cliente: e.target.value})} className="w-full bg-white border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:border-accent outline-none" />
+                             <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5 opacity-70">Cliente / Nombre</label>
+                             <input type="text" value={editForm.cliente} onChange={e => setEditForm({...editForm, cliente: e.target.value})} className="w-full bg-white border border-border rounded-xl px-4 py-2.5 text-sm text-text-primary focus:border-accent focus:ring-4 focus:ring-accent/5 transition-all outline-none" />
                           </div>
 
                           <div className="col-span-1 relative">
-                             <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1" style={{ fontFamily: 'var(--font-outfit)' }}>DNI / CUIT</label>
-                             <input type="text" value={editForm.cuit} onChange={e => setEditForm({...editForm, cuit: e.target.value})} onBlur={handleCuitBlur} className="w-full bg-white border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:border-accent outline-none font-mono" />
-                             {lookingUpAFIP && <Loader2 size={12} className="absolute right-2 top-[28px] animate-spin text-accent" />}
+                             <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5 opacity-70">DNI / CUIT</label>
+                             <input type="text" value={editForm.cuit} onChange={e => setEditForm({...editForm, cuit: e.target.value})} onBlur={handleCuitBlur} className="w-full bg-white border border-border rounded-xl px-4 py-2.5 text-sm text-text-primary focus:border-accent focus:ring-4 focus:ring-accent/5 transition-all outline-none font-mono" />
+                             {lookingUpAFIP && <Loader2 size={12} className="absolute right-3 top-[34px] animate-spin text-accent" />}
                           </div>
 
                           <div className="col-span-1">
-                             <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1" style={{ fontFamily: 'var(--font-outfit)' }}>IVA</label>
-                             <select value={editForm.condicionIva} onChange={e => setEditForm({...editForm, condicionIva: e.target.value})} className="w-full bg-white border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:border-accent outline-none">
+                             <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5 opacity-70">IVA</label>
+                             <select value={editForm.condicionIva} onChange={e => setEditForm({...editForm, condicionIva: e.target.value})} className="w-full bg-white border border-border rounded-xl px-4 py-2.5 text-sm text-text-primary focus:border-accent focus:ring-4 focus:ring-accent/5 transition-all outline-none appearance-none cursor-pointer">
                                <option>Consumidor Final</option>
                                <option>Responsable Inscripto</option>
                                <option>Monotributista</option>
@@ -622,19 +620,21 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
                           </div>
 
                           <div className="col-span-2">
-                             <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1" style={{ fontFamily: 'var(--font-outfit)' }}>Descripción Venta</label>
-                             <input type="text" value={editForm.descripcion} onChange={e => setEditForm({...editForm, descripcion: e.target.value})} className="w-full bg-white border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:border-accent outline-none" />
+                             <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5 opacity-70">Descripción Venta</label>
+                             <input type="text" value={editForm.descripcion} onChange={e => setEditForm({...editForm, descripcion: e.target.value})} className="w-full bg-white border border-border rounded-xl px-4 py-2.5 text-sm text-text-primary focus:border-accent focus:ring-4 focus:ring-accent/5 transition-all outline-none" />
                           </div>
 
                           <div className="col-span-3 relative">
-                             <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1" style={{ fontFamily: 'var(--font-outfit)' }}>Monto a Procesar</label>
-                             <span className="absolute left-3 top-[28px] text-text-muted font-bold">$</span>
-                             <input type="number" step="0.01" value={editForm.monto} onChange={e => setEditForm({...editForm, monto: e.target.value})} className="w-full bg-white border border-border rounded-lg pl-7 pr-3 py-2 text-sm text-text-primary focus:border-accent outline-none font-bold" required />
+                             <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5 opacity-70">Monto a Procesar</label>
+                             <div className="relative">
+                               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted font-bold">$</span>
+                               <input type="number" step="0.01" value={editForm.monto} onChange={e => setEditForm({...editForm, monto: e.target.value})} className="w-full bg-white border border-border rounded-xl pl-9 pr-4 py-3 text-lg font-bold text-text-primary focus:border-accent focus:ring-4 focus:ring-accent/5 transition-all outline-none" required />
+                             </div>
                           </div>
 
                           <div className="col-span-3">
-                             <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1" style={{ fontFamily: 'var(--font-outfit)' }}>Forma de Pago</label>
-                             <select value={editForm.formaPago} onChange={e => setEditForm({...editForm, formaPago: e.target.value})} className="w-full bg-white border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:border-accent outline-none">
+                             <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5 opacity-70">Forma de Pago</label>
+                             <select value={editForm.formaPago} onChange={e => setEditForm({...editForm, formaPago: e.target.value})} className="w-full bg-white border border-border rounded-xl px-4 py-3 text-sm text-text-primary focus:border-accent focus:ring-4 focus:ring-accent/5 transition-all outline-none appearance-none cursor-pointer">
                                {FORMAS_PAGO.map(fp => <option key={fp} value={fp}>{fp}</option>)}
                              </select>
                           </div>
@@ -689,10 +689,9 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
         </table>
       </div>
 
-      {/* ─── Pagination bar (Gmail style) ─── */}
       <div className="flex items-center justify-between px-4 py-3 border-t border-border bg-surface-alt/50">
         <div className="flex items-center gap-3">
-          <span className="text-xs text-text-muted" style={{ fontFamily: 'Inter' }}>
+          <span className="text-xs text-text-muted">
             Filas por página:
           </span>
           <select
@@ -707,7 +706,7 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
         </div>
 
         <div className="flex items-center gap-4">
-          <span className="text-xs text-text-muted tabular-nums" style={{ fontFamily: 'Inter' }}>
+          <span className="text-xs text-text-muted tabular-nums">
             {startIndex}–{endIndex} de {sortedVentas.length}
           </span>
           <div className="flex items-center gap-1">

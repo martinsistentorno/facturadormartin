@@ -58,8 +58,8 @@ export default function StatsCards({ ventas, onCardClick }) {
   return (
     <div className="space-y-4">
       {/* Selector de Rango */}
-      <div className="flex items-center justify-start gap-5">
-        <h2 className="text-xl font-black text-text-secondary uppercase tracking-wider" style={{fontFamily: 'Montserrat'}}>
+      <div className="flex items-center justify-start gap-4">
+        <h2 className="text-xl font-bold text-text-primary uppercase tracking-tight">
             Resumen
         </h2>
         <select 

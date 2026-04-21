@@ -14,8 +14,8 @@ const FORMAS_PAGO = [
 function MinimalField({ label, icon: Icon, type = "text", value, onChange, placeholder, required, full = false, onFocus, onBlur, step, min }) {
   return (
     <div className={`flex flex-col gap-1 ${!full && 'col-span-1'}`}>
-      <span className="text-[9px] font-bold uppercase tracking-widest text-text-secondary flex items-center gap-1" style={{ fontFamily: 'var(--font-outfit)' }}>
-        {Icon && <Icon size={10} />}
+      <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted/80 flex items-center gap-1.5 ml-1">
+        {Icon && <Icon size={11} />}
         {label} {required && '*'}
       </span>
         <input
@@ -29,7 +29,7 @@ function MinimalField({ label, icon: Icon, type = "text", value, onChange, place
         step={step}
         min={min}
         autoComplete="off"
-        className="w-full px-3 py-2.5 rounded-lg border border-border bg-white text-sm focus:outline-none focus:ring-1 focus:ring-[#7C4DFF]/50 focus:border-[#7C4DFF] transition-all font-medium placeholder:font-normal placeholder:text-text-muted/60"
+        className="w-full px-4 py-3 rounded-xl border border-border bg-white text-sm focus:outline-none focus:ring-4 focus:ring-accent/5 focus:border-accent transition-all font-medium placeholder:font-normal placeholder:text-text-muted/40"
       />
     </div>
   )
@@ -169,17 +169,17 @@ export default function AddSaleModal({ isOpen, onClose, onSave, searchClientes }
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header Minimalista */}
-        <div className="bg-white/60 backdrop-blur-sm px-6 py-4 flex items-center justify-between border-b border-border/40 shrink-0">
+        <div className="bg-white/80 backdrop-blur-md px-8 py-5 flex items-center justify-between border-b border-border/40 shrink-0">
           <div>
-            <span className="text-[9px] font-bold tracking-[0.2em] text-[#2D8F5E] uppercase mb-0.5 block" style={{ fontFamily: 'var(--font-outfit)' }}>
+            <span className="text-[10px] font-bold tracking-[0.2em] text-[#2D8F5E] uppercase mb-0.5 block opacity-80">
               Operaciones
             </span>
-            <h2 className="text-lg font-black uppercase text-[#000000] tracking-tight leading-none" style={{ fontFamily: 'var(--font-montserrat)' }}>
+            <h2 className="text-xl font-bold uppercase text-text-primary tracking-tight leading-none">
               Nueva Venta
             </h2>
           </div>
-          <button onClick={handleClose} className="w-8 h-8 rounded-full bg-white border border-border flex items-center justify-center text-text-muted hover:text-[#C0443C] hover:border-[#C0443C] hover:-translate-y-0.5 transition-all cursor-pointer">
-            <X size={14} />
+          <button onClick={handleClose} className="w-9 h-9 rounded-full bg-white border border-border flex items-center justify-center text-text-muted hover:text-[#C0443C] hover:border-[#C0443C] hover:shadow-lg hover:-translate-y-0.5 transition-all cursor-pointer">
+            <X size={16} />
           </button>
         </div>
 
@@ -207,10 +207,10 @@ export default function AddSaleModal({ isOpen, onClose, onSave, searchClientes }
                       key={i}
                       type="button"
                       onClick={() => handleSelectSuggestion(c)}
-                      className="w-full text-left px-4 py-3 hover:bg-[#3460A8]/5 transition-colors flex items-center justify-between gap-2 cursor-pointer border-b border-border/40 last:border-0"
+                      className="w-full text-left px-5 py-3.5 hover:bg-accent/5 transition-colors flex items-center justify-between gap-2 cursor-pointer border-b border-border/40 last:border-0"
                     >
-                      <span className="text-sm text-text-primary font-medium" style={{ fontFamily: 'var(--font-outfit)' }}>{c.nombre}</span>
-                      {c.cuit && <span className="text-[10px] text-text-muted font-mono bg-surface px-2 py-0.5 rounded">{c.cuit}</span>}
+                      <span className="text-sm text-text-primary font-semibold">{c.nombre}</span>
+                      {c.cuit && <span className="text-[10px] text-text-muted font-mono bg-surface-alt px-2.5 py-1 rounded-lg">{c.cuit}</span>}
                     </button>
                   ))}
                 </div>
@@ -230,13 +230,13 @@ export default function AddSaleModal({ isOpen, onClose, onSave, searchClientes }
 
             {/* Condición IVA */}
             <div className="flex flex-col gap-1 w-full mt-2">
-              <span className="text-[9px] font-bold uppercase tracking-widest text-text-secondary flex items-center gap-1" style={{ fontFamily: 'var(--font-outfit)' }}>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted/80 flex items-center gap-1.5 ml-1">
                 Condición frente al IVA
               </span>
               <select
                 value={formData.condicionIva}
                 onChange={(e) => setFormData({ ...formData, condicionIva: e.target.value })}
-                className="w-full px-3 py-2 border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#7C4DFF]/50 focus:border-[#7C4DFF] transition-all font-medium appearance-none rounded-lg"
+                className="w-full px-4 py-3 border border-border bg-white text-sm focus:outline-none focus:ring-4 focus:ring-accent/5 focus:border-accent transition-all font-medium appearance-none rounded-xl cursor-pointer"
               >
                 <option value="Consumidor Final">Consumidor Final</option>
                 <option value="Responsable Inscripto">Responsable Inscripto</option>
@@ -275,24 +275,23 @@ export default function AddSaleModal({ isOpen, onClose, onSave, searchClientes }
             </div>
 
             <div>
-              <span className="text-[9px] font-bold uppercase tracking-widest text-text-secondary flex items-center gap-1 mb-2" style={{ fontFamily: 'var(--font-outfit)' }}>
-                <CreditCard size={10} />
+              <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted/80 flex items-center gap-1.5 ml-1 mb-2">
+                <CreditCard size={11} />
                 Forma de Pago
               </span>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-3">
                 {FORMAS_PAGO.map(fp => (
                   <button
                     key={fp}
                     type="button"
                     onClick={() => setFormData({ ...formData, formaPago: fp })}
                     className={`
-                      px-3 py-2.5 rounded-lg text-[11px] font-bold uppercase tracking-wider text-center transition-all cursor-pointer border-2
+                      px-3 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest text-center transition-all cursor-pointer border
                       ${formData.formaPago === fp
-                        ? 'bg-[#3460A8] border-[#3460A8] text-white shadow-md shadow-[#3460A8]/20'
-                        : 'bg-white border-border text-text-secondary hover:border-[#3460A8] hover:text-[#3460A8]'
+                        ? 'bg-accent border-accent text-white shadow-lg shadow-accent/20'
+                        : 'bg-white border-border text-text-secondary hover:border-accent/40 hover:text-accent'
                       }
                     `}
-                    style={{ fontFamily: 'var(--font-montserrat)' }}
                   >
                     {fp}
                   </button>
@@ -303,12 +302,12 @@ export default function AddSaleModal({ isOpen, onClose, onSave, searchClientes }
         </form>
 
         {/* Footer Minimalista */}
-        <div className="bg-[#F9F7F2] px-6 py-6 border-t-[3px] border-black/5 shrink-0">
-          <div className="flex flex-col gap-4">
+        <div className="bg-surface-alt/30 px-8 py-8 border-t border-border/40 shrink-0">
+          <div className="flex flex-col gap-5">
             {/* Resumen */}
-            <div className="flex items-center justify-between px-2 text-[10px] font-bold uppercase tracking-widest" style={{ fontFamily: 'var(--font-montserrat)' }}>
-               <span className="text-text-muted">Monto Final:</span>
-               <span className="text-xl font-black text-[#000000]">
+            <div className="flex items-center justify-between px-2 text-[11px] font-bold uppercase tracking-[0.1em]">
+               <span className="text-text-muted opacity-80">Monto Final</span>
+               <span className="text-2xl font-bold text-text-primary">
                  {formData.monto ? `$ ${Number(formData.monto).toLocaleString('es-AR', { minimumFractionDigits: 2 })}` : '$ 0.00'}
                </span>
             </div>
@@ -317,8 +316,7 @@ export default function AddSaleModal({ isOpen, onClose, onSave, searchClientes }
               form="add-sale-form"
               type="submit"
               disabled={loading}
-              className="w-full h-14 rounded-xl bg-[#000000] text-white flex items-center justify-center gap-3 font-black uppercase tracking-[0.2em] text-xs hover:-translate-y-1.5 hover:shadow-[0_10px_25px_-5px_rgba(0,0,0,0.4)] transition-all duration-300 disabled:opacity-50 disabled:hover:translate-y-0 cursor-pointer border-2 border-black"
-              style={{ fontFamily: 'var(--font-montserrat)' }}
+              className="w-full h-14 rounded-2xl bg-[#121212] text-white flex items-center justify-center gap-3 font-bold uppercase tracking-[0.2em] text-xs hover:-translate-y-1 hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.3)] transition-all duration-300 disabled:opacity-50 disabled:hover:translate-y-0 cursor-pointer"
             >
               {loading ? <Loader2 className="animate-spin text-white" size={20} /> : <Plus size={20} />}
               {loading ? 'PROCESANDO...' : 'GENERAR VENTA'}
