@@ -113,11 +113,11 @@ export default function AddSaleModal({ isOpen, onClose, onSave, searchClientes }
       const res = await fetch(`/api/lookup-cuit?cuit=${val}`);
       if (res.ok) {
         const data = await res.json();
-        if (data.razonSocial) {
+        if (data.razonSocial && data.razonSocial.razonSocial) {
            setFormData(prev => ({
               ...prev,
-              cliente: data.razonSocial,
-              condicionIva: val.length === 11 ? 'Responsable Inscripto' : 'Consumidor Final',
+              cliente: data.razonSocial.razonSocial,
+              condicionIva: data.razonSocial.condicion_iva || (val.length === 11 ? 'Responsable Inscripto' : 'Consumidor Final'),
               cuit: val
            }));
         }
