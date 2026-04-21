@@ -72,13 +72,16 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
   const [editForm, setEditForm] = useState({})
   const [savingEdit, setSavingEdit] = useState(false)
   const [lookingUpAFIP, setLookingUpAFIP] = useState(false)
+  const [confirmingEdit, setConfirmingEdit] = useState(false)
 
   const handleStartEdit = (e, venta) => {
     e.stopPropagation();
     if (editingId === venta.id) {
        setEditingId(null);
+       setConfirmingEdit(false);
     } else {
        setEditingId(venta.id);
+       setConfirmingEdit(false);
        setEditForm({
          cliente: venta.cliente || '',
          cuit: venta.datos_fiscales?.cuit || '',
@@ -118,9 +121,20 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
   const submitEdit = async (e) => {
     e.preventDefault();
     if (!onSaveEdit) return;
+
+    const ventaOrig = ventas.find(v => v.id === editingId);
+    if (!ventaOrig) return;
+
+    const origenVal = ventaOrig.datos_fiscales?.origen?.toLowerCase();
+    const isManual = origenVal === 'manual' || (!origenVal && !ventaOrig.mp_payment_id);
+
+    if (!isManual && !confirmingEdit) {
+       setConfirmingEdit(true);
+       return;
+    }
+
     setSavingEdit(true);
     try {
-       const ventaOrig = ventas.find(v => v.id === editingId);
        await onSaveEdit(editingId, {
           cliente: editForm.cliente,
           monto: parseFloat(editForm.monto),
@@ -133,6 +147,7 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
           }
        });
        setEditingId(null);
+       setConfirmingEdit(false);
     } catch (err) {
        onShowError('Error al guardar: ' + err.message);
     } finally {
@@ -457,23 +472,37 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
                              </select>
                           </div>
 
-                          <div className="col-span-6 flex flex-col md:flex-row gap-4 items-center justify-between mt-2 pt-4 border-t border-border/60">
-                            <div className="flex-1">
-                               {!isManual && (
-                                 <div className="flex items-center gap-2 text-[10px] text-[#C0443C] leading-tight max-w-[420px] font-medium p-2 bg-[#C0443C]/5 border border-[#C0443C]/20 rounded-lg">
+                          <div className="col-span-6 flex flex-col md:flex-row gap-4 items-center justify-between mt-2 pt-4 border-t border-border/60 min-h-[50px]">
+                            <div className="flex-1 w-full relative">
+                               {confirmingEdit && (
+                                 <div className="flex items-center gap-2 text-[11px] text-[#C0443C] leading-tight max-w-[420px] font-medium p-2 bg-[#C0443C]/5 border border-[#C0443C]/20 rounded-lg animate-fade-in mx-auto md:mx-0">
                                    <AlertCircle size={16} className="shrink-0" />
-                                   <p><strong>Cuidado:</strong> Esta venta proviene de plataformas externas. Modificar la información de origen puede traer inconsistencias. Actuá bajo tu propia responsabilidad.</p>
+                                   <p><strong>Cuidado:</strong> Estás por alterar datos automáticos. Podría generar inconsistencias de conciliación. ¿Confirmás?</p>
                                  </div>
                                )}
                             </div>
                             <div className="flex gap-2 min-w-[250px] w-full md:w-auto">
-                               <button type="button" onClick={() => setEditingId(null)} className="flex-1 md:flex-none px-6 py-2 rounded-lg text-xs font-bold text-text-muted hover:bg-[#EAE4D3]/60 transition-colors border border-transparent cursor-pointer">
-                                 Cancelar
-                               </button>
-                               <button type="submit" disabled={savingEdit} className="flex-1 md:flex-none flex gap-2 items-center justify-center px-6 py-2 bg-[#3460A8] text-white rounded-lg text-xs font-bold hover:bg-[#3460A8]/90 transition-colors shadow-lg shadow-[#3460A8]/20 cursor-pointer">
-                                 {savingEdit ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-                                 Actualizar
-                               </button>
+                               {confirmingEdit ? (
+                                 <>
+                                   <button type="button" onClick={() => setConfirmingEdit(false)} className="flex-1 md:flex-none px-6 py-2 rounded-lg text-xs font-bold text-text-muted hover:bg-[#EAE4D3]/60 transition-colors border border-transparent cursor-pointer">
+                                     Volver
+                                   </button>
+                                   <button type="submit" disabled={savingEdit} className="flex-1 md:flex-none flex gap-2 items-center justify-center px-6 py-2 bg-[#C0443C] text-white rounded-lg text-xs font-bold hover:bg-[#C0443C]/90 transition-colors shadow-lg shadow-[#C0443C]/20 cursor-pointer animate-pulse-once">
+                                     {savingEdit ? <Loader2 size={14} className="animate-spin" /> : null}
+                                     Confirmar
+                                   </button>
+                                 </>
+                               ) : (
+                                 <>
+                                   <button type="button" onClick={() => setEditingId(null)} className="flex-1 md:flex-none px-6 py-2 rounded-lg text-xs font-bold text-text-muted hover:bg-[#EAE4D3]/60 transition-colors border border-transparent cursor-pointer">
+                                     Cancelar
+                                   </button>
+                                   <button type="submit" disabled={savingEdit} className="flex-1 md:flex-none flex gap-2 items-center justify-center px-6 py-2 bg-[#3460A8] text-white rounded-lg text-xs font-bold hover:bg-[#3460A8]/90 transition-colors shadow-lg shadow-[#3460A8]/20 cursor-pointer">
+                                     {savingEdit ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                                     Actualizar
+                                   </button>
+                                 </>
+                               )}
                             </div>
                           </div>
                         </form>
