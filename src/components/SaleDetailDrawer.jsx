@@ -120,7 +120,7 @@ export default function SaleDetailDrawer({ venta, isOpen, onClose, onSave, onRet
         {/* Header */}
         <div className="sticky top-0 bg-surface/95 backdrop-blur-sm border-b border-border px-6 py-4 flex items-center justify-between z-10">
           <div>
-            <h3 className="text-sm font-black uppercase tracking-widest text-text-primary" style={{ fontFamily: 'Montserrat' }}>
+            <h3 className="text-sm font-black uppercase tracking-widest text-text-primary">
               Detalle de Venta
             </h3>
             <p className="text-xs text-text-muted mt-0.5 font-mono">{venta.id?.slice(0, 8)}...</p>
@@ -138,11 +138,11 @@ export default function SaleDetailDrawer({ venta, isOpen, onClose, onSave, onRet
             <form onSubmit={handleSaveEdit} className="space-y-5 animate-fade-in">
               <div className="flex items-center justify-between mb-4">
                 <StatusBadge status="procesando" />
-                <span className="text-sm font-bold uppercase tracking-widest text-accent" style={{fontFamily: 'Montserrat'}}>Modo Edición</span>
+                <span className="text-sm font-bold uppercase tracking-widest text-accent">Modo Edición</span>
               </div>
               
               <div>
-                <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5" style={{ fontFamily: 'Inter' }}>Restaurar Monto Total</label>
+                <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5">Restaurar Monto Total</label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted font-bold">$</span>
                   <input type="number" step="0.01" value={editForm.monto} onChange={e => setEditForm({...editForm, monto: e.target.value})} className="w-full bg-surface-alt border border-border rounded-xl pl-8 pr-4 py-3 text-sm text-text-primary focus:border-accent outline-none font-bold" required />
@@ -150,17 +150,17 @@ export default function SaleDetailDrawer({ venta, isOpen, onClose, onSave, onRet
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5" style={{ fontFamily: 'Inter' }}>Cliente / Nombre</label>
+                <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5">Cliente / Nombre</label>
                 <input type="text" value={editForm.cliente} onChange={e => setEditForm({...editForm, cliente: e.target.value})} className="w-full bg-surface-alt border border-border rounded-xl px-4 py-3 text-sm text-text-primary focus:border-accent outline-none" />
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5" style={{ fontFamily: 'Inter' }}>CUIT / DNI</label>
+                <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5">CUIT / DNI</label>
                 <input type="text" value={editForm.cuit} onChange={e => setEditForm({...editForm, cuit: e.target.value})} className="w-full bg-surface-alt border border-border rounded-xl px-4 py-3 text-sm text-text-primary focus:border-accent outline-none font-mono" />
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5" style={{ fontFamily: 'Inter' }}>Condición frente al IVA</label>
+                <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5">Condición frente al IVA</label>
                 <select value={editForm.condicionIva} onChange={e => setEditForm({...editForm, condicionIva: e.target.value})} className="w-full bg-surface-alt border border-border rounded-xl px-4 py-3 text-sm text-text-primary focus:border-accent outline-none">
                   <option>Consumidor Final</option>
                   <option>Responsable Inscripto</option>
@@ -170,7 +170,7 @@ export default function SaleDetailDrawer({ venta, isOpen, onClose, onSave, onRet
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5" style={{ fontFamily: 'Inter' }}>Forma de Pago</label>
+                <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5">Forma de Pago</label>
                 <select value={editForm.formaPago} onChange={e => setEditForm({...editForm, formaPago: e.target.value})} className="w-full bg-surface-alt border border-border rounded-xl px-4 py-3 text-sm text-text-primary focus:border-accent outline-none">
                   {FORMAS_PAGO.map(fp => <option key={fp} value={fp}>{fp}</option>)}
                 </select>
@@ -191,7 +191,7 @@ export default function SaleDetailDrawer({ venta, isOpen, onClose, onSave, onRet
               {/* ─── Status + monto hero ─── */}
           <div className="flex items-center justify-between">
             <StatusBadge status={venta.status} />
-            <span className="text-2xl font-bold text-text-primary" style={{ fontFamily: 'Inter' }}>
+            <span className="text-2xl font-bold text-text-primary">
               {formatCurrency(venta.monto)}
             </span>
           </div>
@@ -225,7 +225,7 @@ export default function SaleDetailDrawer({ venta, isOpen, onClose, onSave, onRet
           {/* ─── Error detalle ─── */}
           {venta.status === 'error' && venta.datos_fiscales?.error_detalle && (
             <div className="bg-red-subtle/50 border border-red/20 rounded-xl p-4">
-              <p className="text-xs font-bold text-red uppercase tracking-widest mb-2" style={{ fontFamily: 'Inter' }}>
+              <p className="text-xs font-bold text-red uppercase tracking-widest mb-2">
                 Motivo del Error
               </p>
               <p className="text-sm text-red/80">{venta.datos_fiscales.error_detalle}</p>
@@ -277,7 +277,7 @@ export default function SaleDetailDrawer({ venta, isOpen, onClose, onSave, onRet
               <button
                 onClick={handleDownload}
                 className="w-full flex items-center justify-center gap-2 bg-[#3460A8] text-white py-3 rounded-xl font-bold uppercase tracking-wider text-sm hover:-translate-y-0.5 hover:shadow-lg transition-all cursor-pointer"
-                style={{ fontFamily: 'Montserrat' }}
+               
               >
                 <FileDown size={16} />
                 Descargar PDF
@@ -287,7 +287,7 @@ export default function SaleDetailDrawer({ venta, isOpen, onClose, onSave, onRet
               <button
                 onClick={() => onRetry(venta.id)}
                 className="w-full flex items-center justify-center gap-2 bg-accent text-white py-3 rounded-xl font-bold uppercase tracking-wider text-sm hover:-translate-y-0.5 hover:shadow-lg transition-all cursor-pointer"
-                style={{ fontFamily: 'Montserrat' }}
+               
               >
                 <RotateCcw size={16} />
                 Reintentar Facturación
@@ -297,7 +297,7 @@ export default function SaleDetailDrawer({ venta, isOpen, onClose, onSave, onRet
               <button
                 onClick={() => setIsEditing(true)}
                 className="w-full flex items-center justify-center gap-2 bg-surface-alt border border-border text-text-primary py-3 rounded-xl font-bold uppercase tracking-wider text-sm hover:-translate-y-0.5 hover:shadow-md transition-all cursor-pointer"
-                style={{ fontFamily: 'Montserrat' }}
+               
               >
                 <Edit2 size={16} />
                 Editar Datos
@@ -319,7 +319,7 @@ function Section({ title, icon: Icon, children }) {
     <div>
       <div className="flex items-center gap-2 mb-3">
         {Icon && <Icon size={14} className="text-text-muted" />}
-        <h4 className="text-xs font-bold text-text-muted uppercase tracking-widest" style={{ fontFamily: 'Inter' }}>
+        <h4 className="text-xs font-bold text-text-muted uppercase tracking-widest">
           {title}
         </h4>
       </div>

@@ -17,13 +17,22 @@
   --color-text-secondary: #3D3D3D;
   --color-text-muted: #8E8A81;
 
-  /* Colores de Marca Command (Extraídos de captura) */
+  /* Colores de Marca Command */
   --color-cmd-red: #C0443C;
   --color-cmd-green: #234D3F;
   --color-cmd-blue: #2D6474;
   --color-cmd-yellow: #CC9F2F;
   
-  --color-accent: var(--color-cmd-red);
+  /* Colores utilitarios para Tailwind (text-red, bg-red-subtle, etc.) */
+  --color-red: #C0443C;
+  --color-red-subtle: #FDF2F1;
+  --color-green: #2D8F5E;
+  --color-green-subtle: #F0F9F4;
+  --color-yellow: #CC9F2F;
+  --color-yellow-subtle: #FDF8EB;
+  --color-blue: #3460A8;
+
+  --color-accent: #C0443C;
   --color-accent-hover: #D64F46;
 
   --font-montserrat: 'Montserrat', sans-serif;

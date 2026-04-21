@@ -26,7 +26,7 @@ export default function Layout({ children, headerActions }) {
         <header className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-2">
             <img src="/logo.png" alt="Command Logo" className="h-8 w-auto object-contain" />
-            <span className="text-xs font-black text-text-primary uppercase tracking-widest ml-1 border-l-2 border-border pl-3" style={{fontFamily: 'var(--font-montserrat)'}}>
+            <span className="text-xs font-black text-text-primary uppercase tracking-widest ml-1 border-l-2 border-border pl-3">
               Facturador Automático
             </span>
           </div>
@@ -36,7 +36,7 @@ export default function Layout({ children, headerActions }) {
             {afipStatus && (
               <div className="flex items-center gap-2 pr-2 border-r border-border">
                 <div className={`w-2 h-2 rounded-full ${afipStatus.connected ? 'bg-green animate-pulse' : 'bg-red'}`} />
-                <span className="text-[10px] font-bold uppercase tracking-widest hidden sm:inline" style={{ fontFamily: 'var(--font-outfit)' }}>
+                <span className="text-[10px] font-bold uppercase tracking-widest hidden sm:inline">
                   {afipStatus.connected
                     ? `AFIP ${afipStatus.mode === 'production' ? 'PROD' : 'HOM'}`
                     : afipStatus.mode === 'sandbox' ? 'SANDBOX' : 'AFIP ✗'
@@ -51,7 +51,7 @@ export default function Layout({ children, headerActions }) {
             <button
               onClick={() => setConfigOpen(true)}
               className="hidden sm:flex items-center gap-1.5 text-xs font-semibold text-text-secondary hover:text-text-primary transition-colors cursor-pointer group"
-              style={{ fontFamily: 'var(--font-outfit)' }}
+             
               title="Editar datos fiscales"
             >
               <span className="truncate max-w-[140px]">{emisor?.razon_social || EMISOR.razonSocial}</span>
@@ -59,7 +59,7 @@ export default function Layout({ children, headerActions }) {
             </button>
 
             <div className="w-[1px] h-4 bg-border hidden sm:block"></div>
-            <span className="hidden sm:block text-xs font-semibold text-text-secondary truncate max-w-[200px]" style={{fontFamily: 'Inter'}}>
+            <span className="hidden sm:block text-xs font-semibold text-text-secondary truncate max-w-[200px]">
                {user?.email || 'usuario'}
             </span>
             <div className="w-[1px] h-4 bg-border hidden sm:block"></div>
@@ -68,7 +68,7 @@ export default function Layout({ children, headerActions }) {
               className="text-text-muted hover:text-card-red transition-colors cursor-pointer flex items-center gap-2"
               title="Cerrar sesión"
             >
-              <span className="hidden sm:inline text-xs font-bold uppercase tracking-widest" style={{fontFamily: 'Inter'}}>Salir</span>
+              <span className="hidden sm:inline text-xs font-bold uppercase tracking-widest">Salir</span>
               <LogOut size={16} />
             </button>
           </div>

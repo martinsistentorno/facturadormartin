@@ -1,9 +1,9 @@
-Ôªøimport { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Upload, FileDown, CheckCircle, AlertCircle, Loader2, X, FileSpreadsheet } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 const FORMAS_PAGO_VALIDAS = [
-  'Contado - Efectivo', 'Transferencia Bancaria', 'Tarjeta de D√©bito', 'Tarjeta de Cr√©dito', 'Mercado Pago', 'Otro'
+  'Contado - Efectivo', 'Transferencia Bancaria', 'Tarjeta de DÈbito', 'Tarjeta de CrÈdito', 'Mercado Pago', 'Otro'
 ];
 
 export default function BulkImportModal({ isOpen, onClose, onSave }) {
@@ -63,7 +63,7 @@ export default function BulkImportModal({ isOpen, onClose, onSave }) {
         const foundErrors = [];
 
         rows.forEach((row, index) => {
-          const rowNum = index + 2; // +1 de √≠ndice, +1 del header
+          const rowNum = index + 2; // +1 de Ìndice, +1 del header
           
           const cliente = String(row.Cliente || '').trim();
           const cuit = String(row.CUIT || '').trim();
@@ -77,7 +77,7 @@ export default function BulkImportModal({ isOpen, onClose, onSave }) {
           
           const monto = parseFloat(montoRaw);
           if (isNaN(monto) || monto <= 0) {
-             foundErrors.push(`Fila ${rowNum}: Monto inv√°lido para ${cliente}.`);
+             foundErrors.push(`Fila ${rowNum}: Monto inv·lido para ${cliente}.`);
              return;
           }
 
@@ -100,7 +100,7 @@ export default function BulkImportModal({ isOpen, onClose, onSave }) {
         setParsedData(validVentas);
         setErrors(foundErrors);
       } catch (err) {
-        setErrors(["Error al leer el archivo. Verific√° que sea un archivo v√°lido (.xlsx, .csv)."]);
+        setErrors(["Error al leer el archivo. Verific· que sea un archivo v·lido (.xlsx, .csv)."]);
       } finally {
         setLoading(false);
       }
@@ -138,10 +138,10 @@ export default function BulkImportModal({ isOpen, onClose, onSave }) {
         {/* Header */}
         <div className="bg-white/60 backdrop-blur-sm px-6 py-4 flex items-center justify-between border-b border-border/40 shrink-0">
           <div>
-            <span className="text-[10px] font-medium text-[#3460A8] mb-0.5 block" style={{ fontFamily: 'Inter' }}>
-              Importaci√≥n Masiva
+            <span className="text-[10px] font-medium text-[#3460A8] mb-0.5 block">
+              ImportaciÛn Masiva
             </span>
-            <h2 className="text-base font-semibold text-[#000000] leading-none" style={{ fontFamily: 'Montserrat' }}>
+            <h2 className="text-base font-semibold text-[#000000] leading-none">
               Cargar Ventas
             </h2>
           </div>
@@ -158,13 +158,13 @@ export default function BulkImportModal({ isOpen, onClose, onSave }) {
             <div className="flex flex-col gap-3">
               <div className="bg-white border border-border/50 rounded-xl px-4 py-3 flex items-center justify-between shadow-sm">
                 <div>
-                  <h4 className="text-sm font-medium text-[#000000]" style={{ fontFamily: 'Inter' }}>Plantilla requerida</h4>
-                  <p className="text-[10px] text-text-muted mt-0.5">Descarg√° el formato oficial</p>
+                  <h4 className="text-sm font-medium text-[#000000]">Plantilla requerida</h4>
+                  <p className="text-[10px] text-text-muted mt-0.5">Descarg· el formato oficial</p>
                 </div>
                 <button 
                   onClick={handleDownloadTemplate}
                   className="flex items-center gap-1.5 px-3 py-1.5 bg-[#3460A8] text-white rounded-lg text-[11px] font-medium transition-all cursor-pointer hover:bg-[#2F528F]"
-                  style={{ fontFamily: 'Inter' }}
+                 
                 >
                   <FileDown size={14} className="text-white/70" /> Descargar
                 </button>
@@ -179,8 +179,8 @@ export default function BulkImportModal({ isOpen, onClose, onSave }) {
                 <div className="w-10 h-10 bg-white rounded-full shadow-sm border border-[#3460A8]/10 flex items-center justify-center mb-3 text-[#3460A8]">
                   <Upload size={18} />
                 </div>
-                <h3 className="text-sm font-medium text-[#000000] mb-1" style={{ fontFamily: 'Inter' }}>Subir archivo (.xlsx o .csv)</h3>
-                <p className="text-[11px] text-text-muted max-w-[200px]">Arrastr√° ac√° o hac√© clic para explorar tus carpetas.</p>
+                <h3 className="text-sm font-medium text-[#000000] mb-1">Subir archivo (.xlsx o .csv)</h3>
+                <p className="text-[11px] text-text-muted max-w-[200px]">Arrastr· ac· o hacÈ clic para explorar tus carpetas.</p>
                 <input 
                   type="file" 
                   ref={fileInputRef} 
@@ -201,14 +201,14 @@ export default function BulkImportModal({ isOpen, onClose, onSave }) {
                     <FileSpreadsheet size={16} className="text-[#2D8F5E]" />
                   </div>
                   <div className="flex-1 overflow-hidden">
-                    <h4 className="text-xs font-medium text-[#000000] truncate" style={{ fontFamily: 'Inter' }}>{file.name}</h4>
+                    <h4 className="text-xs font-medium text-[#000000] truncate">{file.name}</h4>
                     <p className="text-[10px] text-text-muted mt-0.5">
-                       {loading ? 'Procesando...' : `${parsedData.length} filas le√≠das`}
+                       {loading ? 'Procesando...' : `${parsedData.length} filas leÌdas`}
                     </p>
                   </div>
                 </div>
                 {!loading && (
-                   <button onClick={resetState} className="text-[11px] text-[#C0443C] shrink-0 ml-3 hover:underline cursor-pointer" style={{ fontFamily: 'Inter' }}>Cancelar</button>
+                   <button onClick={resetState} className="text-[11px] text-[#C0443C] shrink-0 ml-3 hover:underline cursor-pointer">Cancelar</button>
                 )}
               </div>
 
@@ -224,12 +224,12 @@ export default function BulkImportModal({ isOpen, onClose, onSave }) {
               {parsedData.length > 0 && !loading && (
                 <div className="grid grid-cols-2 gap-2 mt-1">
                   <div className="bg-white border border-border/50 rounded-xl p-4 shadow-sm flex flex-col justify-center">
-                    <span className="text-[10px] text-text-muted mb-0.5" style={{ fontFamily: 'Inter' }}>Ventas v√°lidas</span>
-                    <span className="text-lg font-medium text-[#000000]" style={{ fontFamily: 'Inter' }}>{parsedData.length}</span>
+                    <span className="text-[10px] text-text-muted mb-0.5">Ventas v·lidas</span>
+                    <span className="text-lg font-medium text-[#000000]">{parsedData.length}</span>
                   </div>
                   <div className="bg-white border border-border/50 rounded-xl p-4 shadow-sm flex flex-col justify-center">
-                    <span className="text-[10px] text-text-muted mb-0.5" style={{ fontFamily: 'Inter' }}>Suma de importes</span>
-                    <span className="text-lg font-medium text-[#2D8F5E]" style={{ fontFamily: 'Inter' }}>
+                    <span className="text-[10px] text-text-muted mb-0.5">Suma de importes</span>
+                    <span className="text-lg font-medium text-[#2D8F5E]">
                        $ {parsedData.reduce((acc, curr) => acc + curr.monto, 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
                     </span>
                   </div>
@@ -247,7 +247,7 @@ export default function BulkImportModal({ isOpen, onClose, onSave }) {
               onClick={handleConfirm}
               disabled={loading}
               className="w-full h-10 rounded-xl bg-[#3460A8] text-white flex items-center justify-center gap-2 font-medium text-xs hover:shadow-md hover:bg-[#2F528F] transition-all duration-300 disabled:opacity-50 cursor-pointer"
-              style={{ fontFamily: 'Inter' }}
+             
             >
               <CheckCircle size={16} className="text-white/60" />
               Importar {parsedData.length} ventas ahora

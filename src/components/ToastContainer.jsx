@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { CheckCircle, AlertTriangle, XCircle, Info, X } from 'lucide-react';
 
 const ICONS = {
@@ -39,7 +39,7 @@ function ToastItem({ toast, onRemove }) {
         ${COLORS[toast.type] || COLORS.info}
         ${exiting ? 'animate-toast-out' : 'animate-toast-in'}
       `}
-      style={{ fontFamily: 'Inter' }}
+     
     >
       <Icon size={18} className="mt-0.5 shrink-0" />
       <p className="text-sm font-medium flex-1">{toast.message}</p>
@@ -65,7 +65,7 @@ export default function ToastContainer({ toasts, onRemove }) {
   );
 }
 
-/** Helper para crear un toast con ID único */
+/** Helper para crear un toast con ID �nico */
 export function createToast(message, type = 'success', duration = 4000) {
   return { id: ++toastIdCounter, message, type, duration };
 }

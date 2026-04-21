@@ -471,7 +471,7 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
                   )}
                   {isVisible('cliente') && (
                     <td className="px-4 py-3">
-                      <div className="text-text-primary uppercase" style={{ fontFamily: 'Space Grotesk' }}>{venta.cliente || '—'}</div>
+                      <div className="text-text-primary uppercase">{venta.cliente || '—'}</div>
                     </td>
                   )}
                   {isVisible('cuit') && (

@@ -32,14 +32,14 @@ export default function Login() {
       <div className="w-full max-w-md animate-fade-in">
         {/* Logo Text Match Screenshot Style */}
         <div className="text-center mb-8 flex justify-center items-baseline gap-[1px]">
-          <h1 className="text-4xl font-extrabold text-card-red uppercase tracking-tighter" style={{fontFamily: 'var(--font-montserrat)'}}>
+          <h1 className="text-4xl font-extrabold text-card-red uppercase tracking-tighter">
             C<span className="text-text-primary">OMMAND</span>
           </h1>
         </div>
 
         {/* Text Above Form */}
         <div className="text-center mb-8">
-           <h2 className="text-2xl font-black text-text-primary uppercase tracking-tight" style={{fontFamily: 'var(--font-montserrat)'}}>
+           <h2 className="text-2xl font-black text-text-primary uppercase tracking-tight">
               INICIAR <span className="text-card-red">SESIÓN</span>
            </h2>
         </div>
@@ -57,7 +57,7 @@ export default function Login() {
           )}
 
           <div className="space-y-2">
-            <label htmlFor="email" className="block text-xs font-bold text-text-secondary uppercase tracking-widest ml-1" style={{fontFamily: 'var(--font-outfit)'}}>
+            <label htmlFor="email" className="block text-xs font-bold text-text-secondary uppercase tracking-widest ml-1">
               Email
             </label>
             <input
@@ -72,7 +72,7 @@ export default function Login() {
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="password" className="block text-xs font-bold text-text-secondary uppercase tracking-widest ml-1" style={{fontFamily: 'var(--font-outfit)'}}>
+            <label htmlFor="password" className="block text-xs font-bold text-text-secondary uppercase tracking-widest ml-1">
               Contraseña
             </label>
             <input
@@ -102,7 +102,7 @@ export default function Login() {
           </div>
         </form>
 
-        <p className="text-center text-text-muted text-[10px] mt-8 tracking-widest uppercase font-bold" style={{fontFamily: 'var(--font-outfit)'}}>
+        <p className="text-center text-text-muted text-[10px] mt-8 tracking-widest uppercase font-bold">
           Acceso privado - Command Soluciones
         </p>
       </div>

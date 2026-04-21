@@ -1,4 +1,4 @@
-ï»¿import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { Building2, MapPin, FileText, Hash, Calendar, Receipt, X, Save, AlertCircle, Lock } from 'lucide-react'
 import { EMISOR } from '../config/emisor'
 
@@ -12,7 +12,7 @@ const CONDICION_IVA_OPTIONS = [
 const TIPO_CBTE_OPTIONS = [
   { value: 11, label: 'Factura C (Monotributo)' },
   { value: 1, label: 'Factura A (Resp. Inscripto)' },
-  { value: 6, label: 'Factura B (Resp. Inscripto â†’ C.F.)' },
+  { value: 6, label: 'Factura B (Resp. Inscripto ? C.F.)' },
 ]
 
 // Helper para saber si un dato ya viene fijo desde el .env
@@ -40,12 +40,12 @@ function MinimalField({ label, icon: Icon, type = "text", value, onChange, place
   if (locked) {
     return (
       <div className={`flex flex-col gap-1 ${!full && 'col-span-1'}`}>
-        <span className="text-[9px] font-bold uppercase tracking-widest text-[#3460A8]/80 flex items-center gap-1" style={{ fontFamily: 'Inter' }}>
+        <span className="text-[9px] font-bold uppercase tracking-widest text-[#3460A8]/80 flex items-center gap-1">
           {Icon && <Icon size={10} />}
           {label}
         </span>
         <div className="flex items-center justify-between px-3 py-2 bg-[#3460A8]/5 border border-[#3460A8]/20 rounded-lg">
-          <span className="text-xs font-semibold text-[#000000] truncate" style={{ fontFamily: 'Inter' }}>
+          <span className="text-xs font-semibold text-[#000000] truncate">
             {isSelect ? options.find(o => o.value === value)?.label || value : value}
           </span>
           <Lock size={12} className="text-[#3460A8]/50 shrink-0 ml-2" />
@@ -56,7 +56,7 @@ function MinimalField({ label, icon: Icon, type = "text", value, onChange, place
 
   return (
     <div className={`flex flex-col gap-1 ${!full && 'col-span-1'}`}>
-      <span className="text-[9px] font-bold uppercase tracking-widest text-text-secondary flex items-center gap-1" style={{ fontFamily: 'Inter' }}>
+      <span className="text-[9px] font-bold uppercase tracking-widest text-text-secondary flex items-center gap-1">
         {Icon && <Icon size={10} />}
         {label} {required && '*'}
       </span>
@@ -139,8 +139,8 @@ export default function EmisorSetupModal({ isOpen, onClose, onSave, currentData,
     e.preventDefault()
     setError('')
 
-    if (!form.razon_social.trim()) return setError('La RazÃ³n Social es obligatoria')
-    if (form.cuit.length !== 11) return setError('El CUIT debe tener 11 dÃ­gitos')
+    if (!form.razon_social.trim()) return setError('La Razón Social es obligatoria')
+    if (form.cuit.length !== 11) return setError('El CUIT debe tener 11 dígitos')
 
     setSaving(true)
     try {
@@ -175,10 +175,10 @@ export default function EmisorSetupModal({ isOpen, onClose, onSave, currentData,
           {/* Header Minimalista */}
           <div className="bg-white/60 backdrop-blur-sm px-6 py-4 flex items-center justify-between border-b border-border/40 shrink-0">
             <div>
-              <span className="text-[9px] font-bold tracking-[0.2em] text-[#7C4DFF] uppercase mb-0.5 block" style={{ fontFamily: 'Inter' }}>
+              <span className="text-[9px] font-bold tracking-[0.2em] text-[#7C4DFF] uppercase mb-0.5 block">
                 Ajustes Vercel
               </span>
-              <h2 className="text-lg font-black uppercase text-[#000000] tracking-tight leading-none" style={{ fontFamily: 'Montserrat' }}>
+              <h2 className="text-lg font-black uppercase text-[#000000] tracking-tight leading-none">
                 Datos Fiscales
               </h2>
             </div>
@@ -201,11 +201,11 @@ export default function EmisorSetupModal({ isOpen, onClose, onSave, currentData,
                 </div>
               )}
 
-              {/* RazÃ³n Social & CUIT (Compacto a 2 columnas) */}
+              {/* Razón Social & CUIT (Compacto a 2 columnas) */}
               <div className="grid grid-cols-5 gap-3">
                 <div className="col-span-3">
                   <MinimalField 
-                    label="RazÃ³n Social" icon={Building2} full
+                    label="Razón Social" icon={Building2} full
                     value={form.razon_social}
                     onChange={(e) => setForm(p => ({ ...p, razon_social: e.target.value.toUpperCase() }))}
                     locked={lockRazon} placeholder="Empresa S.A." required
@@ -239,11 +239,11 @@ export default function EmisorSetupModal({ isOpen, onClose, onSave, currentData,
                  />
               </div>
 
-              {/* FacturaciÃ³n (3 columnas compactas) */}
+              {/* Facturación (3 columnas compactas) */}
               <div className="grid grid-cols-12 gap-3 items-end">
                 <div className="col-span-5">
                   <MinimalField 
-                    label="CondiciÃ³n IVA" icon={Receipt} isSelect full
+                    label="Condición IVA" icon={Receipt} isSelect full
                     value={form.condicion_iva}
                     onChange={(e) => setForm(p => ({ ...p, condicion_iva: e.target.value }))}
                     options={CONDICION_IVA_OPTIONS}
@@ -275,7 +275,7 @@ export default function EmisorSetupModal({ isOpen, onClose, onSave, currentData,
           {/* Footer Minimalista */}
           <div className="bg-white/80 backdrop-blur-md px-6 py-3 border-t border-border/40 shrink-0">
             <div className="flex items-center justify-between">
-              <p className="text-[9px] uppercase font-bold tracking-widest text-text-muted flex items-center gap-1" style={{ fontFamily: 'Inter' }}>
+              <p className="text-[9px] uppercase font-bold tracking-widest text-text-muted flex items-center gap-1">
                 <Lock size={10} /> Protegido por AFIP
               </p>
               <button
@@ -283,7 +283,7 @@ export default function EmisorSetupModal({ isOpen, onClose, onSave, currentData,
                 type="submit"
                 disabled={saving}
                 className="h-10 px-6 rounded-xl bg-[#3460A8] text-white flex items-center justify-center gap-2 font-bold uppercase tracking-widest text-xs hover:-translate-y-1 hover:shadow-lg hover:shadow-black/20 hover:bg-[#2F528F] transition-all duration-300 disabled:opacity-50 disabled:hover:translate-y-0 cursor-pointer"
-                style={{ fontFamily: 'Montserrat' }}
+               
               >
                 {saving ? 'Guardando...' : (isFirstSetup ? 'Comenzar' : 'Actualizar')}
               </button>
