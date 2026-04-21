@@ -114,6 +114,7 @@ export function useVentas() {
       .eq('id', id)
 
     if (deleteError) throw deleteError
+    setVentas(prev => prev.map(v => v.id === id ? { ...v, status: 'borrada' } : v))
   }, [])
 
   const hardDeleteVenta = useCallback(async (id) => {
@@ -123,6 +124,7 @@ export function useVentas() {
       .eq('id', id)
 
     if (deleteError) throw deleteError
+    setVentas(prev => prev.filter(v => v.id !== id))
   }, [])
 
   const bulkCreateVentas = useCallback(async (payloads) => {
