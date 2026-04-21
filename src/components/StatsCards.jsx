@@ -18,8 +18,8 @@ export default function StatsCards({ ventas, onCardClick }) {
       value: facturadas.length,
       sub: formatCurrency(facturadas.reduce((s, v) => s + (Number(v.monto) || 0), 0)),
       icon: FileCheck,
-      accent: 'text-green',
-      accentBg: 'bg-green-subtle',
+      accent: 'text-[var(--color-cmd-green)]',
+      accentBg: 'bg-[var(--color-cmd-green)]/10',
       ventas: facturadas
     },
     {
@@ -28,18 +28,18 @@ export default function StatsCards({ ventas, onCardClick }) {
       value: pendientes.length,
       sub: formatCurrency(pendientes.reduce((s, v) => s + (Number(v.monto) || 0), 0)),
       icon: Clock,
-      accent: 'text-yellow',
-      accentBg: 'bg-yellow-subtle',
+      accent: 'text-[var(--color-cmd-yellow)]',
+      accentBg: 'bg-[var(--color-cmd-yellow)]/10',
       ventas: pendientes
     },
     {
       id: 'total',
       label: 'Total General',
       value: formatCurrency(activas.reduce((s, v) => s + (Number(v.monto) || 0), 0)),
-      sub: `${activas.length} operaciones`,
+      sub: `${activas.length} operaciones activas`,
       icon: TrendingUp,
-      accent: 'text-blue',
-      accentBg: 'bg-blue/10',
+      accent: 'text-[var(--color-cmd-blue)]',
+      accentBg: 'bg-[var(--color-cmd-blue)]/10',
       ventas: activas
     },
     {
@@ -48,8 +48,8 @@ export default function StatsCards({ ventas, onCardClick }) {
       value: borradas.length,
       sub: borradas.length > 0 ? 'Ver papelera' : 'Papelera vacía',
       icon: Trash2,
-      accent: 'text-red',
-      accentBg: 'bg-red-subtle',
+      accent: 'text-[var(--color-cmd-red)]',
+      accentBg: 'bg-[var(--color-cmd-red)]/10',
       ventas: borradas
     },
   ]

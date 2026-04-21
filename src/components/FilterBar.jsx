@@ -41,7 +41,6 @@ export default function FilterBar({ filters, onFilterChange, totalCount, filtere
             value={filters.search}
             onChange={(e) => update('search', e.target.value)}
             className="w-full pl-10 pr-4 py-2 bg-surface-alt border border-border rounded-lg text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-accent transition-colors"
-            style={{ fontFamily: 'var(--font-jakarta)' }}
           />
         </div>
 
@@ -55,7 +54,6 @@ export default function FilterBar({ filters, onFilterChange, totalCount, filtere
               : 'bg-surface-alt border-border text-text-secondary hover:border-accent/30'
             }
           `}
-          style={{ fontFamily: 'var(--font-jakarta)' }}
         >
           <Filter size={14} />
           Filtros
@@ -68,14 +66,13 @@ export default function FilterBar({ filters, onFilterChange, totalCount, filtere
           <button
             onClick={clearAll}
             className="flex items-center gap-1 px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wider bg-red-subtle border border-red/20 text-red hover:bg-red/10 transition-colors cursor-pointer"
-            style={{ fontFamily: 'var(--font-jakarta)' }}
           >
             <X size={14} />
             Limpiar
           </button>
         )}
 
-        <span className="text-xs text-text-muted whitespace-nowrap hidden sm:block" style={{ fontFamily: 'var(--font-jakarta)' }}>
+        <span className="text-xs text-text-muted whitespace-nowrap hidden sm:block">
           {hasActiveFilters ? `${filteredCount} de ${totalCount}` : `${totalCount} registros`}
         </span>
       </div>

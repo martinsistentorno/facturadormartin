@@ -398,7 +398,7 @@ export default function Home() {
         flex items-center gap-2 px-4 py-2 rounded-xl
         bg-surface border border-border mr-2
         text-text-secondary text-[11px] font-bold tracking-widest uppercase
-        hover:bg-surface-alt hover:text-text-primary hover:shadow-sm
+        hover:bg-surface-alt hover:text-[var(--color-cmd-blue)] hover:border-[var(--color-cmd-blue)]/30 hover:shadow-sm
         transition-all duration-200
         disabled:opacity-50 cursor-pointer
       "
@@ -441,8 +441,7 @@ export default function Home() {
             <div className="relative">
               <button
                 onClick={() => setExportMenuOpen(!exportMenuOpen)}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-border/60 text-text-secondary text-[11px] font-bold uppercase tracking-widest hover:-translate-y-1 hover:shadow-lg hover:border-[#3460A8]/30 hover:text-[#3460A8] transition-all cursor-pointer"
-                style={{ fontFamily: 'var(--font-outfit)' }}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-border/60 text-text-secondary text-[11px] font-bold uppercase tracking-widest hover:-translate-y-1 hover:shadow-lg hover:border-[var(--color-cmd-blue)]/30 hover:text-[var(--color-cmd-blue)] transition-all cursor-pointer"
               >
                 <Download size={14} className="text-text-muted" />
                 Exportación Masiva

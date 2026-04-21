@@ -171,14 +171,14 @@ export default function AddSaleModal({ isOpen, onClose, onSave, searchClientes }
         {/* Header Minimalista */}
         <div className="bg-white/80 backdrop-blur-md px-8 py-5 flex items-center justify-between border-b border-border/40 shrink-0">
           <div>
-            <span className="text-[10px] font-bold tracking-[0.2em] text-[#2D8F5E] uppercase mb-0.5 block opacity-80">
+            <span className="text-[10px] font-bold tracking-[0.2em] text-[var(--color-cmd-green)] uppercase mb-0.5 block opacity-80">
               Operaciones
             </span>
             <h2 className="text-xl font-bold uppercase text-text-primary tracking-tight leading-none">
               Nueva Venta
             </h2>
           </div>
-          <button onClick={handleClose} className="w-9 h-9 rounded-full bg-white border border-border flex items-center justify-center text-text-muted hover:text-[#C0443C] hover:border-[#C0443C] hover:shadow-lg hover:-translate-y-0.5 transition-all cursor-pointer">
+          <button onClick={handleClose} className="w-9 h-9 rounded-full bg-white border border-border flex items-center justify-center text-text-muted hover:text-[var(--color-cmd-red)] hover:border-[var(--color-cmd-red)] hover:shadow-lg hover:-translate-y-0.5 transition-all cursor-pointer">
             <X size={16} />
           </button>
         </div>
@@ -258,7 +258,7 @@ export default function AddSaleModal({ isOpen, onClose, onSave, searchClientes }
           {/* Monto & Forma de Pago */}
           <div className="space-y-4">
             <div className="flex flex-col gap-1">
-              <span className="text-[9px] font-bold uppercase tracking-widest text-[#2D8F5E] flex items-center gap-1" style={{ fontFamily: 'var(--font-outfit)' }}>
+              <span className="text-[9px] font-bold uppercase tracking-widest text-[var(--color-cmd-green)] flex items-center gap-1">
                 <DollarSign size={10} />
                 Monto Total (ARS) *
               </span>
@@ -268,7 +268,7 @@ export default function AddSaleModal({ isOpen, onClose, onSave, searchClientes }
                 step="0.01"
                 min="1"
                 placeholder="0.00"
-                className="w-full px-4 py-3 rounded-xl border border-border bg-white text-xl font-bold text-text-primary focus:outline-none focus:ring-2 focus:ring-[#2D8F5E]/30 focus:border-[#2D8F5E] transition-all tabular-nums"
+                className="w-full px-4 py-3 rounded-xl border border-border bg-white text-xl font-bold text-text-primary focus:outline-none focus:ring-4 focus:ring-[var(--color-cmd-green)]/10 focus:border-[var(--color-cmd-green)] transition-all tabular-nums"
                 value={formData.monto}
                 onChange={(e) => setFormData({ ...formData, monto: e.target.value })}
               />
