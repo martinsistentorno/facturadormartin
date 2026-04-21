@@ -6,22 +6,21 @@ export default function StatsCards({ ventas, onCardClick }) {
   const [timeframe, setTimeframe] = useState('all') // 'all', 'day', 'week', 'month'
 
   const filteredVentas = filterVentasByTimeframe(ventas, timeframe)
-
-  const totalMonto = filteredVentas.reduce((sum, v) => sum + (Number(v.monto) || 0), 0)
-  const pendientes = filteredVentas.filter(v => v.status === 'pendiente' || v.status === 'procesando')
-  const facturadas = filteredVentas.filter(v => v.status === 'facturado')
+  const activas = filteredVentas.filter(v => v.status !== 'borrada')
+  const facturadas = activas.filter(v => v.status === 'facturado')
+  const pendientes = activas.filter(v => v.status === 'pendiente' || v.status === 'procesando' || v.status === 'error')
   const borradas = filteredVentas.filter(v => v.status === 'borrada')
 
   const cards = [
     {
-      id: 'total',
-      label: 'Total Ventas',
-      value: formatCurrency(totalMonto),
-      sub: `${filteredVentas.length} operaciones`,
-      icon: TrendingUp,
+      id: 'facturadas',
+      label: 'Facturadas',
+      value: facturadas.length,
+      sub: formatCurrency(facturadas.reduce((s, v) => s + (Number(v.monto) || 0), 0)),
+      icon: FileCheck,
       accent: 'text-green',
       accentBg: 'bg-green-subtle',
-      ventas: filteredVentas
+      ventas: facturadas
     },
     {
       id: 'pendientes',
@@ -34,14 +33,14 @@ export default function StatsCards({ ventas, onCardClick }) {
       ventas: pendientes
     },
     {
-      id: 'facturadas',
-      label: 'Facturadas',
-      value: facturadas.length,
-      sub: formatCurrency(facturadas.reduce((s, v) => s + (Number(v.monto) || 0), 0)),
-      icon: FileCheck,
-      accent: 'text-green',
-      accentBg: 'bg-green-subtle',
-      ventas: facturadas
+      id: 'total',
+      label: 'Total General',
+      value: formatCurrency(activas.reduce((s, v) => s + (Number(v.monto) || 0), 0)),
+      sub: `${activas.length} operaciones`,
+      icon: TrendingUp,
+      accent: 'text-blue',
+      accentBg: 'bg-blue/10',
+      ventas: activas
     },
     {
       id: 'borradas',
