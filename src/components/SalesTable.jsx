@@ -349,7 +349,7 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
       
       {/* Table Toolbar / Column Picker */}
       <div className="flex items-center justify-end px-4 py-2 bg-surface-alt/30 border-b border-border gap-2 relative">
-        <div className="relative" ref={pickerRef}>
+            <div className="relative" ref={pickerRef}>
           <button
             onClick={() => setShowColumnPicker(!showColumnPicker)}
             className={`
@@ -359,7 +359,7 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
                 : 'bg-white border-border text-text-muted hover:text-text-primary hover:border-black/20'
               }
             `}
-            style={{ fontFamily: 'Montserrat' }}
+            style={{ fontFamily: 'var(--font-montserrat)' }}
           >
             <Settings2 size={12} />
             Mostrar
@@ -368,7 +368,7 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
           {showColumnPicker && (
             <div className="absolute right-0 mt-2 w-64 bg-[#F9F7F2] border-2 border-black rounded-xl shadow-[8px_8px_0px_0px_rgba(0,0,0,0.1)] z-50 py-3 animate-slide-down">
               <div className="px-4 pb-2 mb-2 border-b border-black/5">
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-black" style={{ fontFamily: 'Montserrat' }}>
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-black" style={{ fontFamily: 'var(--font-montserrat)' }}>
                   Columnas de la Tabla
                 </span>
               </div>
@@ -384,7 +384,7 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
                         : 'text-text-muted hover:bg-white hover:text-text-primary'
                       }
                     `}
-                    style={{ fontFamily: 'Space Grotesk' }}
+                    style={{ fontFamily: 'var(--font-outfit)' }}
                   >
                     <span>{col.label}</span>
                     {isVisible(col.id) && <Check size={14} className="text-[#3460A8]" />}
@@ -601,18 +601,18 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
                         <form onSubmit={submitEdit} className="grid grid-cols-6 gap-4 items-end">
                           
                           <div className="col-span-2">
-                             <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1" style={{ fontFamily: 'Inter' }}>Cliente / Nombre</label>
+                             <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1" style={{ fontFamily: 'var(--font-outfit)' }}>Cliente / Nombre</label>
                              <input type="text" value={editForm.cliente} onChange={e => setEditForm({...editForm, cliente: e.target.value})} className="w-full bg-white border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:border-accent outline-none" />
                           </div>
 
                           <div className="col-span-1 relative">
-                             <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1" style={{ fontFamily: 'Inter' }}>DNI / CUIT</label>
+                             <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1" style={{ fontFamily: 'var(--font-outfit)' }}>DNI / CUIT</label>
                              <input type="text" value={editForm.cuit} onChange={e => setEditForm({...editForm, cuit: e.target.value})} onBlur={handleCuitBlur} className="w-full bg-white border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:border-accent outline-none font-mono" />
                              {lookingUpAFIP && <Loader2 size={12} className="absolute right-2 top-[28px] animate-spin text-accent" />}
                           </div>
 
                           <div className="col-span-1">
-                             <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1" style={{ fontFamily: 'Inter' }}>IVA</label>
+                             <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1" style={{ fontFamily: 'var(--font-outfit)' }}>IVA</label>
                              <select value={editForm.condicionIva} onChange={e => setEditForm({...editForm, condicionIva: e.target.value})} className="w-full bg-white border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:border-accent outline-none">
                                <option>Consumidor Final</option>
                                <option>Responsable Inscripto</option>
@@ -622,18 +622,18 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
                           </div>
 
                           <div className="col-span-2">
-                             <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1" style={{ fontFamily: 'Inter' }}>Descripción Venta</label>
+                             <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1" style={{ fontFamily: 'var(--font-outfit)' }}>Descripción Venta</label>
                              <input type="text" value={editForm.descripcion} onChange={e => setEditForm({...editForm, descripcion: e.target.value})} className="w-full bg-white border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:border-accent outline-none" />
                           </div>
 
                           <div className="col-span-3 relative">
-                             <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1" style={{ fontFamily: 'Inter' }}>Monto a Procesar</label>
+                             <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1" style={{ fontFamily: 'var(--font-outfit)' }}>Monto a Procesar</label>
                              <span className="absolute left-3 top-[28px] text-text-muted font-bold">$</span>
                              <input type="number" step="0.01" value={editForm.monto} onChange={e => setEditForm({...editForm, monto: e.target.value})} className="w-full bg-white border border-border rounded-lg pl-7 pr-3 py-2 text-sm text-text-primary focus:border-accent outline-none font-bold" required />
                           </div>
 
                           <div className="col-span-3">
-                             <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1" style={{ fontFamily: 'Inter' }}>Forma de Pago</label>
+                             <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1" style={{ fontFamily: 'var(--font-outfit)' }}>Forma de Pago</label>
                              <select value={editForm.formaPago} onChange={e => setEditForm({...editForm, formaPago: e.target.value})} className="w-full bg-white border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:border-accent outline-none">
                                {FORMAS_PAGO.map(fp => <option key={fp} value={fp}>{fp}</option>)}
                              </select>
@@ -651,24 +651,24 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
                             <div className="flex gap-2 min-w-[250px] w-full md:w-auto">
                                {confirmingEdit ? (
                                  <>
-                                   <button type="button" onClick={() => setConfirmingEdit(false)} className="flex-1 md:flex-none px-6 py-2 rounded-lg text-xs font-bold text-text-muted hover:bg-[#EAE4D3]/60 transition-colors border border-transparent cursor-pointer uppercase tracking-widest" style={{ fontFamily: 'Montserrat' }}>
+                                   <button type="button" onClick={() => setConfirmingEdit(false)} className="flex-1 md:flex-none px-6 py-2 rounded-lg text-xs font-bold text-text-muted hover:bg-[#EAE4D3]/60 transition-colors border border-transparent cursor-pointer uppercase tracking-widest" style={{ fontFamily: 'var(--font-montserrat)' }}>
                                      Volver
                                    </button>
-                                   <button type="submit" disabled={savingEdit} className="flex-1 md:flex-none flex gap-2 items-center justify-center px-8 py-3 bg-[#C0443C] text-white rounded-xl text-xs font-black uppercase tracking-[0.15em] hover:-translate-y-1 hover:shadow-[0_8px_20px_-5px_rgba(192,68,60,0.4)] transition-all cursor-pointer animate-pulse-once border-2 border-[#C0443C]" style={{ fontFamily: 'Montserrat' }}>
+                                   <button type="submit" disabled={savingEdit} className="flex-1 md:flex-none flex gap-2 items-center justify-center px-8 py-3 bg-[#C0443C] text-white rounded-xl text-xs font-black uppercase tracking-[0.15em] hover:-translate-y-1 hover:shadow-[0_8px_20px_-5px_rgba(192,68,60,0.4)] transition-all cursor-pointer animate-pulse-once border-2 border-[#C0443C]" style={{ fontFamily: 'var(--font-montserrat)' }}>
                                      {savingEdit ? <Loader2 size={14} className="animate-spin" /> : null}
                                      CONFIRMAR
                                    </button>
                                  </>
                                ) : (
                                  <>
-                                   <button type="button" onClick={() => setEditingId(null)} className="flex-1 md:flex-none px-6 py-2 rounded-lg text-xs font-bold text-text-muted hover:bg-[#EAE4D3]/60 transition-colors border border-transparent cursor-pointer uppercase tracking-widest" style={{ fontFamily: 'Montserrat' }}>
+                                   <button type="button" onClick={() => setEditingId(null)} className="flex-1 md:flex-none px-6 py-2 rounded-lg text-xs font-bold text-text-muted hover:bg-[#EAE4D3]/60 transition-colors border border-transparent cursor-pointer uppercase tracking-widest" style={{ fontFamily: 'var(--font-montserrat)' }}>
                                      Cancelar
                                    </button>
                                    <button 
                                      type="submit" 
                                      disabled={savingEdit || !hasChanges} 
                                      className={`flex-1 md:flex-none flex gap-2 items-center justify-center px-8 py-3 rounded-xl text-xs font-black uppercase tracking-[0.15em] transition-all cursor-pointer border-2 shadow-lg shadow-black/20 ${!hasChanges ? 'bg-text-muted/20 border-border text-text-muted/50 cursor-not-allowed opacity-70' : 'bg-[#000000] border-black text-white hover:-translate-y-1 hover:shadow-[0_8px_20px_-5px_rgba(0,0,0,0.3)]'}`}
-                                     style={{ fontFamily: 'Montserrat' }}
+                                     style={{ fontFamily: 'var(--font-montserrat)' }}
                                    >
                                      {savingEdit ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
                                      ACTUALIZAR

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600&family=Inter:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
 /* ───────────────────────────────────────────
@@ -34,6 +34,8 @@
   --color-red-subtle: #fee2e2;
 
   --font-montserrat: 'Montserrat', sans-serif;
+  --font-space: 'Space Grotesk', sans-serif;
+  --font-outfit: 'Outfit', sans-serif;
   --font-inter: 'Inter', sans-serif;
 }
 
@@ -52,7 +54,7 @@ html {
 body {
   margin: 0;
   padding: 0;
-  font-family: var(--font-inter);
+  font-family: var(--font-outfit), var(--font-inter);
   background-color: var(--color-base);
   color: var(--color-text-primary);
   line-height: 1.5;
@@ -78,10 +80,10 @@ h3 { font-size: clamp(1.25rem, 2.5vw, 1.5rem); line-height: 1.2; }
   justify-content: center;
   background-color: #ffffff;
   color: #1A1A1A;
-  font-family: var(--font-inter);
+  font-family: var(--font-space);
   font-weight: 600;
-  font-size: 0.85rem;
-  letter-spacing: 0.01em;
+  font-size: 0.8rem;
+  letter-spacing: 0.03em;
   padding: 0.75rem 1.75rem;
   border-radius: 9999px; /* Pill shaped */
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);

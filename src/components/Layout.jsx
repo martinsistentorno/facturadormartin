@@ -1,4 +1,4 @@
-﻿import { LogOut, Settings } from 'lucide-react'
+import { LogOut, Settings } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useConfig } from '../context/ConfigContext'
 import { useState, useEffect } from 'react'
@@ -26,7 +26,7 @@ export default function Layout({ children, headerActions }) {
         <header className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-2">
             <img src="/logo.png" alt="Command Logo" className="h-8 w-auto object-contain" />
-            <span className="text-xs font-black text-text-primary uppercase tracking-widest ml-1 border-l-2 border-border pl-3" style={{fontFamily: 'Montserrat'}}>
+            <span className="text-xs font-black text-text-primary uppercase tracking-widest ml-1 border-l-2 border-border pl-3" style={{fontFamily: 'var(--font-montserrat)'}}>
               Facturador Automático
             </span>
           </div>
@@ -36,7 +36,7 @@ export default function Layout({ children, headerActions }) {
             {afipStatus && (
               <div className="flex items-center gap-2 pr-2 border-r border-border">
                 <div className={`w-2 h-2 rounded-full ${afipStatus.connected ? 'bg-green animate-pulse' : 'bg-red'}`} />
-                <span className="text-[10px] font-bold uppercase tracking-widest hidden sm:inline" style={{ fontFamily: 'Inter' }}>
+                <span className="text-[10px] font-bold uppercase tracking-widest hidden sm:inline" style={{ fontFamily: 'var(--font-outfit)' }}>
                   {afipStatus.connected
                     ? `AFIP ${afipStatus.mode === 'production' ? 'PROD' : 'HOM'}`
                     : afipStatus.mode === 'sandbox' ? 'SANDBOX' : 'AFIP ✗'
@@ -51,7 +51,7 @@ export default function Layout({ children, headerActions }) {
             <button
               onClick={() => setConfigOpen(true)}
               className="hidden sm:flex items-center gap-1.5 text-xs font-semibold text-text-secondary hover:text-text-primary transition-colors cursor-pointer group"
-              style={{ fontFamily: 'Inter' }}
+              style={{ fontFamily: 'var(--font-outfit)' }}
               title="Editar datos fiscales"
             >
               <span className="truncate max-w-[140px]">{emisor?.razon_social || EMISOR.razonSocial}</span>

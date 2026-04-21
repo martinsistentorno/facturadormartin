@@ -443,7 +443,7 @@ export default function Home() {
               <button
                 onClick={() => setExportMenuOpen(!exportMenuOpen)}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-border/60 text-text-secondary text-[11px] font-bold uppercase tracking-widest hover:-translate-y-1 hover:shadow-lg hover:border-[#3460A8]/30 hover:text-[#3460A8] transition-all cursor-pointer"
-                style={{ fontFamily: 'Inter' }}
+                style={{ fontFamily: 'var(--font-outfit)' }}
               >
                 <Download size={14} className="text-text-muted" />
                 Exportación Masiva
@@ -456,7 +456,7 @@ export default function Home() {
                     <button
                       onClick={() => handleExportAll('csv')}
                       className="w-full text-left px-5 py-3 text-[11px] font-bold uppercase tracking-widest text-[#000000] hover:bg-[#3460A8]/10 hover:text-[#3460A8] transition-colors cursor-pointer"
-                      style={{ fontFamily: 'Inter' }}
+                      style={{ fontFamily: 'var(--font-outfit)' }}
                     >
                       Archivo CSV
                     </button>
@@ -464,7 +464,7 @@ export default function Home() {
                     <button
                       onClick={() => handleExportAll('xlsx')}
                       className="w-full text-left px-5 py-3 text-[11px] font-bold uppercase tracking-widest text-[#000000] hover:bg-[#2D8F5E]/10 hover:text-[#2D8F5E] transition-colors cursor-pointer"
-                      style={{ fontFamily: 'Inter' }}
+                      style={{ fontFamily: 'var(--font-outfit)' }}
                     >
                       Excel (.xlsx)
                     </button>
@@ -481,7 +481,7 @@ export default function Home() {
                 hover:-translate-y-1 hover:bg-[#3460A8]/20
                 transition-all duration-300 cursor-pointer
               "
-              style={{ fontFamily: 'Montserrat' }}
+              style={{ fontFamily: 'var(--font-montserrat)' }}
             >
               <Download size={16} />
               Carga Masiva
@@ -495,7 +495,7 @@ export default function Home() {
                 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/20 hover:bg-[#2F528F]
                 transition-all duration-300 cursor-pointer
               "
-              style={{ fontFamily: 'Montserrat' }}
+              style={{ fontFamily: 'var(--font-montserrat)' }}
             >
               <Plus size={16} className="text-[#FFE100]" />
               Nueva Venta

@@ -14,7 +14,7 @@ const FORMAS_PAGO = [
 function MinimalField({ label, icon: Icon, type = "text", value, onChange, placeholder, required, full = false, onFocus, onBlur, step, min }) {
   return (
     <div className={`flex flex-col gap-1 ${!full && 'col-span-1'}`}>
-      <span className="text-[9px] font-bold uppercase tracking-widest text-text-secondary flex items-center gap-1" style={{ fontFamily: 'Inter' }}>
+      <span className="text-[9px] font-bold uppercase tracking-widest text-text-secondary flex items-center gap-1" style={{ fontFamily: 'var(--font-outfit)' }}>
         {Icon && <Icon size={10} />}
         {label} {required && '*'}
       </span>
@@ -171,10 +171,10 @@ export default function AddSaleModal({ isOpen, onClose, onSave, searchClientes }
         {/* Header Minimalista */}
         <div className="bg-white/60 backdrop-blur-sm px-6 py-4 flex items-center justify-between border-b border-border/40 shrink-0">
           <div>
-            <span className="text-[9px] font-bold tracking-[0.2em] text-[#2D8F5E] uppercase mb-0.5 block" style={{ fontFamily: 'Inter' }}>
+            <span className="text-[9px] font-bold tracking-[0.2em] text-[#2D8F5E] uppercase mb-0.5 block" style={{ fontFamily: 'var(--font-outfit)' }}>
               Operaciones
             </span>
-            <h2 className="text-lg font-black uppercase text-[#000000] tracking-tight leading-none" style={{ fontFamily: 'Montserrat' }}>
+            <h2 className="text-lg font-black uppercase text-[#000000] tracking-tight leading-none" style={{ fontFamily: 'var(--font-montserrat)' }}>
               Nueva Venta
             </h2>
           </div>
@@ -209,7 +209,7 @@ export default function AddSaleModal({ isOpen, onClose, onSave, searchClientes }
                       onClick={() => handleSelectSuggestion(c)}
                       className="w-full text-left px-4 py-3 hover:bg-[#3460A8]/5 transition-colors flex items-center justify-between gap-2 cursor-pointer border-b border-border/40 last:border-0"
                     >
-                      <span className="text-sm text-text-primary font-medium" style={{ fontFamily: 'Inter' }}>{c.nombre}</span>
+                      <span className="text-sm text-text-primary font-medium" style={{ fontFamily: 'var(--font-outfit)' }}>{c.nombre}</span>
                       {c.cuit && <span className="text-[10px] text-text-muted font-mono bg-surface px-2 py-0.5 rounded">{c.cuit}</span>}
                     </button>
                   ))}
@@ -230,7 +230,7 @@ export default function AddSaleModal({ isOpen, onClose, onSave, searchClientes }
 
             {/* Condición IVA */}
             <div className="flex flex-col gap-1 w-full mt-2">
-              <span className="text-[9px] font-bold uppercase tracking-widest text-text-secondary flex items-center gap-1" style={{ fontFamily: 'Inter' }}>
+              <span className="text-[9px] font-bold uppercase tracking-widest text-text-secondary flex items-center gap-1" style={{ fontFamily: 'var(--font-outfit)' }}>
                 Condición frente al IVA
               </span>
               <select
@@ -258,7 +258,7 @@ export default function AddSaleModal({ isOpen, onClose, onSave, searchClientes }
           {/* Monto & Forma de Pago */}
           <div className="space-y-4">
             <div className="flex flex-col gap-1">
-              <span className="text-[9px] font-bold uppercase tracking-widest text-[#2D8F5E] flex items-center gap-1" style={{ fontFamily: 'Inter' }}>
+              <span className="text-[9px] font-bold uppercase tracking-widest text-[#2D8F5E] flex items-center gap-1" style={{ fontFamily: 'var(--font-outfit)' }}>
                 <DollarSign size={10} />
                 Monto Total (ARS) *
               </span>
@@ -275,7 +275,7 @@ export default function AddSaleModal({ isOpen, onClose, onSave, searchClientes }
             </div>
 
             <div>
-              <span className="text-[9px] font-bold uppercase tracking-widest text-text-secondary flex items-center gap-1 mb-2" style={{ fontFamily: 'Inter' }}>
+              <span className="text-[9px] font-bold uppercase tracking-widest text-text-secondary flex items-center gap-1 mb-2" style={{ fontFamily: 'var(--font-outfit)' }}>
                 <CreditCard size={10} />
                 Forma de Pago
               </span>
@@ -292,7 +292,7 @@ export default function AddSaleModal({ isOpen, onClose, onSave, searchClientes }
                         : 'bg-white border-border text-text-secondary hover:border-[#3460A8] hover:text-[#3460A8]'
                       }
                     `}
-                    style={{ fontFamily: 'Montserrat' }}
+                    style={{ fontFamily: 'var(--font-montserrat)' }}
                   >
                     {fp}
                   </button>
@@ -306,7 +306,7 @@ export default function AddSaleModal({ isOpen, onClose, onSave, searchClientes }
         <div className="bg-[#F9F7F2] px-6 py-6 border-t-[3px] border-black/5 shrink-0">
           <div className="flex flex-col gap-4">
             {/* Resumen */}
-            <div className="flex items-center justify-between px-2 text-[10px] font-bold uppercase tracking-widest" style={{ fontFamily: 'Montserrat' }}>
+            <div className="flex items-center justify-between px-2 text-[10px] font-bold uppercase tracking-widest" style={{ fontFamily: 'var(--font-montserrat)' }}>
                <span className="text-text-muted">Monto Final:</span>
                <span className="text-xl font-black text-[#000000]">
                  {formData.monto ? `$ ${Number(formData.monto).toLocaleString('es-AR', { minimumFractionDigits: 2 })}` : '$ 0.00'}
@@ -318,7 +318,7 @@ export default function AddSaleModal({ isOpen, onClose, onSave, searchClientes }
               type="submit"
               disabled={loading}
               className="w-full h-14 rounded-xl bg-[#000000] text-white flex items-center justify-center gap-3 font-black uppercase tracking-[0.2em] text-xs hover:-translate-y-1.5 hover:shadow-[0_10px_25px_-5px_rgba(0,0,0,0.4)] transition-all duration-300 disabled:opacity-50 disabled:hover:translate-y-0 cursor-pointer border-2 border-black"
-              style={{ fontFamily: 'Montserrat' }}
+              style={{ fontFamily: 'var(--font-montserrat)' }}
             >
               {loading ? <Loader2 className="animate-spin text-white" size={20} /> : <Plus size={20} />}
               {loading ? 'PROCESANDO...' : 'GENERAR VENTA'}
