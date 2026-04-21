@@ -112,6 +112,14 @@ export default async function handler(req, res) {
           .from('ventas').select('id').eq('mp_payment_id', paymentId).maybeSingle()
         if (existing) { skipped++; continue }
 
+        // MÚLTIPLE DE DUPLICADOS: Si es un pago de Mercado Libre, ignorarlo por completo.
+        // Orders API ya procesa las ventas de Mercado Libre con todos los datos correctos del comprador.
+        if (payment.order?.type === 'mercadolibre') {
+          console.log(`[Sync] Pago ${paymentId} pertenece a MeLi (Order: ${payment.order.id}). Se ignora por estar manejado por Orders.`)
+          skipped++
+          continue
+        }
+
         // ─── Extraer nombre del cliente ───
         const payer = payment.payer || {}
         let clienteNombre = 'Consumidor Final'

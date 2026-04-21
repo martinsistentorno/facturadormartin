@@ -346,15 +346,12 @@ async function processPayment(supabaseAdmin, accessToken, paymentId, res) {
     console.warn('[Webhook] No se pudo verificar collector:', meErr.message)
   }
 
-  // Si es un pago de una orden de MeLi, ignorar (ya lo maneja orders_v2)
-  if (payment.order?.id) {
-    const meliOrderId = String(payment.order.id)
-    const { data: existingMeliOrder } = await supabaseAdmin
-      .from('ventas').select('id').eq('mp_payment_id', `order-${meliOrderId}`).maybeSingle()
-    if (existingMeliOrder) {
-      console.log('[Webhook] Pago pertenece a orden MeLi ya registrada, saltando')
-      return res.status(200).json({ received: true, duplicate: true })
-    }
+  // PREVENCIÓN DE DUPLICADOS: Si es un pago de una orden de MeLi, IGNORAR COMPLETAMENTE.
+  // El webhook topic 'orders_v2' ya se encarga de procesar esta venta con la info real de facturación del cliente (CUIT, Nombre).
+  // Procesar el payment generaría un duplicado con datos de baja calidad (ej: apodo de MP).
+  if (payment.order?.type === 'mercadolibre') {
+    console.log(`[Webhook] Pago ${paymentId} pertenece a orden MeLi ${payment.order.id}. Delegando a orders_v2. Saltando.`)
+    return res.status(200).json({ received: true, duplicate: false, reason: 'Delegated to orders_v2 to avoid duplicates and ensure data quality' })
   }
 
   // Solo procesar pagos aprobados
