@@ -1,11 +1,38 @@
-import { X, FileDown, Edit2, RotateCcw, Calendar, CreditCard, User, Hash, ShieldCheck, Clock } from 'lucide-react';
+import { X, FileDown, Edit2, RotateCcw, Calendar, CreditCard, User, ShieldCheck, Clock, Save, Loader2 } from 'lucide-react';
 import StatusBadge from './StatusBadge';
 import { generateInvoicePdf } from '../utils/invoicePdf';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useConfig } from '../context/ConfigContext';
 
-export default function SaleDetailDrawer({ venta, isOpen, onClose, onEdit, onRetry }) {
+const FORMAS_PAGO = [
+  'Contado - Efectivo',
+  'Transferencia Bancaria',
+  'Tarjeta de Débito',
+  'Tarjeta de Crédito',
+  'Mercado Pago',
+  'Otro',
+];
+
+export default function SaleDetailDrawer({ venta, isOpen, onClose, onSave, onRetry, initialEditMode = false }) {
   const { emisor } = useConfig();
+  const [isEditing, setIsEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [editForm, setEditForm] = useState({});
+
+  // Initialize edit form
+  useEffect(() => {
+    if (venta) {
+      setEditForm({
+        cliente: venta.cliente || '',
+        cuit: venta.datos_fiscales?.cuit || '',
+        condicionIva: venta.datos_fiscales?.condicion_iva || (venta.datos_fiscales?.cuit?.length === 11 ? 'Responsable Inscripto' : 'Consumidor Final'),
+        monto: venta.monto || 0,
+        formaPago: venta.datos_fiscales?.forma_pago || 'Contado - Efectivo',
+      });
+      setIsEditing(initialEditMode);
+    }
+  }, [venta, isOpen, initialEditMode]);
+
   // Close on Escape
   useEffect(() => {
     const handleEsc = (e) => { if (e.key === 'Escape') onClose(); };
@@ -46,6 +73,32 @@ export default function SaleDetailDrawer({ venta, isOpen, onClose, onEdit, onRet
     generateInvoicePdf(venta, emisor);
   };
 
+  const handleSaveEdit = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      if (onSave) {
+        await onSave(venta.id, {
+          cliente: editForm.cliente,
+          monto: parseFloat(editForm.monto),
+          datos_fiscales: {
+            ...venta.datos_fiscales,
+            cuit: editForm.cuit,
+            condicion_iva: editForm.condicionIva,
+            forma_pago: editForm.formaPago,
+          }
+        });
+      }
+      setIsEditing(false);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSaving(true);
+      // Wait to stop loading after modal closes usually or handled outside
+      setTimeout(() => setSaving(false), 500);
+    }
+  };
+
   // Status timeline
   const statusSteps = [
     { key: 'pendiente', label: 'Pendiente', icon: Clock },
@@ -81,8 +134,61 @@ export default function SaleDetailDrawer({ venta, isOpen, onClose, onEdit, onRet
         </div>
 
         <div className="p-6 space-y-6">
+          {isEditing ? (
+            <form onSubmit={handleSaveEdit} className="space-y-5 animate-fade-in">
+              <div className="flex items-center justify-between mb-4">
+                <StatusBadge status="procesando" />
+                <span className="text-sm font-bold uppercase tracking-widest text-accent" style={{fontFamily: 'Montserrat'}}>Modo Edición</span>
+              </div>
+              
+              <div>
+                <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5" style={{ fontFamily: 'Inter' }}>Restaurar Monto Total</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted font-bold">$</span>
+                  <input type="number" step="0.01" value={editForm.monto} onChange={e => setEditForm({...editForm, monto: e.target.value})} className="w-full bg-surface-alt border border-border rounded-xl pl-8 pr-4 py-3 text-sm text-text-primary focus:border-accent outline-none font-bold" required />
+                </div>
+              </div>
 
-          {/* ─── Status + monto hero ─── */}
+              <div>
+                <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5" style={{ fontFamily: 'Inter' }}>Cliente / Nombre</label>
+                <input type="text" value={editForm.cliente} onChange={e => setEditForm({...editForm, cliente: e.target.value})} className="w-full bg-surface-alt border border-border rounded-xl px-4 py-3 text-sm text-text-primary focus:border-accent outline-none" />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5" style={{ fontFamily: 'Inter' }}>CUIT / DNI</label>
+                <input type="text" value={editForm.cuit} onChange={e => setEditForm({...editForm, cuit: e.target.value})} className="w-full bg-surface-alt border border-border rounded-xl px-4 py-3 text-sm text-text-primary focus:border-accent outline-none font-mono" />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5" style={{ fontFamily: 'Inter' }}>Condición frente al IVA</label>
+                <select value={editForm.condicionIva} onChange={e => setEditForm({...editForm, condicionIva: e.target.value})} className="w-full bg-surface-alt border border-border rounded-xl px-4 py-3 text-sm text-text-primary focus:border-accent outline-none">
+                  <option>Consumidor Final</option>
+                  <option>Responsable Inscripto</option>
+                  <option>Monotributista</option>
+                  <option>Exento</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5" style={{ fontFamily: 'Inter' }}>Forma de Pago</label>
+                <select value={editForm.formaPago} onChange={e => setEditForm({...editForm, formaPago: e.target.value})} className="w-full bg-surface-alt border border-border rounded-xl px-4 py-3 text-sm text-text-primary focus:border-accent outline-none">
+                  {FORMAS_PAGO.map(fp => <option key={fp} value={fp}>{fp}</option>)}
+                </select>
+              </div>
+
+              <div className="pt-4 flex items-center gap-3">
+                <button type="button" onClick={() => setIsEditing(false)} disabled={saving} className="flex-1 py-3 rounded-xl text-xs font-bold uppercase tracking-widest text-text-muted hover:bg-surface-alt transition-colors cursor-pointer border border-transparent hover:border-border">
+                  Cancelar
+                </button>
+                <button type="submit" disabled={saving} className="flex-1 py-3 rounded-xl text-[11px] font-bold uppercase tracking-widest bg-accent text-white hover:bg-accent/90 transition-colors flex justify-center items-center gap-2 cursor-pointer shadow-lg shadow-accent/20">
+                  {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                  Guardar Datos
+                </button>
+              </div>
+            </form>
+          ) : (
+            <>
+              {/* ─── Status + monto hero ─── */}
           <div className="flex items-center justify-between">
             <StatusBadge status={venta.status} />
             <span className="text-2xl font-bold text-text-primary" style={{ fontFamily: 'Inter' }}>
@@ -187,9 +293,9 @@ export default function SaleDetailDrawer({ venta, isOpen, onClose, onEdit, onRet
                 Reintentar Facturación
               </button>
             )}
-            {venta.status === 'pendiente' && onEdit && (
+            {venta.status === 'pendiente' && onSave && (
               <button
-                onClick={() => { onEdit(venta); onClose(); }}
+                onClick={() => setIsEditing(true)}
                 className="w-full flex items-center justify-center gap-2 bg-surface-alt border border-border text-text-primary py-3 rounded-xl font-bold uppercase tracking-wider text-sm hover:-translate-y-0.5 hover:shadow-md transition-all cursor-pointer"
                 style={{ fontFamily: 'Montserrat' }}
               >
@@ -198,6 +304,9 @@ export default function SaleDetailDrawer({ venta, isOpen, onClose, onEdit, onRet
               </button>
             )}
           </div>
+        </>
+        )}
+      </div>
         </div>
       </div>
     </>

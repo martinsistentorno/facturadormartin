@@ -10,7 +10,6 @@ import FilterBar from '../components/FilterBar'
 import SaleDetailDrawer from '../components/SaleDetailDrawer'
 import ToastContainer, { createToast } from '../components/ToastContainer'
 import { RefreshCw, Plus, Download, ChevronDown } from 'lucide-react'
-import EditSaleModal from '../components/EditSaleModal'
 import AddSaleModal from '../components/AddSaleModal'
 import BulkImportModal from '../components/BulkImportModal'
 import { exportToCSV, exportToExcel } from '../utils/exportUtils'
@@ -26,11 +25,11 @@ export default function Home() {
   
   // ─── Modal State ───
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [editingVenta, setEditingVenta] = useState(null)
   const [modalData, setModalData] = useState({ title: '', ventas: [] })
 
   // ─── Drawer State ───
   const [detailVenta, setDetailVenta] = useState(null)
+  const [startInEditMode, setStartInEditMode] = useState(false)
 
   // ─── Filters State ───
   const [filters, setFilters] = useState({
@@ -511,7 +510,7 @@ export default function Home() {
           onToggleAll={handleToggleAll}
           loading={loading}
           onShowError={(msg) => showToast(msg, 'error')}
-          onEdit={(venta) => setEditingVenta(venta)}
+          onEdit={(venta) => { setDetailVenta(venta); setStartInEditMode(true); }}
           onRowClick={(venta) => setDetailVenta(venta)}
           onRetry={handleRetry}
         />
@@ -528,21 +527,13 @@ export default function Home() {
         onBulkRetry={handleBulkRetry}
       />
 
-      {/* ─── Detail Drawer ─── */}
       <SaleDetailDrawer
         venta={detailVenta}
         isOpen={!!detailVenta}
-        onClose={() => setDetailVenta(null)}
-        onEdit={(venta) => setEditingVenta(venta)}
-        onRetry={handleRetry}
-      />
-
-      {/* ─── Edit Modal ─── */}
-      <EditSaleModal
-        isOpen={!!editingVenta}
-        onClose={() => setEditingVenta(null)}
-        venta={editingVenta}
+        initialEditMode={startInEditMode}
+        onClose={() => { setDetailVenta(null); setStartInEditMode(false); }}
         onSave={handleEditVenta}
+        onRetry={handleRetry}
       />
 
       {/* ─── Add Sale Modal ─── */}
