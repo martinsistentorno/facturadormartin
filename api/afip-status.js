@@ -30,12 +30,12 @@ export default async function handler(req, res) {
     }
 
     // Probar el certificado real
-    const afipHelper = await import('./lib/afip-helper.js');
-    const getAfipTestInstance = (prod) => {
-      const fs = require('fs')
-      const path = require('path')
-      const os = require('os')
-      const Afip = require('@afipsdk/afip.js').default || require('@afipsdk/afip.js')
+    const getAfipTestInstance = async (prod) => {
+      const fs = await import('fs')
+      const path = await import('path')
+      const os = await import('os')
+      const AfipModule = await import('@afipsdk/afip.js')
+      const Afip = AfipModule.default || AfipModule
       
       const tmpDir = os.tmpdir()
       const certPath = path.join(tmpDir, 'afip_cert_test.crt')
@@ -48,7 +48,7 @@ export default async function handler(req, res) {
     }
 
     try {
-      const afipHomo = getAfipTestInstance(false)
+      const afipHomo = await getAfipTestInstance(false)
       await afipHomo.ElectronicBilling.getServerStatus()
       baseStatus.tests.homologacion = "EXITO - El certificado sirve para Homologación (Pruebas)"
     } catch (e) {
@@ -56,7 +56,7 @@ export default async function handler(req, res) {
     }
 
     try {
-      const afipProd = getAfipTestInstance(true)
+      const afipProd = await getAfipTestInstance(true)
       await afipProd.ElectronicBilling.getServerStatus()
       baseStatus.tests.produccion = "EXITO - El certificado sirve para Producción (Real)"
     } catch (e) {
