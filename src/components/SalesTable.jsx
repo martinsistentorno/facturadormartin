@@ -270,10 +270,9 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
                 <tr
                   onClick={() => handleRowClick(venta)}
                   className={`
-                    transition-colors duration-150 cursor-pointer
-                    ${isEditing ? 'border-b-0 bg-surface-alt/20' : 'border-b border-border'}
-                    ${isError ? 'bg-red-subtle/20 hover:bg-red-subtle/40' : ''}
-                    hover:bg-surface-alt hover:opacity-90
+                    transition-all duration-150 cursor-pointer
+                    ${isEditing ? 'border-b-0 bg-[#F9F7F2] relative z-10 font-medium' : 'border-b border-border hover:bg-surface-alt hover:opacity-90'}
+                    ${isError && !isEditing ? 'bg-red-subtle/20 hover:bg-red-subtle/40' : ''}
                     ${isSelected ? 'bg-[#EAE4D3]' : ''}
                   `}
                 >
@@ -386,9 +385,9 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
                   </td>
                 </tr>
                 {isEditing && (
-                  <tr className="border-b border-border bg-surface-alt/10">
+                  <tr className="bg-[#F9F7F2] border-b-2 border-[#EAE4D3]">
                     <td colSpan="11" className="p-0">
-                      <div className="animate-fade-in pl-12 pr-6 py-5 border-l-4 border-accent">
+                      <div className="animate-fade-in pl-10 pr-6 py-6 border-l-[6px] border-[#3460A8] shadow-[inset_0px_8px_15px_-8px_rgba(0,0,0,0.06)] relative z-0">
                         <form onSubmit={submitEdit} className="grid grid-cols-6 gap-4 items-end">
                           
                           <div className="col-span-2">
