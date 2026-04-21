@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import Afip from '@afipsdk/afip.js'
+import { getValidAccessToken } from './lib/meli-token.js'
 
 // ─── Configurar AFIP para consultas globales (si están las credenciales) ───
 let afipInstance = null
@@ -69,14 +70,13 @@ export default async function handler(req, res) {
   try {
     const supabaseUrl = process.env.VITE_SUPABASE_URL
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-    const accessToken = process.env.MELI_ACCESS_TOKEN || process.env.MP_ACCESS_TOKEN
 
     if (!supabaseUrl || !supabaseKey) {
       throw new Error('Faltan credenciales de Supabase en el servidor.')
     }
-    if (!accessToken) {
-      throw new Error('Falta MELI_ACCESS_TOKEN en el servidor.')
-    }
+
+    // Obtener token válido (auto-refresh si expiró)
+    const accessToken = await getValidAccessToken()
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseKey)
     const body = req.body
