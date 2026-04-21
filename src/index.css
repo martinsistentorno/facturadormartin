@@ -17,20 +17,24 @@
   --color-text-secondary: #3D3D3D;
   --color-text-muted: #8E8A81;
 
-  /* Colores de Marca Command */
+  /* Colores de Marca Command (Nuevos/Refinados) */
   --color-cmd-red: #C0443C;
-  --color-cmd-green: #234D3F;
-  --color-cmd-blue: #2D6474;
-  --color-cmd-yellow: #CC9F2F;
+  --color-cmd-blue: #3460A8;
+  --color-cmd-yellow: #FFE100;
+  --color-cmd-green: #2D8F5E;
+  --color-cmd-purple: #7C4DFF;
   
-  /* Colores utilitarios para Tailwind (text-red, bg-red-subtle, etc.) */
+  /* Colores utilitarios para Tailwind */
   --color-red: #C0443C;
   --color-red-subtle: #FDF2F1;
   --color-green: #2D8F5E;
   --color-green-subtle: #F0F9F4;
-  --color-yellow: #CC9F2F;
-  --color-yellow-subtle: #FDF8EB;
+  --color-yellow: #FFE100;
+  --color-yellow-subtle: #FFFDE6;
   --color-blue: #3460A8;
+  --color-blue-subtle: #F0F4FA;
+  --color-purple: #7C4DFF;
+  --color-purple-subtle: #F5EEFF;
 
   --color-accent: #C0443C;
   --color-accent-hover: #D64F46;
@@ -82,14 +86,14 @@ h3 { font-size: clamp(1.1rem, 2vw, 1.3rem); line-height: 1.3; font-weight: 600; 
   background-color: #121212;
   color: #ffffff;
   font-family: var(--font-space);
-  font-weight: 700;
+  font-weight: 600;
   font-size: 0.85rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   padding: 0.65rem 1.75rem;
-  border-radius: 4px; /* Estilo Brutalista Suave */
-  box-shadow: 4px 4px 0px 0px rgba(0, 0, 0, 0.2);
-  border: 2px solid #121212;
+  border-radius: 6px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08); /* Sombra moderna suave */
+  border: 1px solid #121212; /* Borde más fino */
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
   gap: 0.5rem;
@@ -98,12 +102,12 @@ h3 { font-size: clamp(1.1rem, 2vw, 1.3rem); line-height: 1.3; font-weight: 600; 
 .btn-primary:hover {
   background-color: #2a2a2a;
   transform: translateY(-2px);
-  box-shadow: 6px 6px 0px 0px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.12); /* Elevación sutil */
 }
 
 .btn-primary:active {
-  transform: translateY(2px);
-  box-shadow: 2px 2px 0px 0px rgba(0, 0, 0, 0.4);
+  transform: translateY(1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .btn-primary svg {
@@ -117,15 +121,15 @@ h3 { font-size: clamp(1.1rem, 2vw, 1.3rem); line-height: 1.3; font-weight: 600; 
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--color-card-red);
+  background-color: var(--color-cmd-red);
   color: #ffffff;
   font-family: var(--font-space);
   font-weight: 600;
   font-size: 0.85rem;
   letter-spacing: 0.05em;
-  padding: 0.85rem 2rem;
-  border-radius: 9999px;
-  box-shadow: 0 4px 6px -1px rgba(197, 75, 75, 0.2);
+  padding: 0.65rem 1.75rem;
+  border-radius: 6px; /* Ajuste moderno, fino y no tan brutalista */
+  box-shadow: 0 4px 10px rgba(192, 68, 60, 0.2);
   transition: all 0.2s ease-in-out;
   cursor: pointer;
   text-transform: uppercase;
@@ -135,7 +139,7 @@ h3 { font-size: clamp(1.1rem, 2vw, 1.3rem); line-height: 1.3; font-weight: 600; 
 .btn-accent:hover {
   background-color: var(--color-accent-hover);
   transform: translateY(-2px);
-  box-shadow: 0 8px 12px -1px rgba(197, 75, 75, 0.3);
+  box-shadow: 0 6px 14px rgba(192, 68, 60, 0.3);
 }
 
 /* ─── Componentes extraídos de la captura ─── */
@@ -161,8 +165,8 @@ h3 { font-size: clamp(1.1rem, 2vw, 1.3rem); line-height: 1.3; font-weight: 600; 
 }
 
 .input-soft:focus {
-  border-color: var(--color-card-blue);
-  box-shadow: 0 0 0 3px rgba(47, 100, 116, 0.1);
+  border-color: var(--color-cmd-blue);
+  box-shadow: 0 0 0 3px rgba(52, 96, 168, 0.1); /* rgba del azul CMD real */
 }
 
 /* ─── Scrollbar Custom ─── */
@@ -178,12 +182,12 @@ h3 { font-size: clamp(1.1rem, 2vw, 1.3rem); line-height: 1.3; font-weight: 600; 
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-card-red);
+  background: var(--color-cmd-red);
 }
 
 /* ─── Selection ─── */
 ::selection {
-  background: var(--color-card-yellow);
+  background: var(--color-cmd-blue);
   color: white;
 }
 

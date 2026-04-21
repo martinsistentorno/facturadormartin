@@ -18,8 +18,8 @@ export default function StatsCards({ ventas, onCardClick }) {
       value: formatCurrency(activas.reduce((s, v) => s + (Number(v.monto) || 0), 0)),
       sub: `${activas.length} operaciones`,
       icon: TrendingUp,
-      accent: 'text-[#2D8F5E]',
-      accentBg: 'bg-[#2D8F5E]/10',
+      accent: 'text-green',
+      accentBg: 'bg-green/10',
       ventas: activas
     },
     {
@@ -28,8 +28,8 @@ export default function StatsCards({ ventas, onCardClick }) {
       value: pendientes.length,
       sub: formatCurrency(pendientes.reduce((s, v) => s + (Number(v.monto) || 0), 0)),
       icon: Clock,
-      accent: 'text-[#CC9F2F]',
-      accentBg: 'bg-[#CC9F2F]/10',
+      accent: 'text-amber-500', // yellow is too bright for text on white bg
+      accentBg: 'bg-yellow/20',
       ventas: pendientes
     },
     {
@@ -38,8 +38,8 @@ export default function StatsCards({ ventas, onCardClick }) {
       value: facturadas.length,
       sub: formatCurrency(facturadas.reduce((s, v) => s + (Number(v.monto) || 0), 0)),
       icon: FileCheck,
-      accent: 'text-[#2D8F5E]',
-      accentBg: 'bg-[#2D8F5E]/10',
+      accent: 'text-blue',
+      accentBg: 'bg-blue/10',
       ventas: facturadas
     },
     {
@@ -48,8 +48,8 @@ export default function StatsCards({ ventas, onCardClick }) {
       value: borradas.length,
       sub: borradas.length > 0 ? 'Ver detalles' : 'Sin errores',
       icon: Trash2,
-      accent: 'text-[#C0443C]',
-      accentBg: 'bg-[#C0443C]/10',
+      accent: 'text-red',
+      accentBg: 'bg-red/10',
       ventas: borradas
     },
   ]
