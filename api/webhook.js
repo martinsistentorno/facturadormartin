@@ -121,9 +121,9 @@ export default async function handler(req, res) {
         }
       } catch (err) {}
 
-      // 1. Prioridad: Consultar AFIP si es un CUIT o DNI
-      let resolvedCuit = ''
-      if (docNumber && docNumber.length >= 7) {
+      // 1. Consultar AFIP SOLO si es un CUIT (11 dígitos)
+      let resolvedCuit = docNumber
+      if (docNumber && docNumber.length === 11) {
         const afipResult = await getAfipRazonSocial(docNumber)
         if (afipResult) {
           clienteNombre = afipResult.razonSocial
@@ -343,11 +343,11 @@ async function processPayment(supabaseAdmin, accessToken, paymentId, res) {
 
   const payerIdStr = String(payer.id || '')
 
-  // 1. Prioridad: Consultar AFIP si es un CUIT o DNI
-  let resolvedCuit = ''
+  // 1. Consultar AFIP SOLO si es un CUIT (11 dígitos)
+  let resolvedCuit = docNumber
   let isOwnAccount = payerIdStr === ownerIdStr
 
-  if (!isOwnAccount && docNumber && docNumber.length >= 7) {
+  if (!isOwnAccount && docNumber && docNumber.length === 11) {
     const afipResult = await getAfipRazonSocial(docNumber)
     if (afipResult) {
       clienteNombre = afipResult.razonSocial

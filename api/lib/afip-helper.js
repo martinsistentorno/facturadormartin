@@ -59,54 +59,10 @@ function getAfipInstance() {
   }
 }
 
-// ─────────────────────────────────────────────────────
-//  Algoritmo de CUIT: calcular dígito verificador
-//  CUIT = XX-DNIDNI00-Y
-//  XX = prefijo (20 masc, 27 fem, 23 ambiguo, 24 otro)
-//  Y  = dígito verificador calculado por módulo 11
-// ─────────────────────────────────────────────────────
-
-function calculateCuitCheckDigit(tenDigits) {
-  const weights = [5, 4, 3, 2, 7, 6, 5, 4, 3, 2]
-  const digits = tenDigits.split('').map(Number)
-  let sum = 0
-  for (let i = 0; i < 10; i++) {
-    sum += digits[i] * weights[i]
-  }
-  const remainder = sum % 11
-  if (remainder === 0) return 0
-  if (remainder === 1) return -1  // caso especial: se necesita otro prefijo
-  return 11 - remainder
-}
-
-/**
- * Dado un DNI (7-8 dígitos), genera las posibles CUITs válidas.
- * Prueba los prefijos más comunes: 20, 27, 23, 24.
- */
-function dniToPossibleCuits(dni) {
-  const paddedDni = String(dni).padStart(8, '0')
-  const prefixes = ['20', '27', '23', '24']
-  const cuits = []
-  
-  for (const prefix of prefixes) {
-    const base = prefix + paddedDni
-    const checkDigit = calculateCuitCheckDigit(base)
-    if (checkDigit >= 0) {
-      cuits.push(base + checkDigit)
-    }
-  }
-  return cuits
-}
-
-// ─────────────────────────────────────────────────────
-//  Cache y función principal de consulta
-// ─────────────────────────────────────────────────────
-
 const nameCache = {}
 
 /**
  * Consulta interna a AFIP con un CUIT de 11 dígitos.
- * NO usa cache, eso lo maneja la función pública.
  */
 async function queryAfipByCuit(cuitStr) {
   const afip = getAfipInstance()
@@ -144,54 +100,28 @@ async function queryAfipByCuit(cuitStr) {
 }
 
 /**
- * Consulta la Razón Social a partir de un CUIT (11 dígitos) o DNI (7-8 dígitos).
+ * Consulta la Razón Social a partir de un CUIT (11 dígitos).
  * 
- * Si recibe un DNI, calcula las posibles CUITs y las prueba contra AFIP
- * hasta encontrar la correcta.
- * 
- * @param {string|number} docNumber - CUIT (11 dígitos) o DNI (7-8 dígitos)
+ * @param {string|number} docNumber - CUIT (11 dígitos)
  * @returns {{ razonSocial: string, cuit: string } | null}
  */
 export async function getAfipRazonSocial(docNumber) {
   const cleaned = String(docNumber).replace(/[-\s]/g, '')
   
-  if (!cleaned || cleaned.length < 7 || cleaned.length > 11) {
+  if (!cleaned || cleaned.length !== 11) {
     return null
   }
 
   // Si ya lo tenemos en cache
   if (nameCache[cleaned]) return nameCache[cleaned]
 
-  const afip = getAfipInstance()
-  if (!afip) return null
-
-  // ─── Caso 1: CUIT directo (11 dígitos) ───
-  if (cleaned.length === 11) {
-    console.log(`[AFIP Helper] Consultando CUIT directo: ${cleaned}`)
-    const name = await queryAfipByCuit(cleaned)
-    if (name) {
-      nameCache[cleaned] = name
-      console.log(`[AFIP Helper] ✅ ${cleaned} → ${name}`)
-      return name
-    }
-    return null
+  console.log(`[AFIP Helper] Consultando CUIT directo: ${cleaned}`)
+  const name = await queryAfipByCuit(cleaned)
+  if (name) {
+    const result = { razonSocial: name, cuit: cleaned }
+    nameCache[cleaned] = result
+    console.log(`[AFIP Helper] ✅ ${cleaned} → ${name}`)
+    return result
   }
-
-  // ─── Caso 2: DNI (7-8 dígitos) → calcular posibles CUITs ───
-  const possibleCuits = dniToPossibleCuits(cleaned)
-  console.log(`[AFIP Helper] DNI ${cleaned} → probando CUITs: ${possibleCuits.join(', ')}`)
-
-  for (const cuit of possibleCuits) {
-    const name = await queryAfipByCuit(cuit)
-    if (name) {
-      // Guardar en cache tanto por DNI como por CUIT
-      nameCache[cleaned] = name
-      nameCache[cuit] = name
-      console.log(`[AFIP Helper] ✅ DNI ${cleaned} → CUIT ${cuit} → ${name}`)
-      return name
-    }
-  }
-
-  console.log(`[AFIP Helper] DNI ${cleaned}: ninguno de los CUITs posibles devolvió datos`)
   return null
 }

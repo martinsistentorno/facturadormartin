@@ -117,19 +117,21 @@ export default async function handler(req, res) {
         let docNumber = String(payer.identification?.number || '')
         let docType = payer.identification?.type || 'DNI'
         let email = payer.email || ''
+        let resolvedCuit = docNumber  // Guardar DNI o CUIT original por defecto
         const payerIdStr = String(payer.id || '')
         const isOwnAccount = payerIdStr === myId
 
         // Para transferencias bancarias: MP pone payer.id = dueño de la cuenta
         // En ese caso, el nombre del payer es realmente el destinatario, no el remitente
-        // Lo detectamos y dejamos "Consumidor Final" + "Transferencia Bancaria"
+        // Lo detectamos y dejamos "Consumidor Final" + sin CUIT
 
-        // 1. Prioridad: Consultar AFIP si es un CUIT (11 dígitos) o DNI (7-8 dígitos)
-        //    PERO solo si el payer NO es el dueño de la cuenta (evitar auto-lookup)
-        if (!isOwnAccount && docNumber && docNumber.length >= 7) {
-          const afipName = await getAfipRazonSocial(docNumber)
-          if (afipName) {
-            clienteNombre = afipName
+        // 1. Consultar AFIP SOLO si es un CUIT (11 dígitos)
+        //    y el payer NO es el dueño de la cuenta
+        if (!isOwnAccount && docNumber && docNumber.length === 11) {
+          const afipResult = await getAfipRazonSocial(docNumber)
+          if (afipResult) {
+            clienteNombre = afipResult.razonSocial
+            resolvedCuit = afipResult.cuit
           }
         }
 
@@ -161,6 +163,9 @@ export default async function handler(req, res) {
         }
         const formaPago = methodMap[typeId] || payment.payment_method_id || 'Mercado Pago'
 
+        // Si es Consumidor Final, NO guardar CUIT (ni el del dueño de la cuenta)
+        const finalCuit = clienteNombre === 'Consumidor Final' ? '' : resolvedCuit
+
         const ventaRecord = {
           fecha: payment.date_approved || payment.date_created || new Date().toISOString(),
           cliente: clienteNombre,
@@ -170,7 +175,7 @@ export default async function handler(req, res) {
           datos_fiscales: {
             email,
             identification: { type: docType, number: docNumber },
-            cuit: docNumber,
+            cuit: finalCuit,
             forma_pago: formaPago,
             mp_status: payment.status,
             mp_method: payment.payment_method_id || '',
@@ -287,11 +292,13 @@ export default async function handler(req, res) {
             }
           }
 
-          // 1. Prioridad: Consultar AFIP si es un CUIT (11) o DNI (7-8 dígitos)
-          if (docNumber && docNumber.length >= 7) {
-            const afipName = await getAfipRazonSocial(docNumber)
-            if (afipName) {
-              clienteNombre = afipName
+          // 1. Consultar AFIP SOLO si es un CUIT (11 dígitos)
+          let resolvedCuit = docNumber
+          if (docNumber && docNumber.length === 11) {
+            const afipResult = await getAfipRazonSocial(docNumber)
+            if (afipResult) {
+              clienteNombre = afipResult.razonSocial
+              resolvedCuit = afipResult.cuit
             }
           }
 
@@ -315,6 +322,9 @@ export default async function handler(req, res) {
           }
           const formaPago = paymentTypeMap[firstPayment?.payment_type] || firstPayment?.payment_type || 'Mercado Libre'
 
+          // Si es Consumidor Final, NO guardar CUIT
+          const finalCuit = clienteNombre === 'Consumidor Final' ? '' : resolvedCuit
+
           const ventaRecord = {
             fecha: order.date_created || new Date().toISOString(),
             cliente: clienteNombre,
@@ -324,7 +334,7 @@ export default async function handler(req, res) {
             datos_fiscales: {
               email,
               identification: { type: docType, number: docNumber },
-              cuit: docNumber,
+              cuit: finalCuit,
               forma_pago: formaPago,
               meli_order_id: orderId,
               meli_payment_ids: orderPaymentIds,
