@@ -40,16 +40,18 @@ export default function AddSaleModal({ isOpen, onClose, onSave, searchClientes }
   const [formData, setFormData] = useState({
     cliente: '',
     cuit: '',
+    descripcion: 'Varios',
     monto: '',
     condicionIva: 'Consumidor Final',
     formaPago: 'Contado - Efectivo',
   });
+  const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [lookingUp, setLookingUp] = useState(false);
   const suggestionsRef = useRef(null);
 
   const resetForm = () => {
-    setFormData({ cliente: '', cuit: '', monto: '', condicionIva: 'Consumidor Final', formaPago: 'Contado - Efectivo' });
+    setFormData({ cliente: '', cuit: '', descripcion: 'Varios', monto: '', condicionIva: 'Consumidor Final', formaPago: 'Contado - Efectivo' });
     setSuggestions([]);
     setShowSuggestions(false);
   };
@@ -142,6 +144,7 @@ export default function AddSaleModal({ isOpen, onClose, onSave, searchClientes }
           cuit: formData.cuit,
           condicion_iva: formData.condicionIva,
           forma_pago: formData.formaPago,
+          descripcion: formData.descripcion,
           origen: 'Manual'
         }
       });
@@ -241,6 +244,13 @@ export default function AddSaleModal({ isOpen, onClose, onSave, searchClientes }
                 <option value="Exento">Exento</option>
               </select>
             </div>
+
+            <MinimalField 
+              label="Descripción Venta" icon={FileText} full
+              value={formData.descripcion}
+              onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
+              placeholder="Ej: Varios / Servicios Profesionales"
+            />
           </div>
 
           <div className="h-px bg-border/40 w-full" />
@@ -276,13 +286,13 @@ export default function AddSaleModal({ isOpen, onClose, onSave, searchClientes }
                     type="button"
                     onClick={() => setFormData({ ...formData, formaPago: fp })}
                     className={`
-                      px-3 py-2.5 rounded-lg text-[11px] font-semibold text-center transition-all cursor-pointer border
+                      px-3 py-2.5 rounded-lg text-[11px] font-bold uppercase tracking-wider text-center transition-all cursor-pointer border-2
                       ${formData.formaPago === fp
-                        ? 'bg-[#3460A8]/10 border-[#3460A8]/30 text-[#3460A8]'
-                        : 'bg-white border-border text-text-secondary hover:border-[#3460A8]/30'
+                        ? 'bg-[#3460A8] border-[#3460A8] text-white shadow-md shadow-[#3460A8]/20'
+                        : 'bg-white border-border text-text-secondary hover:border-[#3460A8] hover:text-[#3460A8]'
                       }
                     `}
-                    style={{ fontFamily: 'Inter' }}
+                    style={{ fontFamily: 'Montserrat' }}
                   >
                     {fp}
                   </button>
@@ -293,12 +303,12 @@ export default function AddSaleModal({ isOpen, onClose, onSave, searchClientes }
         </form>
 
         {/* Footer Minimalista */}
-        <div className="bg-white/80 backdrop-blur-md px-6 py-4 border-t border-border/40 shrink-0">
-          <div className="flex flex-col gap-3">
+        <div className="bg-[#F9F7F2] px-6 py-6 border-t-[3px] border-black/5 shrink-0">
+          <div className="flex flex-col gap-4">
             {/* Resumen */}
-            <div className="flex items-center justify-between px-2 text-xs font-medium" style={{ fontFamily: 'Inter' }}>
-               <span className="text-text-muted">Total a facturar:</span>
-               <span className="text-base font-black text-[#2D8F5E]">
+            <div className="flex items-center justify-between px-2 text-[10px] font-bold uppercase tracking-widest" style={{ fontFamily: 'Montserrat' }}>
+               <span className="text-text-muted">Monto Final:</span>
+               <span className="text-xl font-black text-[#000000]">
                  {formData.monto ? `$ ${Number(formData.monto).toLocaleString('es-AR', { minimumFractionDigits: 2 })}` : '$ 0.00'}
                </span>
             </div>
@@ -307,11 +317,11 @@ export default function AddSaleModal({ isOpen, onClose, onSave, searchClientes }
               form="add-sale-form"
               type="submit"
               disabled={loading}
-              className="w-full h-11 rounded-xl bg-[#3460A8] text-white flex items-center justify-center gap-2 font-bold uppercase tracking-widest text-[11px] hover:-translate-y-1 hover:shadow-lg hover:shadow-black/20 hover:bg-[#2F528F] transition-all duration-300 disabled:opacity-50 disabled:hover:translate-y-0 cursor-pointer"
+              className="w-full h-14 rounded-xl bg-[#000000] text-white flex items-center justify-center gap-3 font-black uppercase tracking-[0.2em] text-xs hover:-translate-y-1.5 hover:shadow-[0_10px_25px_-5px_rgba(0,0,0,0.4)] transition-all duration-300 disabled:opacity-50 disabled:hover:translate-y-0 cursor-pointer border-2 border-black"
               style={{ fontFamily: 'Montserrat' }}
             >
-              {loading ? <Loader2 className="animate-spin" size={16} /> : <Plus size={16} />}
-              {loading ? 'Procesando...' : 'Confirmar Venta'}
+              {loading ? <Loader2 className="animate-spin text-white" size={20} /> : <Plus size={20} />}
+              {loading ? 'PROCESANDO...' : 'GENERAR VENTA'}
             </button>
           </div>
         </div>
