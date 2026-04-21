@@ -9,29 +9,68 @@ export default async function handler(req, res) {
     const cuit = process.env.AFIP_CUIT
     const certBase64 = process.env.AFIP_CERT_BASE64
     const keyBase64 = process.env.AFIP_KEY_BASE64
-    const sdkToken = process.env.AFIP_SDK_TOKEN
     const isProduction = process.env.AFIP_PRODUCTION === 'true'
     const isSandbox = process.env.AFIP_SANDBOX === 'true'
     const ptoVta = process.env.AFIP_PTO_VTA || '1'
 
     const hasCert = !!certBase64 && !!keyBase64
-    const hasToken = !!sdkToken
     const hasCuit = !!cuit
 
-    const connected = hasCert && hasToken && hasCuit && !isSandbox
-    const mode = isSandbox ? 'sandbox' : (isProduction ? 'production' : 'homologation')
-
-    return res.status(200).json({
-      connected,
-      mode,
+    const baseStatus = {
+      connected: hasCert && hasCuit && !isSandbox,
+      mode: isSandbox ? 'sandbox' : (isProduction ? 'production' : 'homologation'),
       ptoVta: parseInt(ptoVta),
-      checks: {
-        cuit: hasCuit,
-        cert: hasCert,
-        token: hasToken,
-      },
+      checks: { cuit: hasCuit, cert: hasCert },
       timestamp: new Date().toISOString(),
-    })
+      tests: {}
+    }
+
+    if (!hasCert || !hasCuit) {
+      return res.status(200).json(baseStatus)
+    }
+
+    // Probar el certificado real
+    const afipHelper = await import('./lib/afip-helper.js');
+    const getAfipTestInstance = (prod) => {
+      const fs = require('fs')
+      const path = require('path')
+      const os = require('os')
+      const Afip = require('@afipsdk/afip.js').default || require('@afipsdk/afip.js')
+      
+      const tmpDir = os.tmpdir()
+      const certPath = path.join(tmpDir, 'afip_cert_test.crt')
+      const keyPath = path.join(tmpDir, 'afip_key_test.key')
+      
+      fs.writeFileSync(certPath, Buffer.from(certBase64, 'base64').toString('utf-8'))
+      fs.writeFileSync(keyPath, Buffer.from(keyBase64, 'base64').toString('utf-8'))
+      
+      return new Afip({ CUIT: parseInt(cuit), res_folder: tmpDir, cert: 'afip_cert_test.crt', key: 'afip_key_test.key', production: prod })
+    }
+
+    try {
+      const afipHomo = getAfipTestInstance(false)
+      await afipHomo.ElectronicBilling.getServerStatus()
+      baseStatus.tests.homologacion = "EXITO - El certificado sirve para Homologación (Pruebas)"
+    } catch (e) {
+      baseStatus.tests.homologacion = `FALLO - ${e.message}`
+    }
+
+    try {
+      const afipProd = getAfipTestInstance(true)
+      await afipProd.ElectronicBilling.getServerStatus()
+      baseStatus.tests.produccion = "EXITO - El certificado sirve para Producción (Real)"
+    } catch (e) {
+      baseStatus.tests.produccion = `FALLO - ${e.message}`
+    }
+
+    // Evaluar estado final del certificado
+    if (baseStatus.tests.homologacion.includes("EXITO") && baseStatus.tests.produccion.includes("FALLO")) {
+      baseStatus.tests.conclusion = "CERTIFICADO DE HOMOLOGACIÓN DETECTADO. No podés emitir facturas reales con este certificado."
+    } else if (baseStatus.tests.produccion.includes("EXITO")) {
+      baseStatus.tests.conclusion = "CERTIFICADO DE PRODUCCIÓN DETECTADO. Todo listo para emitir facturas legales."
+    }
+
+    return res.status(200).json(baseStatus)
   } catch (err) {
     return res.status(200).json({
       connected: false,
