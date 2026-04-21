@@ -42,9 +42,6 @@ function getAfipInstance() {
     fs.writeFileSync(certPath, certContent)
     fs.writeFileSync(keyPath, keyContent)
 
-    console.log(`[AFIP Helper] Cert escrito en ${certPath} (${certContent.length} chars)`)
-    console.log(`[AFIP Helper] Key escrito en ${keyPath} (${keyContent.length} chars)`)
-
     afipInstance = new Afip({
       CUIT: parseInt(afipCuit),
       res_folder: tmpDir,
@@ -54,7 +51,7 @@ function getAfipInstance() {
       production: isProduction
     })
 
-    console.log('[AFIP Helper] Instancia creada OK (producción:', isProduction, ', CUIT:', afipCuit, ')')
+    console.log('[AFIP Helper] Instancia creada OK (producción:', isProduction, ')')
     return afipInstance
   } catch (err) {
     console.error('[AFIP Helper] Error creando instancia:', err.message)
@@ -62,37 +59,62 @@ function getAfipInstance() {
   }
 }
 
+// ─────────────────────────────────────────────────────
+//  Algoritmo de CUIT: calcular dígito verificador
+//  CUIT = XX-DNIDNI00-Y
+//  XX = prefijo (20 masc, 27 fem, 23 ambiguo, 24 otro)
+//  Y  = dígito verificador calculado por módulo 11
+// ─────────────────────────────────────────────────────
+
+function calculateCuitCheckDigit(tenDigits) {
+  const weights = [5, 4, 3, 2, 7, 6, 5, 4, 3, 2]
+  const digits = tenDigits.split('').map(Number)
+  let sum = 0
+  for (let i = 0; i < 10; i++) {
+    sum += digits[i] * weights[i]
+  }
+  const remainder = sum % 11
+  if (remainder === 0) return 0
+  if (remainder === 1) return -1  // caso especial: se necesita otro prefijo
+  return 11 - remainder
+}
+
 /**
- * Consulta la Razón Social de un CUIT usando ws_sr_constancia_inscripcion.
- * 
- * @param {string|number} cuit - CUIT de 11 dígitos
- * @returns {string|null} Razón Social o null si no se encuentra
+ * Dado un DNI (7-8 dígitos), genera las posibles CUITs válidas.
+ * Prueba los prefijos más comunes: 20, 27, 23, 24.
  */
+function dniToPossibleCuits(dni) {
+  const paddedDni = String(dni).padStart(8, '0')
+  const prefixes = ['20', '27', '23', '24']
+  const cuits = []
+  
+  for (const prefix of prefixes) {
+    const base = prefix + paddedDni
+    const checkDigit = calculateCuitCheckDigit(base)
+    if (checkDigit >= 0) {
+      cuits.push(base + checkDigit)
+    }
+  }
+  return cuits
+}
+
+// ─────────────────────────────────────────────────────
+//  Cache y función principal de consulta
+// ─────────────────────────────────────────────────────
+
 const nameCache = {}
 
-export async function getAfipRazonSocial(cuit) {
-  const cuitStr = String(cuit).replace(/[-\s]/g, '')
-  
-  if (!cuitStr || cuitStr.length !== 11) {
-    console.log(`[AFIP Helper] CUIT inválido: "${cuitStr}" (largo: ${cuitStr.length})`)
-    return null
-  }
-  if (nameCache[cuitStr]) return nameCache[cuitStr]
-
+/**
+ * Consulta interna a AFIP con un CUIT de 11 dígitos.
+ * NO usa cache, eso lo maneja la función pública.
+ */
+async function queryAfipByCuit(cuitStr) {
   const afip = getAfipInstance()
-  if (!afip) {
-    console.log('[AFIP Helper] No hay instancia AFIP disponible')
-    return null
-  }
+  if (!afip) return null
 
   try {
-    console.log(`[AFIP Helper] Paso 1: Obteniendo TA para ${AFIP_SERVICE}...`)
-
-    // Obtener Token de Autorización para ws_sr_constancia_inscripcion
     const ta = await afip.GetServiceTA(AFIP_SERVICE)
-    console.log(`[AFIP Helper] Paso 1 OK: TA obtenido (token: ${ta.token?.substring(0, 30)}...)`)
 
-    // Preparar parámetros SOAP (misma estructura que RegisterScopeFive.getTaxpayerDetails)
     const soapParams = {
       token: ta.token,
       sign: ta.sign,
@@ -100,22 +122,13 @@ export async function getAfipRazonSocial(cuit) {
       idPersona: parseInt(cuitStr)
     }
 
-    console.log(`[AFIP Helper] Paso 2: Llamando getPersona_v2 para CUIT ${cuitStr}...`)
+    const result = await afip.RegisterScopeFive.executeRequest('getPersona_v2', soapParams)
+      .catch(err => {
+        if (err.message.indexOf('No existe') !== -1) return null
+        throw err
+      })
 
-    // Ejecutar la request SOAP directamente usando el cliente SOAP de RegisterScopeFive
-    // que apunta al endpoint personaServiceA5 (el mismo que usa ws_sr_constancia_inscripcion)
-    const rawResult = await afip.RegisterScopeFive.executeRequest('getPersona_v2', soapParams)
-
-    console.log(`[AFIP Helper] Paso 2 resultado crudo:`, JSON.stringify(rawResult)?.substring(0, 500))
-
-    // RegisterScopeFive.executeRequest wraps the result already,
-    // extracting personaReturn from the raw SOAP response
-    const result = rawResult
-
-    if (!result || !result.datosGenerales) {
-      console.log(`[AFIP Helper] CUIT ${cuitStr} no tiene datosGenerales`)
-      return null
-    }
+    if (!result || !result.datosGenerales) return null
 
     // Extraer nombre: Empresa → razonSocial, Persona → nombre + apellido
     let razonSocial = result.datosGenerales.razonSocial || ''
@@ -123,16 +136,62 @@ export async function getAfipRazonSocial(cuit) {
       razonSocial = `${result.datosGenerales.nombre} ${result.datosGenerales.apellido || ''}`.trim()
     }
 
-    if (razonSocial) {
-      nameCache[cuitStr] = razonSocial
-      console.log(`[AFIP Helper] ✅ ${cuitStr} → ${razonSocial}`)
-    }
-
     return razonSocial || null
   } catch (err) {
-    console.error(`[AFIP Helper] ❌ Error consultando ${cuitStr}:`, err.message)
-    // Log stack trace for debugging
-    if (err.stack) console.error('[AFIP Helper] Stack:', err.stack.substring(0, 500))
+    console.error(`[AFIP Helper] Error SOAP para ${cuitStr}:`, err.message)
     return null
   }
+}
+
+/**
+ * Consulta la Razón Social a partir de un CUIT (11 dígitos) o DNI (7-8 dígitos).
+ * 
+ * Si recibe un DNI, calcula las posibles CUITs y las prueba contra AFIP
+ * hasta encontrar la correcta.
+ * 
+ * @param {string|number} docNumber - CUIT (11 dígitos) o DNI (7-8 dígitos)
+ * @returns {{ razonSocial: string, cuit: string } | null}
+ */
+export async function getAfipRazonSocial(docNumber) {
+  const cleaned = String(docNumber).replace(/[-\s]/g, '')
+  
+  if (!cleaned || cleaned.length < 7 || cleaned.length > 11) {
+    return null
+  }
+
+  // Si ya lo tenemos en cache
+  if (nameCache[cleaned]) return nameCache[cleaned]
+
+  const afip = getAfipInstance()
+  if (!afip) return null
+
+  // ─── Caso 1: CUIT directo (11 dígitos) ───
+  if (cleaned.length === 11) {
+    console.log(`[AFIP Helper] Consultando CUIT directo: ${cleaned}`)
+    const name = await queryAfipByCuit(cleaned)
+    if (name) {
+      nameCache[cleaned] = name
+      console.log(`[AFIP Helper] ✅ ${cleaned} → ${name}`)
+      return name
+    }
+    return null
+  }
+
+  // ─── Caso 2: DNI (7-8 dígitos) → calcular posibles CUITs ───
+  const possibleCuits = dniToPossibleCuits(cleaned)
+  console.log(`[AFIP Helper] DNI ${cleaned} → probando CUITs: ${possibleCuits.join(', ')}`)
+
+  for (const cuit of possibleCuits) {
+    const name = await queryAfipByCuit(cuit)
+    if (name) {
+      // Guardar en cache tanto por DNI como por CUIT
+      nameCache[cleaned] = name
+      nameCache[cuit] = name
+      console.log(`[AFIP Helper] ✅ DNI ${cleaned} → CUIT ${cuit} → ${name}`)
+      return name
+    }
+  }
+
+  console.log(`[AFIP Helper] DNI ${cleaned}: ninguno de los CUITs posibles devolvió datos`)
+  return null
 }

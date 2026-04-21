@@ -124,9 +124,9 @@ export default async function handler(req, res) {
         // En ese caso, el nombre del payer es realmente el destinatario, no el remitente
         // Lo detectamos y dejamos "Consumidor Final" + "Transferencia Bancaria"
 
-        // 1. Prioridad: Consultar AFIP si es un CUIT válido (11 dígitos)
+        // 1. Prioridad: Consultar AFIP si es un CUIT (11 dígitos) o DNI (7-8 dígitos)
         //    PERO solo si el payer NO es el dueño de la cuenta (evitar auto-lookup)
-        if (!isOwnAccount && docNumber && docNumber.length === 11) {
+        if (!isOwnAccount && docNumber && docNumber.length >= 7) {
           const afipName = await getAfipRazonSocial(docNumber)
           if (afipName) {
             clienteNombre = afipName
@@ -287,8 +287,8 @@ export default async function handler(req, res) {
             }
           }
 
-          // 1. Prioridad: Consultar AFIP si es un CUIT válido
-          if (docNumber && docNumber.length === 11) {
+          // 1. Prioridad: Consultar AFIP si es un CUIT (11) o DNI (7-8 dígitos)
+          if (docNumber && docNumber.length >= 7) {
             const afipName = await getAfipRazonSocial(docNumber)
             if (afipName) {
               clienteNombre = afipName
