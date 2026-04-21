@@ -1,4 +1,4 @@
-﻿import { TrendingUp, Clock, FileCheck, AlertTriangle } from 'lucide-react'
+import { TrendingUp, Clock, FileCheck, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { filterVentasByTimeframe } from '../utils/dateUtils'
 
@@ -10,7 +10,7 @@ export default function StatsCards({ ventas, onCardClick }) {
   const totalMonto = filteredVentas.reduce((sum, v) => sum + (Number(v.monto) || 0), 0)
   const pendientes = filteredVentas.filter(v => v.status === 'pendiente' || v.status === 'procesando')
   const facturadas = filteredVentas.filter(v => v.status === 'facturado')
-  const errores = filteredVentas.filter(v => v.status === 'error')
+  const borradas = filteredVentas.filter(v => v.status === 'borrada')
 
   const cards = [
     {
@@ -44,14 +44,14 @@ export default function StatsCards({ ventas, onCardClick }) {
       ventas: facturadas
     },
     {
-      id: 'errores',
-      label: 'Con Error',
-      value: errores.length,
-      sub: errores.length > 0 ? 'Requieren atención' : 'Sin errores',
-      icon: AlertTriangle,
+      id: 'borradas',
+      label: 'Borradas',
+      value: borradas.length,
+      sub: borradas.length > 0 ? 'Ver papelera' : 'Papelera vacía',
+      icon: Trash2,
       accent: 'text-red',
       accentBg: 'bg-red-subtle',
-      ventas: errores
+      ventas: borradas
     },
   ]
 

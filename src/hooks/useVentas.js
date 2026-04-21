@@ -110,6 +110,15 @@ export function useVentas() {
   const deleteVenta = useCallback(async (id) => {
     const { error: deleteError } = await supabase
       .from('ventas')
+      .update({ status: 'borrada' })
+      .eq('id', id)
+
+    if (deleteError) throw deleteError
+  }, [])
+
+  const hardDeleteVenta = useCallback(async (id) => {
+    const { error: deleteError } = await supabase
+      .from('ventas')
       .delete()
       .eq('id', id)
 
@@ -126,5 +135,5 @@ export function useVentas() {
     return data
   }, [])
 
-  return { ventas, setVentas, loading, error, refetch: fetchVentas, updateVentaStatus, updateVenta, createVenta, deleteVenta, bulkCreateVentas }
+  return { ventas, setVentas, loading, error, refetch: fetchVentas, updateVentaStatus, updateVenta, createVenta, deleteVenta, hardDeleteVenta, bulkCreateVentas }
 }

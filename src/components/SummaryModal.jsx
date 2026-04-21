@@ -1,9 +1,9 @@
-﻿import Modal from './Modal';
+import Modal from './Modal';
 import StatusBadge from './StatusBadge';
-import { Trash2, Loader2, AlertCircle } from 'lucide-react';
+import { Trash2, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 import { useState } from 'react';
 
-export default function SummaryModal({ isOpen, onClose, title, ventas, onDelete, onShowError }) {
+export default function SummaryModal({ isOpen, onClose, title, ventas, onDelete, onRestore, onHardDelete, onShowError }) {
   const [deletingId, setDeletingId] = useState(null)
 
   const formatDate = (dateStr) => {
@@ -31,6 +31,16 @@ export default function SummaryModal({ isOpen, onClose, title, ventas, onDelete,
     setDeletingId(id);
     try {
       await onDelete(id);
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
+  const handleHardDelete = async (id) => {
+    if (!onHardDelete) return;
+    setDeletingId(id);
+    try {
+      await onHardDelete(id);
     } finally {
       setDeletingId(null);
     }
@@ -91,12 +101,30 @@ export default function SummaryModal({ isOpen, onClose, title, ventas, onDelete,
                       </div>
                     </td>
                     <td className="px-4 py-3 text-right">
-                      {venta.status === 'error' && (
+                      {venta.status === 'borrada' ? (
+                        <div className="flex justify-end gap-2">
+                          <button
+                            onClick={() => onRestore && onRestore(venta.id)}
+                            className="p-1.5 rounded-lg text-text-muted hover:text-green hover:bg-green-subtle/30 transition-colors"
+                            title="Restaurar a pendiente"
+                          >
+                            <RefreshCw size={16} />
+                          </button>
+                          <button
+                            onClick={() => handleHardDelete(venta.id)}
+                            disabled={deletingId === venta.id}
+                            className="p-1.5 rounded-lg text-text-muted hover:text-red hover:bg-red-subtle/30 transition-colors disabled:opacity-50"
+                            title="Eliminar definitivamente"
+                          >
+                            {deletingId === venta.id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                          </button>
+                        </div>
+                      ) : (
                         <button
                           onClick={() => handleDelete(venta.id)}
                           disabled={deletingId === venta.id}
                           className="p-1.5 rounded-lg text-text-muted hover:text-red hover:bg-red-subtle/30 transition-colors disabled:opacity-50"
-                          title="Eliminar venta"
+                          title="Mover a papelera"
                         >
                           {deletingId === venta.id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
                         </button>

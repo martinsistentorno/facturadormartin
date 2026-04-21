@@ -1,4 +1,4 @@
-﻿export default function StatusBadge({ status }) {
+export default function StatusBadge({ status }) {
   const config = {
     pendiente: {
       label: 'Pendiente',
@@ -23,6 +23,12 @@
       bg: 'bg-red-subtle',
       text: 'text-red',
       dot: 'bg-red',
+    },
+    borrada: {
+      label: 'Borrada',
+      bg: 'bg-text-secondary/10',
+      text: 'text-text-secondary',
+      dot: 'bg-text-secondary',
     },
   }
 

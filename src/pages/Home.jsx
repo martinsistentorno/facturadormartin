@@ -16,7 +16,7 @@ import BulkImportModal from '../components/BulkImportModal'
 import { exportToCSV, exportToExcel } from '../utils/exportUtils'
 
 export default function Home() {
-  const { ventas, setVentas, loading, error, refetch, updateVentaStatus, updateVenta, createVenta, deleteVenta, bulkCreateVentas } = useVentas()
+  const { ventas, setVentas, loading, error, refetch, updateVentaStatus, updateVenta, createVenta, deleteVenta, hardDeleteVenta, bulkCreateVentas } = useVentas()
   const { search: searchClientes } = useClientes(ventas)
   const [selectedIds, setSelectedIds] = useState(new Set())
   const [toasts, setToasts] = useState([])
@@ -58,6 +58,9 @@ export default function Home() {
   // ─── Filtered ventas ───
   const filteredVentas = useMemo(() => {
     return ventas.filter(v => {
+      // Exclude borradas globally from generic UI views
+      if (v.status === 'borrada') return false
+
       // Universal search across all fields
       if (debouncedSearch) {
         const q = debouncedSearch.toLowerCase()
@@ -187,11 +190,39 @@ export default function Home() {
     }
   }
 
+  const handleRestoreVenta = async (id) => {
+    try {
+      await updateVentaStatus(id, 'pendiente')
+      showToast('Venta restaurada a pendiente', 'info')
+      setModalData(prev => ({
+        ...prev,
+        ventas: prev.ventas.filter(v => v.id !== id)
+      }))
+    } catch (err) {
+      console.error('Error al restaurar:', err)
+      showToast('Error al restaurar: ' + err.message, 'error')
+    }
+  }
+
+  const handleHardDeleteVenta = async (id) => {
+    try {
+      await hardDeleteVenta(id)
+      showToast('Venta eliminada permanentemente', 'success')
+      setModalData(prev => ({
+        ...prev,
+        ventas: prev.ventas.filter(v => v.id !== id)
+      }))
+    } catch (err) {
+      console.error('Error al eliminar definitivamente:', err)
+      showToast('Error al eliminar: ' + err.message, 'error')
+    }
+  }
+
   // ─── Bulk delete ───
   const handleBulkDelete = async () => {
     if (selectedVentas.length === 0) return
 
-    if (!confirm(`¿Eliminar permanentemente ${selectedVentas.length} venta(s) del sistema?\nEsto no las borrará de AFIP si ya fueron facturadas.`)) return
+    if (!confirm(`¿Mover ${selectedVentas.length} venta(s) a la papelera?\nPodrás restaurarlas o eliminarlas definitivamente luego.`)) return
 
     let deleted = 0
     for (const v of selectedVentas) {
@@ -539,6 +570,8 @@ export default function Home() {
         title={modalData.title}
         ventas={modalData.ventas}
         onDelete={handleDeleteVenta}
+        onRestore={handleRestoreVenta}
+        onHardDelete={handleHardDeleteVenta}
         onShowError={(msg) => showToast(msg, 'error')}
       />
 
