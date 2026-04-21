@@ -124,11 +124,11 @@ export default async function handler(req, res) {
 
     // Debug: mostrar info de diagnóstico
     console.log('AFIP SDK inicializado correctamente')
-    console.log(`Cert empieza con: ${cert.substring(0, 30)}...`)
-    console.log(`Key empieza con: ${key.substring(0, 30)}...`)
-    console.log(`Cert largo: ${cert.length} chars`)
-    console.log(`Key largo: ${key.length} chars`)
-    console.log(`Token (primeros 10): ${sdkToken.substring(0, 10)}...`)
+    console.log(`Cert empieza con: ${certContent.substring(0, 30)}...`)
+    console.log(`Key empieza con: ${keyContent.substring(0, 30)}...`)
+    console.log(`Cert largo: ${certContent.length} chars`)
+    console.log(`Key largo: ${keyContent.length} chars`)
+    console.log(`Token: ${sdkToken ? sdkToken.substring(0, 10) + '...' : 'NO DEFINIDO'}`)
 
     const resultados = []
 
