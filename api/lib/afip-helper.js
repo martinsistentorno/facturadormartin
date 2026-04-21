@@ -120,7 +120,39 @@ async function queryAfipByCuit(cuitStr) {
       }
     }
 
-    return { razonSocial: razonSocial || null, condicionIva }
+    // Extraer domicilio
+    let domicilio = ''
+    if (result.datosGenerales && result.datosGenerales.domicilioFiscal) {
+      const dom = result.datosGenerales.domicilioFiscal
+      const dir = dom.direccion || ''
+      const loc = dom.localidad || ''
+      const cp = dom.codPostal ? `(CP ${dom.codPostal})` : ''
+      const prv = dom.descripcionProvincia || ''
+      domicilio = [dir, loc, prv, cp].filter(Boolean).join(', ')
+    }
+
+    // Extraer inicio de actividades (suele estar en impuestos/monotributo)
+    let inicioActividades = ''
+    if (result.datosRegimenGeneral?.impuesto?.[0]?.periodo) {
+      inicioActividades = String(result.datosRegimenGeneral.impuesto[0].periodo)
+    } else if (result.datosMonotributo?.periodo) {
+      inicioActividades = String(result.datosMonotributo.periodo)
+    } else if (result.datosGenerales?.mesCierre) {
+      inicioActividades = `Mes Cierre: ${result.datosGenerales.mesCierre}`
+    }
+
+    // Convertir AAAAMM a MM/AAAA si tiene 6 dígitos numéricos
+    if (/^\d{6}$/.test(inicioActividades)) {
+      inicioActividades = `${inicioActividades.substring(4, 6)}/${inicioActividades.substring(0, 4)}`
+    }
+
+    return { 
+      razonSocial: razonSocial || null, 
+      condicionIva,
+      domicilio,
+      inicioActividades,
+      raw: result 
+    }
   } catch (err) {
     console.error(`[AFIP Helper] Error SOAP para ${cuitStr}:`, err.message)
     return null
@@ -131,7 +163,7 @@ async function queryAfipByCuit(cuitStr) {
  * Consulta la Razón Social a partir de un CUIT (11 dígitos).
  * 
  * @param {string|number} docNumber - CUIT (11 dígitos)
- * @returns {{ razonSocial: string, cuit: string } | null}
+ * @returns {{ razonSocial: string, cuit: string, condicion_iva: string, raw: any } | null}
  */
 export async function getAfipRazonSocial(docNumber) {
   const cleaned = String(docNumber).replace(/[-\s]/g, '')
@@ -146,7 +178,14 @@ export async function getAfipRazonSocial(docNumber) {
   console.log(`[AFIP Helper] Consultando CUIT directo: ${cleaned}`)
   const data = await queryAfipByCuit(cleaned)
   if (data && data.razonSocial) {
-    const result = { razonSocial: data.razonSocial, cuit: cleaned, condicion_iva: data.condicionIva }
+    const result = { 
+      razonSocial: data.razonSocial, 
+      cuit: cleaned, 
+      condicion_iva: data.condicionIva,
+      domicilio: data.domicilio,
+      inicio_actividades: data.inicioActividades,
+      raw: data.raw 
+    }
     nameCache[cleaned] = result
     console.log(`[AFIP Helper] ✅ ${cleaned} → ${data.razonSocial} (${data.condicionIva})`)
     return result

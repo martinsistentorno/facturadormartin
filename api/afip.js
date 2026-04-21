@@ -5,6 +5,7 @@ import path from 'path'
 import os from 'os'
 import tls from 'tls'
 import crypto from 'crypto'
+import { getAfipRazonSocial } from './lib/afip-helper.js'
 
 // AFIP servers use 1024-bit DH keys which OpenSSL 3.0+ (Node 18+) rejects.
 // Force SECLEVEL=0 on ALL TLS connections — the SOAP lib inside the SDK creates its own.
@@ -49,20 +50,71 @@ export default async function handler(req, res) {
 
     // ─── Fetch emisor config from DB ───
     let emisorConfig = null
+    const cuit = process.env.AFIP_CUIT
+
     try {
       const { data: cfgData, error: cfgError } = await supabaseAdmin
         .from('config_emisor')
         .select('*')
         .limit(1)
         .maybeSingle()
-      if (cfgError) console.error('⚠️ Error leyendo config_emisor:', cfgError.message)
+      
+      if (cfgError) {
+        console.error('⚠️ Error leyendo config_emisor:', cfgError.message)
+      }
+
       emisorConfig = cfgData
+
+      // Si no hay configuración, la autogeneramos usando AFIP
+      if (!emisorConfig && cuit) {
+        console.log('[AFIP] config_emisor vacío. Autogenerando desde Padrón AFIP...')
+        const afipData = await getAfipRazonSocial(cuit)
+        
+        let condicionIva = 'Responsable Monotributo'
+        if (afipData?.condicion_iva) {
+          const map = {
+            'Monotributista': 'Responsable Monotributo',
+            'Responsable Inscripto': 'IVA Responsable Inscripto',
+            'Exento': 'IVA Sujeto Exento',
+          }
+          condicionIva = map[afipData.condicion_iva] || afipData.condicion_iva
+        }
+
+        const cuitFmt = cuit.length === 11 ? `${cuit.slice(0, 2)}-${cuit.slice(2, 10)}-${cuit.slice(10)}` : cuit
+        const ptoVta = parseInt(process.env.AFIP_PTO_VTA || '1')
+        const tipoCbte = parseInt(process.env.AFIP_TIPO_CBTE || '11')
+
+        const newConfig = {
+          razon_social: afipData?.razonSocial || '',
+          cuit: cuit,
+          cuit_fmt: cuitFmt,
+          condicion_iva: condicionIva,
+          pto_vta: ptoVta,
+          tipo_cbte: tipoCbte,
+          domicilio: afipData?.domicilio || '',
+          inicio_actividades: afipData?.inicio_actividades || '',
+          ingresos_brutos: cuitFmt
+        }
+
+        const { data: insertedConfig, error: insertErr } = await supabaseAdmin
+          .from('config_emisor')
+          .insert([newConfig])
+          .select()
+          .single()
+
+        if (!insertErr && insertedConfig) {
+          console.log('[AFIP] config_emisor autogenerado con éxito.')
+          emisorConfig = insertedConfig
+        } else {
+          console.error('[AFIP] Error insertando auto-config:', insertErr?.message)
+          emisorConfig = newConfig // fallback temporal en memoria
+        }
+      }
     } catch (cfgErr) {
       console.error('⚠️ Error fetch config_emisor:', cfgErr.message)
     }
 
     // ─── Config AFIP ───
-    const cuit = process.env.AFIP_CUIT
     const certBase64 = process.env.AFIP_CERT_BASE64
     const keyBase64 = process.env.AFIP_KEY_BASE64
     const ptoVta = emisorConfig?.pto_vta || parseInt(process.env.AFIP_PTO_VTA || '1')

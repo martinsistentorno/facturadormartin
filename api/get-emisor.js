@@ -47,9 +47,9 @@ export default async function handler(req, res) {
       // Datos configurados en el servidor
       pto_vta: ptoVta,
       tipo_cbte: tipoCbte,
-      // Campos editables por el cliente (vacíos, los completa él)
-      domicilio: '',
-      inicio_actividades: '',
+      // Campos editables por el cliente (pre-cargados de AFIP si existen sino vacíos)
+      domicilio: afipData?.domicilio || '',
+      inicio_actividades: afipData?.inicio_actividades || '',
       ingresos_brutos: cuitFmt,
     })
   } catch (err) {
