@@ -307,7 +307,6 @@ export default function SaleDetailDrawer({ venta, isOpen, onClose, onSave, onRet
         </>
         )}
       </div>
-        </div>
       </div>
     </>
   );
