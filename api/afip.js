@@ -105,6 +105,12 @@ export default async function handler(req, res) {
     const keyContent = Buffer.from(keyBase64, 'base64').toString('utf8')
     const sdkToken = process.env.AFIP_SDK_TOKEN
 
+    if (!sdkToken) {
+      return res.status(500).json({
+        error: 'Falta la variable AFIP_SDK_TOKEN en Vercel. Registrate en app.afipsdk.com para obtener tu token.'
+      })
+    }
+
     // Escribir certs a /tmp para evitar ENAMETOOLONG (afip.js v0.7.6 en Vercel)
     const tmpDir = os.tmpdir()
     const certPath = path.join(tmpDir, 'afip_cert.crt')
@@ -119,7 +125,8 @@ export default async function handler(req, res) {
       ta_folder: tmpDir,
       cert: 'afip_cert.crt',
       key: 'afip_key.key',
-      production: isProduction
+      production: isProduction,
+      access_token: sdkToken
     })
 
     // Debug: mostrar info de diagnóstico
