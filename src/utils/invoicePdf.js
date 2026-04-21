@@ -76,7 +76,8 @@ export async function generateInvoicePdf(venta, emisor) {
 
   // ─── Datos del Receptor ───
   const cuitCliente = venta.datos_fiscales?.cuit || 'Consumidor Final';
-  const condIvaReceptor = cuitCliente.includes('-') || cuitCliente.length > 8 ? 'IVA Responsable Inscripto' : 'Consumidor Final';
+  const fallbackIva = (cuitCliente.includes('-') || cuitCliente.length > 8) ? 'Responsable Inscripto' : 'Consumidor Final';
+  const condIvaReceptor = venta.datos_fiscales?.condicion_iva || fallbackIva;
   
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');

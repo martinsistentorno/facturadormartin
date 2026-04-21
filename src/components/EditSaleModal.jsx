@@ -16,6 +16,7 @@ export default function EditSaleModal({ isOpen, onClose, venta, onSave }) {
   const [formData, setFormData] = useState({
     cliente: '',
     cuit: '',
+    condicionIva: 'Consumidor Final',
     descripcion: '',
     monto: 0,
     formaPago: 'Contado - Efectivo',
@@ -26,6 +27,7 @@ export default function EditSaleModal({ isOpen, onClose, venta, onSave }) {
       setFormData({
         cliente: venta.cliente || '',
         cuit: venta.datos_fiscales?.cuit || '',
+        condicionIva: venta.datos_fiscales?.condicion_iva || (venta.datos_fiscales?.cuit?.length === 11 ? 'Responsable Inscripto' : 'Consumidor Final'),
         descripcion: venta.datos_fiscales?.descripcion || 'Productos varios',
         monto: venta.monto || 0,
         formaPago: venta.datos_fiscales?.forma_pago || 'Contado - Efectivo',
@@ -56,6 +58,7 @@ export default function EditSaleModal({ isOpen, onClose, venta, onSave }) {
         datos_fiscales: {
           ...venta.datos_fiscales,
           cuit: formData.cuit,
+          condicion_iva: formData.condicionIva,
           descripcion: formData.descripcion,
           forma_pago: formData.formaPago,
         }
@@ -155,6 +158,24 @@ export default function EditSaleModal({ isOpen, onClose, venta, onSave }) {
                 Consumidor Final si vacío.
               </span>
             </div>
+          </div>
+
+          {/* Condición IVA */}
+          <div className="flex flex-col gap-1 w-1/2">
+            <span className="text-[9px] font-bold uppercase tracking-widest text-text-secondary flex items-center gap-1" style={{ fontFamily: 'Inter' }}>
+              <FileText size={10} />
+              Condición frente al IVA
+            </span>
+            <select
+              value={formData.condicionIva}
+              onChange={(e) => setFormData({ ...formData, condicionIva: e.target.value })}
+              className="w-full px-3 py-2 rounded-lg border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#C0443C]/30 focus:border-[#C0443C] transition-all font-medium appearance-none"
+            >
+              <option value="Consumidor Final">Consumidor Final</option>
+              <option value="Responsable Inscripto">Responsable Inscripto</option>
+              <option value="Monotributista">Monotributista</option>
+              <option value="Exento">Exento</option>
+            </select>
           </div>
 
           <div className="h-px bg-border/40 w-full" />

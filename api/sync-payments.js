@@ -165,6 +165,7 @@ export default async function handler(req, res) {
 
         // Si es Consumidor Final, NO guardar CUIT (ni el del dueño de la cuenta)
         const finalCuit = clienteNombre === 'Consumidor Final' ? '' : resolvedCuit
+        const condicionIva = (finalCuit && finalCuit.length === 11) ? 'Responsable Inscripto' : 'Consumidor Final'
 
         const ventaRecord = {
           fecha: payment.date_approved || payment.date_created || new Date().toISOString(),
@@ -176,6 +177,7 @@ export default async function handler(req, res) {
             email,
             identification: { type: docType, number: docNumber },
             cuit: finalCuit,
+            condicion_iva: condicionIva,
             forma_pago: formaPago,
             mp_status: payment.status,
             mp_method: payment.payment_method_id || '',
@@ -364,6 +366,7 @@ export default async function handler(req, res) {
 
           // Si es Consumidor Final, NO guardar CUIT
           const finalCuit = clienteNombre === 'Consumidor Final' ? '' : resolvedCuit
+          const condicionIva = (finalCuit && finalCuit.length === 11) ? 'Responsable Inscripto' : 'Consumidor Final'
 
           const ventaRecord = {
             fecha: order.date_created || new Date().toISOString(),
@@ -375,6 +378,7 @@ export default async function handler(req, res) {
               email,
               identification: { type: docType, number: docNumber },
               cuit: finalCuit,
+              condicion_iva: condicionIva,
               forma_pago: formaPago,
               meli_order_id: orderId,
               meli_payment_ids: orderPaymentIds,

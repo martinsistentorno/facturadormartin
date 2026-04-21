@@ -40,6 +40,7 @@ export default function AddSaleModal({ isOpen, onClose, onSave, searchClientes }
     cliente: '',
     cuit: '',
     monto: '',
+    condicionIva: 'Consumidor Final',
     formaPago: 'Contado - Efectivo',
   });
   const [suggestions, setSuggestions] = useState([]);
@@ -47,7 +48,7 @@ export default function AddSaleModal({ isOpen, onClose, onSave, searchClientes }
   const suggestionsRef = useRef(null);
 
   const resetForm = () => {
-    setFormData({ cliente: '', cuit: '', monto: '', formaPago: 'Contado - Efectivo' });
+    setFormData({ cliente: '', cuit: '', monto: '', condicionIva: 'Consumidor Final', formaPago: 'Contado - Efectivo' });
     setSuggestions([]);
     setShowSuggestions(false);
   };
@@ -107,14 +108,16 @@ export default function AddSaleModal({ isOpen, onClose, onSave, searchClientes }
     setLoading(true);
     try {
       await onSave({
-        fecha: new Date().toISOString(),
-        cliente: formData.cliente.trim(),
+        cliente: formData.cliente,
         monto: parseFloat(formData.monto),
         status: 'pendiente',
+        mp_payment_id: null,
         datos_fiscales: {
-          cuit: formData.cuit.trim() || null,
+          cuit: formData.cuit,
+          condicion_iva: formData.condicionIva,
           forma_pago: formData.formaPago,
-        },
+          origen: 'Manual'
+        }
       });
       resetForm();
       onClose();
@@ -191,6 +194,23 @@ export default function AddSaleModal({ isOpen, onClose, onSave, searchClientes }
               onChange={(e) => setFormData({ ...formData, cuit: e.target.value })}
               placeholder="Opcional. Vacío = Consumidor Final"
             />
+
+            {/* Condición IVA */}
+            <div className="flex flex-col gap-1 w-full mt-2">
+              <span className="text-[9px] font-bold uppercase tracking-widest text-text-secondary flex items-center gap-1" style={{ fontFamily: 'Inter' }}>
+                Condición frente al IVA
+              </span>
+              <select
+                value={formData.condicionIva}
+                onChange={(e) => setFormData({ ...formData, condicionIva: e.target.value })}
+                className="w-full px-3 py-2 border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#7C4DFF]/50 focus:border-[#7C4DFF] transition-all font-medium appearance-none rounded-lg"
+              >
+                <option value="Consumidor Final">Consumidor Final</option>
+                <option value="Responsable Inscripto">Responsable Inscripto</option>
+                <option value="Monotributista">Monotributista</option>
+                <option value="Exento">Exento</option>
+              </select>
+            </div>
           </div>
 
           <div className="h-px bg-border/40 w-full" />

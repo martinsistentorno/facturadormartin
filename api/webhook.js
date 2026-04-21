@@ -192,6 +192,7 @@ export default async function handler(req, res) {
       const formaPago = paymentTypeMap[firstPayment?.payment_type] || firstPayment?.payment_type || 'Mercado Libre'
 
       const finalCuit = clienteNombre === 'Consumidor Final' || clienteNombre.includes('Venta MeLi') ? '' : resolvedCuit
+      const condicionIva = (finalCuit && finalCuit.length === 11) ? 'Responsable Inscripto' : 'Consumidor Final'
 
       const ventaRecord = {
         fecha: order.date_created || new Date().toISOString(),
@@ -204,6 +205,7 @@ export default async function handler(req, res) {
           email: buyer.email || '',
           identification: { type: docType, number: docNumber },
           cuit: finalCuit,
+          condicion_iva: condicionIva,
           forma_pago: formaPago,
           meli_order_id: orderId,
           meli_payment_ids: orderPaymentIds,
@@ -432,6 +434,10 @@ async function processPayment(supabaseAdmin, accessToken, paymentId, res) {
   }
   const formaPago = methodMap[typeId] || payment.payment_method_id || 'Mercado Pago'
 
+  // Si es Consumidor Final y fue transferencia ajena o no pudimos sacarlo, vaciamos CUIT
+  const finalCuit = clienteNombre === 'Consumidor Final' ? '' : resolvedCuit
+  const condicionIva = (finalCuit && finalCuit.length === 11) ? 'Responsable Inscripto' : 'Consumidor Final'
+
   const ventaRecord = {
     fecha: payment.date_approved || payment.date_created || new Date().toISOString(),
     cliente: clienteNombre,
@@ -441,7 +447,8 @@ async function processPayment(supabaseAdmin, accessToken, paymentId, res) {
     datos_fiscales: {
       email: payer.email || '',
       identification: { type: payer.identification?.type || 'DNI', number: payer.identification?.number || '' },
-      cuit: payer.identification?.number || '',
+      cuit: finalCuit,
+      condicion_iva: condicionIva,
       forma_pago: formaPago,
       mp_status: payment.status,
       mp_method: payment.payment_method_id || '',
