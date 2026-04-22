@@ -262,45 +262,46 @@ export default async function handler(req, res) {
         // ─── Generar y Guardar PDF Permanente ───
         let finalPdfUrl = null
         try {
-          const pdfRes = await afip.ElectronicBilling.createPDF({
-            html: `
-              <p><b>Razón Social:</b> ${v.cliente || 'Consumidor Final'}</p>
-              <p><b>CUIT:</b> ${v.datos_fiscales?.cuit || 'N/A'}</p>
-              <p><b>Forma de Pago:</b> ${v.datos_fiscales?.forma_pago || 'Contado'}</p>
-            `,
-            file_name: `Factura_${nroComprobante}.pdf`,
-            copy: 1,
-            voucher_info: {
-              PtoVta: ptoVta,
-              CbteTipo: tipoCbte,
-              CbteNro: nextVoucher
-            }
-          })
-          
-          const s3Url = pdfRes?.file || null
-          console.log(`📄 PDF generado en S3 (temporal): ${s3Url}`)
+          if (sdkToken) {
+            const pdfRes = await afip.ElectronicBilling.createPDF({
+              html: `
+                <p><b>Razón Social:</b> ${v.cliente || 'Consumidor Final'}</p>
+                <p><b>CUIT:</b> ${v.datos_fiscales?.cuit || 'N/A'}</p>
+                <p><b>Forma de Pago:</b> ${v.datos_fiscales?.forma_pago || 'Contado'}</p>
+              `,
+              file_name: `Factura_${nroComprobante}.pdf`,
+              copy: 1,
+              voucher_info: {
+                PtoVta: ptoVta,
+                CbteTipo: tipoCbte,
+                CbteNro: nextVoucher
+              }
+            })
+            
+            const s3Url = pdfRes?.file || null
+            console.log(`📄 PDF generado en S3 (temporal): ${s3Url}`)
 
-          if (s3Url) {
-            // Descargar PDF desde S3 temporal
-            const pdfResponse = await fetch(s3Url)
-            const arrayBuffer = await pdfResponse.arrayBuffer()
-            const buffer = Buffer.from(arrayBuffer)
+            if (s3Url) {
+              // Descargar PDF desde S3 temporal
+              const pdfResponse = await fetch(s3Url)
+              const arrayBuffer = await pdfResponse.arrayBuffer()
+              const buffer = Buffer.from(arrayBuffer)
 
-            // Subir a nuestro Supabase Storage (bucket "facturas")
-            const fileName = `${v.id}_${nroComprobante}.pdf`
-            const { error: uploadError } = await supabaseAdmin.storage
-              .from('facturas')
-              .upload(fileName, buffer, {
-                contentType: 'application/pdf',
-                upsert: true
-              })
-
-            if (uploadError) {
-              console.error(`⚠️ Error subiendo PDF a Supabase Storage:`, uploadError.message)
-              finalPdfUrl = s3Url // Fallback temporal si falla
-            } else {
-              const { data } = supabaseAdmin.storage
+              // Subir a nuestro Supabase Storage (bucket "facturas")
+              const fileName = `${v.id}_${nroComprobante}.pdf`
+              const { error: uploadError } = await supabaseAdmin.storage
                 .from('facturas')
+                .upload(fileName, buffer, {
+                  contentType: 'application/pdf',
+                  upsert: true
+                })
+
+              if (uploadError) {
+                console.error(`⚠️ Error subiendo PDF a Supabase Storage:`, uploadError.message)
+                finalPdfUrl = s3Url // Fallback temporal si falla
+              } else {
+                const { data } = supabaseAdmin.storage
+                  .from('facturas')
                 .getPublicUrl(fileName)
               finalPdfUrl = data.publicUrl
               console.log(`💾 PDF guardado permanentemente: ${finalPdfUrl}`)
