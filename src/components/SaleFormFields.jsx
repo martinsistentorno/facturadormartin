@@ -198,7 +198,7 @@ export default function SaleFormFields({
             value={form.cuit}
             onChange={(e) => setForm({ ...form, cuit: e.target.value })}
             onBlur={handleCuitBlur}
-            placeholder="20-33795011-7"
+            placeholder="20-11111111-2"
           />
           {lookingUp && <Loader2 size={14} className="absolute right-3 top-8 animate-spin text-[#7C4DFF]" />}
         </div>

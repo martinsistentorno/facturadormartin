@@ -189,10 +189,6 @@ export default function SaleDetailDrawer({ venta, isOpen, onClose, onSave, onRet
         <div className="p-6 space-y-5">
           {isEditing ? (
             <form onSubmit={handleSaveEdit} className="space-y-4 animate-fade-in">
-              <div className="flex items-center justify-between mb-2">
-                <StatusBadge status="procesando" />
-                <span className="text-xs font-bold uppercase tracking-widest text-[#7C4DFF]">Modo Edición</span>
-              </div>
 
               <SaleFormFields
                 form={editForm}
