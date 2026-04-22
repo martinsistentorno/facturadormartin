@@ -231,6 +231,14 @@ export default async function handler(req, res) {
         const docTipo = cuitCliente && cuitCliente.length >= 10 ? 80 : 99  // 80=CUIT, 99=Consumidor Final
         const docNro = docTipo === 80 ? parseInt(cuitCliente) : 0
 
+        // Nueva reglamentación RG 5616: Condición IVA del receptor
+        let condicionIvaReceptor = 5 // Consumidor Final por defecto
+        const condStr = (v.datos_fiscales?.condicion_iva || '').toLowerCase()
+        if (condStr.includes('inscripto')) condicionIvaReceptor = 1
+        if (condStr.includes('monotributo')) condicionIvaReceptor = 6
+        if (condStr.includes('exento')) condicionIvaReceptor = 4
+        if (condStr.includes('no responsable')) condicionIvaReceptor = 3
+
         // Armar el comprobante (Factura C - tipo 11)
         const data = {
           'CantReg': 1,
@@ -250,6 +258,7 @@ export default async function handler(req, res) {
           'ImpTrib': 0,
           'MonId': 'PES',
           'MonCotiz': 1,
+          'CondicionIvaReceptor': condicionIvaReceptor
         }
 
         console.log(`Enviando comprobante a AFIP...`)
