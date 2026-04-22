@@ -38,6 +38,7 @@ export default function SummaryModal({ isOpen, onClose, title, ventas, onDelete,
 
   const handleHardDelete = async (id) => {
     if (!onHardDelete) return;
+    if (!confirm('¿Estás seguro de que quieres eliminar esta venta permanentemente? Esta acción no se puede deshacer.')) return;
     setDeletingId(id);
     try {
       await onHardDelete(id);
@@ -55,13 +56,15 @@ export default function SummaryModal({ isOpen, onClose, title, ventas, onDelete,
         </div>
       ) : (
         <div className="space-y-6">
-           {/* Total summary */}
-           <div className="flex justify-end p-4 bg-surface-alt rounded-lg border border-border">
+          {/* Total summary - Hidden for Trash */}
+          {!title.toLowerCase().includes('papelera') && (
+            <div className="flex justify-end p-4 bg-surface-alt rounded-lg border border-border">
               <div className="text-right">
                 <p className="text-xs text-text-secondary uppercase tracking-wider mb-1">Total del Período</p>
                 <p className="text-xl font-bold text-accent">{formatCurrency(totalMonto)}</p>
               </div>
-           </div>
+            </div>
+          )}
 
           <div className="border border-border rounded-xl overflow-hidden">
             <table className="w-full text-sm">
@@ -105,7 +108,7 @@ export default function SummaryModal({ isOpen, onClose, title, ventas, onDelete,
                         <div className="flex justify-end gap-2">
                           <button
                             onClick={() => onRestore && onRestore(venta.id)}
-                            className="p-1.5 rounded-lg text-text-muted hover:text-green hover:bg-green-subtle/30 transition-colors"
+                            className="p-1.5 rounded-lg text-green bg-green/5 border border-green/10 hover:bg-green/20 hover:border-green/30 transition-all"
                             title="Restaurar a pendiente"
                           >
                             <RefreshCw size={16} />
@@ -113,7 +116,7 @@ export default function SummaryModal({ isOpen, onClose, title, ventas, onDelete,
                           <button
                             onClick={() => handleHardDelete(venta.id)}
                             disabled={deletingId === venta.id}
-                            className="p-1.5 rounded-lg text-text-muted hover:text-red hover:bg-red-subtle/30 transition-colors disabled:opacity-50"
+                            className="p-1.5 rounded-lg text-red bg-red/5 border border-red/10 hover:bg-red/20 hover:border-red/30 transition-all disabled:opacity-50"
                             title="Eliminar definitivamente"
                           >
                             {deletingId === venta.id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
