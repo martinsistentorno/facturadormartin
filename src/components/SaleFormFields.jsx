@@ -3,13 +3,13 @@ import { User, Hash, Mail, MapPin, FileText, Package, CreditCard, DollarSign, Ca
 
 // ─── Constantes ───
 const FORMAS_PAGO = [
-  'Contado - Efectivo',
-  'Transferencia Bancaria',
+  'Contado',
   'Tarjeta de Débito',
   'Tarjeta de Crédito',
-  'Mercado Pago',
-  'Crédito MP',
-  'Otro',
+  'Transferencia',
+  'Cuenta Corriente',
+  'Cheque',
+  'Otra',
 ];
 
 const TIPOS_COMPROBANTE = [

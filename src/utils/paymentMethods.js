@@ -53,13 +53,14 @@ const PAYMENT_METHOD_MAP = {
  */
 export function simplifyPaymentMethod(method) {
   const m = (method || '').toLowerCase()
-  if (m.includes('tarjeta')) return 'Tarjeta'
-  if (m.includes('efectivo') || m.includes('contado') || m.includes('ticket') || m.includes('rapipago')) return 'Contado - Efectivo'
-  if (m.includes('transferencia') || m.includes('cvu')) return 'Transferencia Bancaria'
-  if (m === 'dinero en cuenta' || m.includes('mercado') || m.includes('crédito mp') || m.includes('billetera')) return 'Mercado Pago'
-  if (m.includes('cripto') || m.includes('digital')) return 'Cripto / Digital'
+  if (m.includes('tarjeta de crédito')) return 'Tarjeta de Crédito'
+  if (m.includes('tarjeta de débito')) return 'Tarjeta de Débito'
+  if (m.includes('tarjeta') || m.includes('prepaga')) return 'Tarjeta de Débito'
+  if (m.includes('transferencia') || m.includes('cvu')) return 'Transferencia'
+  if (m.includes('cuenta') || m.includes('mercado') || m.includes('crédito mp') || m.includes('billetera')) return 'Contado'
+  if (m.includes('efectivo') || m.includes('contado') || m.includes('ticket') || m.includes('rapipago')) return 'Contado'
   
-  return method || 'Mercado Pago'
+  return 'Contado'
 }
 
 /**
@@ -79,29 +80,18 @@ export function translatePaymentMethod(raw) {
  * Devuelve { bg, text, label } para el badge.
  */
 export function getPaymentBadgeStyle(method) {
-  const label = translatePaymentMethod(method)
+  const label = simplifyPaymentMethod(method)
 
   const styles = {
-    'Efectivo':             { bg: 'bg-accent/10',       text: 'text-accent' },
-    'Contado - Efectivo':   { bg: 'bg-accent/10',       text: 'text-accent' },
+    'Contado':              { bg: 'bg-accent/10',       text: 'text-accent' },
     'Transferencia':        { bg: 'bg-[#7C4DFF]/10',    text: 'text-[#7C4DFF]' },
-    'Transferencia Bancaria': { bg: 'bg-[#7C4DFF]/10',  text: 'text-[#7C4DFF]' },
     'Tarjeta de Crédito':   { bg: 'bg-[#E8A34A]/10',    text: 'text-[#9A641A]' },
     'Tarjeta de Débito':    { bg: 'bg-[#E8A34A]/10',    text: 'text-[#9A641A]' },
-    'Tarjeta Prepaga':      { bg: 'bg-[#E8A34A]/10',    text: 'text-[#9A641A]' },
-    'Dinero en Cuenta':     { bg: 'bg-[#009EE3]/10',    text: 'text-[#009EE3]' },
-    'Mercado Pago':         { bg: 'bg-[#009EE3]/10',    text: 'text-[#009EE3]' },
-    'Crédito MP':           { bg: 'bg-[#2D8F5E]/10',    text: 'text-[#2D8F5E]' },
-    'Cripto / Digital':     { bg: 'bg-[#7C4DFF]/10',    text: 'text-[#7C4DFF]' },
-    'Billetera Digital':    { bg: 'bg-[#009EE3]/10',    text: 'text-[#009EE3]' },
+    'Cuenta Corriente':     { bg: 'bg-[#3460A8]/10',    text: 'text-[#3460A8]' },
+    'Cheque':               { bg: 'bg-surface-alt/80',  text: 'text-text-muted' },
+    'Otra':                 { bg: 'bg-surface-alt/50',  text: 'text-text-secondary' },
   }
 
-  // Simplify label for display
-  let displayLabel = label
-  if (label.includes('Tarjeta')) displayLabel = 'Tarjeta'
-  if (label.includes('Contado')) displayLabel = 'Efectivo'
-  if (label === 'Transferencia Bancaria') displayLabel = 'Transferencia'
-
   const style = styles[label] || { bg: 'bg-surface-alt/50', text: 'text-text-secondary' }
-  return { ...style, label: displayLabel }
+  return { ...style, label }
 }
