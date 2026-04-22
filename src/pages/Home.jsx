@@ -465,6 +465,16 @@ export default function Home() {
         showToast('No se emitió ningún comprobante. Comprobá los errores en la tabla.', 'error')
       }
 
+    } catch (err) {
+      console.error('[handleInvoice] Error:', err.message)
+      showToast('Error al procesar facturas: ' + err.message, 'error')
+      
+      // Si falló el request entero, marcar las que estaban en proceso como error
+      setVentas(prev => prev.map(v => 
+        v.status === 'procesando' 
+          ? { ...v, status: 'error', datos_fiscales: { ...v.datos_fiscales, error_detalle: err.message } } 
+          : v
+      ))
     }
   }
 
