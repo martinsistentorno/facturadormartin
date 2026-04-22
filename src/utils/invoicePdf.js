@@ -131,8 +131,9 @@ export async function generateInvoicePdf(venta, emisor) {
     };
 
     const qrJsonStr = JSON.stringify(qrData);
-    const qrBase64 = btoa(qrJsonStr);
-    const qrUrl = `https://www.afip.gob.ar/fe/qr/?p=${qrBase64}`;
+    // Base64 robusto para UTF-8 (requerido para el parámetro p de AFIP/ARCA)
+    const qrBase64 = btoa(encodeURIComponent(qrJsonStr).replace(/%([0-9A-F]{2})/g, (match, p1) => String.fromCharCode('0x' + p1)));
+    const qrUrl = `https://www.arca.gob.ar/fe/qr/?p=${qrBase64}`;
     
     const qrImage = await QRCode.toDataURL(qrUrl);
     doc.addImage(qrImage, 'PNG', margin + 5, pageHeight - 45, 35, 35);

@@ -67,15 +67,18 @@ export default async function handler(req, res) {
 
          if (match && match.length > 0) {
            const venta = match[0]
-           // Actualizar venta
+           // Actualizar venta con datos oficiales de AFIP
+           const afipFecha = `${info.CbteFch.substring(0,4)}-${info.CbteFch.substring(4,6)}-${info.CbteFch.substring(6,8)}T12:00:00Z`
+           
            await supabase.from('ventas').update({
              status: 'facturado',
              cae: cae,
              nro_comprobante: nComp,
+             fecha: afipFecha,
              vto_cae: `${vtoCae.substring(0,4)}-${vtoCae.substring(4,6)}-${vtoCae.substring(6,8)}`
            }).eq('id', venta.id)
            
-           results.push({ voucher: i, status: 'Recovered', id: venta.id, cliente: venta.cliente })
+           results.push({ voucher: i, status: 'Recovered/Updated', id: venta.id, cliente: venta.cliente, date: afipFecha })
          } else {
            results.push({ voucher: i, status: 'Not Found in DB', cuit, monto })
          }
