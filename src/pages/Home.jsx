@@ -716,6 +716,7 @@ export default function Home() {
         isOpen={!!detailVenta}
         onClose={() => setDetailVenta(null)}
         onRetry={handleRetry}
+        onSave={handleEditVenta}
       />
 
       {/* ─── Add Sale Modal ─── */}
