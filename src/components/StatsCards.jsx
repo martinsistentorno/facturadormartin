@@ -1,4 +1,4 @@
-import { TrendingUp, Clock, FileCheck, Trash2, AlertCircle, Eye, EyeOff } from 'lucide-react'
+import { TrendingUp, Clock, FileCheck, Trash2, AlertCircle, Eye, EyeOff, Activity } from 'lucide-react'
 import { useState } from 'react'
 import { filterVentasByTimeframe } from '../utils/dateUtils'
 
@@ -14,7 +14,10 @@ export default function StatsCards({ ventas, onCardClick }) {
   const pendientes = activas.filter(v => v.status === 'pendiente' || v.status === 'procesando')
   const borradas = filteredVentas.filter(v => v.status === 'borrada')
 
-  const totalAmount = activas.reduce((s, v) => s + (Number(v.monto) || 0), 0)
+  const totalActivasAmount = activas.reduce((s, v) => s + (Number(v.monto) || 0), 0)
+  const facturadasAmount = facturadas.reduce((s, v) => s + (Number(v.monto) || 0), 0)
+  const pendientesAmount = pendientes.reduce((s, v) => s + (Number(v.monto) || 0), 0)
+  const conErrorAmount = conError.reduce((s, v) => s + (Number(v.monto) || 0), 0)
 
   const handleToggleValues = (e) => {
     e.stopPropagation()
@@ -32,129 +35,124 @@ export default function StatsCards({ ventas, onCardClick }) {
         <h2 className="text-xl font-bold text-text-primary uppercase tracking-tight">
             Resumen
         </h2>
-        <select 
-          className="bg-surface border border-border rounded-lg text-sm text-text-primary px-3 py-1.5 focus:outline-none focus:border-accent cursor-pointer"
-          value={timeframe}
-          onChange={(e) => setTimeframe(e.target.value)}
-        >
-          <option value="all">Histórico (Todo)</option>
-          <option value="day">Hoy</option>
-          <option value="week">Esta Semana</option>
-          <option value="month">Este Mes</option>
-        </select>
+        <div className="flex items-center gap-2 bg-surface border border-border rounded-lg pl-3 pr-2 py-1 focus-within:border-accent transition-colors">
+          <select 
+            className="text-sm text-text-primary bg-transparent focus:outline-none cursor-pointer pr-4"
+            value={timeframe}
+            onChange={(e) => setTimeframe(e.target.value)}
+          >
+            <option value="all">Histórico (Todo)</option>
+            <option value="day">Hoy</option>
+            <option value="week">Esta Semana</option>
+            <option value="month">Este Mes</option>
+          </select>
+        </div>
       </div>
 
       {/* Main Grid Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:h-[220px]">
         
-        {/* 1. TOTAL VENTAS (Hero Card) - Takes 5 columns */}
+        {/* 1. FACTURADO (Hero Card) - Takes 8 columns */}
         <button
-          onClick={() => onCardClick('Total Ventas', activas, timeframe)}
-          className="lg:col-span-5 relative bg-white border border-border rounded-2xl p-6 flex flex-col justify-center items-center text-center transition-all duration-300 hover:shadow-[0_8px_20px_-10px_rgba(0,0,0,0.1)] hover:-translate-y-1 outline-none group cursor-pointer"
+          onClick={() => onCardClick('Facturadas', facturadas, timeframe)}
+          className="lg:col-span-8 relative bg-white border border-border rounded-2xl p-6 flex flex-col justify-center items-center text-center transition-all duration-300 hover:border-green hover:shadow-sm outline-none group cursor-pointer overflow-hidden"
         >
+          {/* Decorative Waves (Subtle) */}
+          <div className="absolute left-8 bottom-6 w-24 h-12 opacity-10 pointer-events-none hidden md:block">
+            <svg viewBox="0 0 100 50" className="w-full h-full stroke-green fill-green/20" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M0,50 L20,50 L30,10 L40,50 L50,50 L60,10 L70,50 L100,50" />
+            </svg>
+          </div>
+          <div className="absolute right-8 bottom-6 w-24 h-12 opacity-10 pointer-events-none hidden md:block">
+            <svg viewBox="0 0 100 50" className="w-full h-full stroke-green fill-green/20" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M0,50 L20,50 L30,10 L40,50 L50,50 L60,10 L70,50 L100,50" />
+            </svg>
+          </div>
+
           <button 
             onClick={handleToggleValues}
-            className="absolute top-4 right-4 text-text-muted hover:text-text-primary transition-colors p-2 rounded-full hover:bg-surface-alt z-10 cursor-pointer"
+            className="absolute top-4 right-4 text-text-muted/60 hover:text-text-primary transition-colors p-2 rounded-full hover:bg-surface-alt z-10 cursor-pointer"
           >
-            {showValues ? <Eye size={18} /> : <EyeOff size={18} />}
+            {showValues ? <Eye size={16} /> : <EyeOff size={16} />}
           </button>
           
-          <div className="bg-green/10 p-3 rounded-full mb-3 group-hover:scale-110 transition-transform">
-            <TrendingUp size={24} className="text-green" />
+          <div className="bg-green/10 w-10 h-10 flex items-center justify-center rounded-full mb-3 group-hover:scale-110 transition-transform">
+            <TrendingUp size={18} className="text-green" />
           </div>
           
-          <h3 className="font-bold uppercase tracking-widest text-[11px] text-text-muted mb-1">
-            Total Ventas
+          <h3 className="font-bold uppercase tracking-[0.1em] text-[12px] text-text-primary/90 mb-1">
+            Facturado y Cobrado
           </h3>
           
-          <div className="font-black text-4xl lg:text-5xl tracking-tighter text-text-primary mb-2 transition-all">
-            {renderMoney(totalAmount)}
+          <div className="font-black text-4xl lg:text-5xl tracking-tighter text-text-primary mb-3 transition-all">
+            {renderMoney(facturadasAmount)}
           </div>
           
-          <div className="font-semibold text-xs text-green bg-green-subtle px-3 py-1 rounded-full">
-            {activas.length} operaciones exitosas
+          <div className="font-semibold text-[10px] text-green bg-green-subtle px-3 py-1 rounded-full uppercase tracking-wider">
+            {facturadas.length} {facturadas.length === 1 ? 'factura exitosa' : 'facturas exitosas'}
           </div>
         </button>
 
         {/* 2. STACK OF 3 MINI CARDS - Takes 4 columns */}
         <div className="lg:col-span-4 flex flex-col gap-3 h-[220px]">
-          {/* Pendientes */}
+          
+          {/* Total Ventas */}
           <button
-            onClick={() => onCardClick('Pendientes', pendientes, timeframe)}
-            className="flex-1 bg-white border border-border rounded-xl px-4 flex items-center justify-between transition-all duration-300 hover:shadow-sm hover:border-yellow outline-none cursor-pointer group"
+            onClick={() => onCardClick('Total Ventas', activas, timeframe)}
+            className="flex-1 bg-white border border-border rounded-xl px-4 py-2 flex items-center gap-4 transition-all duration-300 hover:shadow-sm hover:border-blue outline-none cursor-pointer group"
           >
-            <div className="flex items-center gap-3">
-              <div className="bg-yellow/20 p-2 rounded-lg">
-                <Clock size={16} className="text-amber-500" />
-              </div>
-              <div className="text-left">
-                <div className="font-bold uppercase text-[10px] text-text-muted tracking-wider">Pendientes</div>
-                <div className="font-bold text-sm text-text-primary">{pendientes.length} fact.</div>
-              </div>
+            <div className="bg-blue/10 p-2.5 rounded-lg shrink-0">
+              <Activity size={20} className="text-blue" />
             </div>
-            <div className="font-bold text-text-primary text-right">
-              {renderMoney(pendientes.reduce((s, v) => s + (Number(v.monto) || 0), 0))}
+            <div className="text-left flex flex-col justify-center h-full">
+              <div className="font-bold uppercase text-[10px] text-text-muted tracking-wider leading-none mb-1">Total Movimientos</div>
+              <div className="font-bold text-[17px] text-text-primary leading-none mb-1">{renderMoney(totalActivasAmount)}</div>
+              <div className="font-medium text-[11px] text-text-secondary leading-none">{activas.length} op. registradas</div>
             </div>
           </button>
 
-          {/* Facturadas */}
+          {/* Pendientes */}
           <button
-            onClick={() => onCardClick('Facturadas', facturadas, timeframe)}
-            className="flex-1 bg-white border border-border rounded-xl px-4 flex items-center justify-between transition-all duration-300 hover:shadow-sm hover:border-blue outline-none cursor-pointer group"
+            onClick={() => onCardClick('Pendientes', pendientes, timeframe)}
+            className="flex-1 bg-white border border-border rounded-xl px-4 py-2 flex items-center gap-4 transition-all duration-300 hover:shadow-sm hover:border-amber-400 outline-none cursor-pointer group"
           >
-            <div className="flex items-center gap-3">
-              <div className="bg-blue/10 p-2 rounded-lg">
-                <FileCheck size={16} className="text-blue" />
-              </div>
-              <div className="text-left">
-                <div className="font-bold uppercase text-[10px] text-text-muted tracking-wider">Facturadas</div>
-                <div className="font-bold text-sm text-text-primary">{facturadas.length} fact.</div>
-              </div>
+            <div className="bg-yellow/20 p-2.5 rounded-lg shrink-0">
+              <Clock size={20} className="text-amber-500" />
             </div>
-            <div className="font-bold text-text-primary text-right">
-              {renderMoney(facturadas.reduce((s, v) => s + (Number(v.monto) || 0), 0))}
+            <div className="text-left flex flex-col justify-center h-full">
+              <div className="font-bold uppercase text-[10px] text-text-muted tracking-wider leading-none mb-1">Pendiente de Cobro</div>
+              <div className="font-bold text-[17px] text-text-primary leading-none mb-1">{renderMoney(pendientesAmount)}</div>
+              <div className="font-medium text-[11px] text-text-secondary leading-none">{pendientes.length} fact.</div>
             </div>
           </button>
 
           {/* Con Error */}
           <button
             onClick={() => onCardClick('Con Error', conError, timeframe)}
-            className="flex-1 bg-white border border-border rounded-xl px-4 flex items-center justify-between transition-all duration-300 hover:shadow-sm hover:border-red outline-none cursor-pointer group"
+            className="flex-1 bg-white border border-border rounded-xl px-4 py-2 flex items-center gap-4 transition-all duration-300 hover:shadow-sm hover:border-red outline-none cursor-pointer group"
           >
-            <div className="flex items-center gap-3">
-              <div className="bg-red/10 p-2 rounded-lg">
-                <AlertCircle size={16} className="text-red" />
-              </div>
-              <div className="text-left">
-                <div className="font-bold uppercase text-[10px] text-text-muted tracking-wider">Con Error AFIP</div>
-                <div className="font-bold text-sm text-red">{conError.length} reintentos</div>
-              </div>
+            <div className="bg-red/10 p-2.5 rounded-lg shrink-0">
+              <AlertCircle size={20} className="text-red" />
             </div>
-            <div className="font-bold text-red text-right">
-               {renderMoney(conError.reduce((s, v) => s + (Number(v.monto) || 0), 0))}
+            <div className="text-left flex flex-col justify-center h-full">
+              <div className="font-bold uppercase text-[10px] text-text-muted tracking-wider leading-none mb-1">Errores AFIP</div>
+              <div className="font-bold text-[17px] text-text-primary leading-none mb-1">{renderMoney(conErrorAmount)}</div>
+              <div className="font-medium text-[11px] text-red leading-none">{conError.length} reintentos</div>
             </div>
           </button>
         </div>
 
-        {/* 3. PAPELERA DE RECICLAJE - Takes 3 columns */}
-        <button
+      </div>
+      
+      {/* 3. PAPELERA DE RECICLAJE (Low profile bottom button) */}
+      <div className="flex justify-end pt-2">
+         <button
           onClick={() => onCardClick('Papelera', borradas, timeframe)}
-          className="lg:col-span-3 bg-surface-alt border border-dashed border-border rounded-2xl p-6 flex flex-col justify-center items-center text-center transition-all duration-300 hover:bg-white hover:border-red hover:shadow-sm outline-none cursor-pointer group"
+          className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-text-muted hover:text-red transition-colors bg-white/50 hover:bg-white px-3 py-1.5 rounded border border-transparent hover:border-red/20 outline-none cursor-pointer"
         >
-          <div className="bg-text-muted/10 p-4 rounded-full mb-3 group-hover:bg-red/10 transition-colors">
-            <Trash2 size={24} className="text-text-muted group-hover:text-red transition-colors" />
-          </div>
-          <h3 className="font-bold uppercase tracking-widest text-[11px] text-text-primary mb-1">
-            Papelera
-          </h3>
-          <div className="font-bold text-2xl text-text-muted group-hover:text-red transition-colors mb-2">
-            {borradas.length}
-          </div>
-          <p className="text-[10px] text-text-muted px-2">
-            Ver ventas borradas. Podés restaurarlas o eliminarlas definitivamente.
-          </p>
+          <Trash2 size={13} />
+          Papelera ({borradas.length})
         </button>
-
       </div>
     </div>
   )
