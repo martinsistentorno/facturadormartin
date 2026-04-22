@@ -25,6 +25,7 @@ export default function SummaryModal({ isOpen, onClose, title, ventas, onDelete,
   };
 
   const totalMonto = ventas.reduce((s, v) => s + (Number(v.monto) || 0), 0);
+  const isTrashView = ventas.length > 0 && ventas.every(v => v.status === 'borrada');
 
   const handleDelete = async (id) => {
     if (!onDelete) return;
@@ -57,7 +58,7 @@ export default function SummaryModal({ isOpen, onClose, title, ventas, onDelete,
       ) : (
         <div className="space-y-6">
           {/* Total summary - Hidden for Trash */}
-          {!title.toLowerCase().includes('papelera') && (
+          {!isTrashView && (
             <div className="flex justify-end p-4 bg-surface-alt rounded-lg border border-border">
               <div className="text-right">
                 <p className="text-xs text-text-secondary uppercase tracking-wider mb-1">Total del Período</p>
