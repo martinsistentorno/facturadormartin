@@ -84,7 +84,7 @@ export default function StatsCards({ ventas, onCardClick }) {
             Facturado y Cobrado
           </h3>
           
-          <div className="font-black text-4xl lg:text-5xl tracking-tighter text-text-primary mb-3 transition-all">
+          <div className="font-black text-4xl lg:text-5xl tracking-tighter text-green mb-3 transition-all">
             {renderMoney(facturadasAmount)}
           </div>
           
@@ -99,40 +99,58 @@ export default function StatsCards({ ventas, onCardClick }) {
           {/* Total Ventas */}
           <button
             onClick={() => onCardClick('Total Ventas', activas, timeframe)}
-            className="flex-1 min-h-0 bg-white border border-border rounded-xl px-2 py-1 flex flex-col items-center justify-center text-center transition-all duration-300 hover:shadow-sm hover:border-blue outline-none cursor-pointer group"
+            className="flex-1 min-h-0 bg-white border border-border rounded-xl px-4 py-2 flex items-center justify-between transition-all duration-300 hover:shadow-sm hover:border-blue outline-none cursor-pointer group"
           >
-            <div className="font-bold uppercase text-[9px] text-text-muted tracking-widest leading-none mb-0.5 truncate w-full px-1">Total Movimientos</div>
-            <div className="flex items-center justify-center gap-1.5 w-full">
-               <Activity size={14} className="text-blue shrink-0" />
-               <div className="font-bold text-[17px] text-text-primary tracking-tighter leading-none truncate">{renderMoney(totalActivasAmount)}</div>
+            {/* Left Box: Text + Principal Number (Quantity) */}
+            <div className="flex items-center gap-3">
+              <div className="font-bold uppercase text-[10px] text-text-muted tracking-widest leading-tight text-left w-20">Total<br/>Movim.</div>
+              <div className="font-black text-2xl text-text-primary tracking-tighter">{activas.length}</div>
             </div>
-            <div className="font-medium text-[9px] text-text-secondary opacity-70 leading-none mt-0.5 truncate w-full px-1">{activas.length} op. registradas</div>
+            {/* Right Box: Money + Icon */}
+            <div className="flex items-center gap-2.5">
+               <div className="font-medium text-[11px] text-text-secondary tracking-tight">{renderMoney(totalActivasAmount)}</div>
+               <div className="bg-blue/10 p-2 rounded-lg shrink-0">
+                 <Activity size={16} className="text-blue" />
+               </div>
+            </div>
           </button>
 
           {/* Pendientes */}
           <button
             onClick={() => onCardClick('Pendientes', pendientes, timeframe)}
-            className="flex-1 min-h-0 bg-white border border-border rounded-xl px-2 py-1 flex flex-col items-center justify-center text-center transition-all duration-300 hover:shadow-sm hover:border-amber-400 outline-none cursor-pointer group"
+            className="flex-1 min-h-0 bg-white border border-border rounded-xl px-4 py-2 flex items-center justify-between transition-all duration-300 hover:shadow-sm hover:border-amber-400 outline-none cursor-pointer group"
           >
-            <div className="font-bold uppercase text-[9px] text-text-muted tracking-widest leading-none mb-0.5 truncate w-full px-1">Pendiente de Cobro</div>
-            <div className="flex items-center justify-center gap-1.5 w-full">
-               <Clock size={14} className="text-amber-500 shrink-0" />
-               <div className="font-bold text-[17px] text-text-primary tracking-tighter leading-none truncate">{renderMoney(pendientesAmount)}</div>
+            {/* Left Box: Text + Principal Number (Quantity) */}
+            <div className="flex items-center gap-3">
+              <div className="font-bold uppercase text-[10px] text-text-muted tracking-widest leading-tight text-left w-20">Pendiente<br/>Cobro</div>
+              <div className="font-black text-2xl text-text-primary tracking-tighter">{pendientes.length}</div>
             </div>
-            <div className="font-medium text-[9px] text-text-secondary opacity-70 leading-none mt-0.5 truncate w-full px-1">{pendientes.length} facturas</div>
+            {/* Right Box: Money + Icon */}
+            <div className="flex items-center gap-2.5">
+               <div className="font-medium text-[11px] text-text-secondary tracking-tight">{renderMoney(pendientesAmount)}</div>
+               <div className="bg-yellow/20 p-2 rounded-lg shrink-0">
+                 <Clock size={16} className="text-amber-500" />
+               </div>
+            </div>
           </button>
 
           {/* Con Error */}
           <button
             onClick={() => onCardClick('Con Error', conError, timeframe)}
-            className="flex-1 min-h-0 bg-white border border-border rounded-xl px-2 py-1 flex flex-col items-center justify-center text-center transition-all duration-300 hover:shadow-sm hover:border-red outline-none cursor-pointer group"
+            className="flex-1 min-h-0 bg-white border border-border rounded-xl px-4 py-2 flex items-center justify-between transition-all duration-300 hover:shadow-sm hover:border-red outline-none cursor-pointer group"
           >
-            <div className="font-bold uppercase text-[9px] text-text-muted tracking-widest leading-none mb-0.5 truncate w-full px-1">Errores AFIP</div>
-            <div className="flex items-center justify-center gap-1.5 w-full">
-               <AlertCircle size={14} className="text-red shrink-0" />
-               <div className="font-bold text-[17px] text-text-primary tracking-tighter text-red leading-none truncate">{renderMoney(conErrorAmount)}</div>
+            {/* Left Box: Text + Principal Number (Quantity) */}
+            <div className="flex items-center gap-3">
+              <div className="font-bold uppercase text-[10px] text-text-muted tracking-widest leading-tight text-left w-20">Errores<br/>AFIP</div>
+              <div className="font-black text-2xl text-red tracking-tighter">{conError.length}</div>
             </div>
-            <div className="font-medium text-[9px] text-red opacity-80 leading-none mt-0.5 truncate w-full px-1">{conError.length} reintentos</div>
+            {/* Right Box: Money + Icon */}
+            <div className="flex items-center gap-2.5">
+               <div className="font-medium text-[11px] text-red opacity-80 tracking-tight">{renderMoney(conErrorAmount)}</div>
+               <div className="bg-red/10 p-2 rounded-lg shrink-0">
+                 <AlertCircle size={16} className="text-red" />
+               </div>
+            </div>
           </button>
         </div>
 
