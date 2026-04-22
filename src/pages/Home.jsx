@@ -9,7 +9,7 @@ import Layout from '../components/Layout'
 import FilterBar from '../components/FilterBar'
 import SaleDetailDrawer from '../components/SaleDetailDrawer'
 import ToastContainer, { createToast } from '../components/ToastContainer'
-import { RefreshCw, Plus, Download, ChevronDown } from 'lucide-react'
+import { RefreshCw, Plus, Download, ChevronDown, Trash2 } from 'lucide-react'
 import AddSaleModal from '../components/AddSaleModal'
 import BulkImportModal from '../components/BulkImportModal'
 import { exportToCSV, exportToExcel } from '../utils/exportUtils'
@@ -55,6 +55,7 @@ export default function Home() {
   }, [])
 
   // ─── Filtered ventas ───
+  const borradas = useMemo(() => ventas.filter(v => v.status === 'borrada'), [ventas])
   const filteredVentas = useMemo(() => {
     return ventas.filter(v => {
       // Exclude borradas globally from generic UI views
@@ -451,6 +452,14 @@ export default function Home() {
             Lista Facturas
           </h2>
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => handleCardClick('Papelera', borradas, 'all')}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-border/60 text-text-muted hover:text-red hover:border-red/20 hover:-translate-y-1 hover:shadow-lg transition-all cursor-pointer text-[11px] font-bold uppercase tracking-widest"
+            >
+              <Trash2 size={14} />
+              Papelera ({borradas.length})
+            </button>
+
             {/* Export dropdown */}
             <div className="relative">
               <button

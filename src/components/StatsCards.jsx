@@ -143,17 +143,6 @@ export default function StatsCards({ ventas, onCardClick }) {
         </div>
 
       </div>
-      
-      {/* 3. PAPELERA DE RECICLAJE (Low profile bottom button) */}
-      <div className="flex justify-end pt-2">
-         <button
-          onClick={() => onCardClick('Papelera', borradas, timeframe)}
-          className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-text-muted hover:text-red transition-colors bg-white/50 hover:bg-white px-3 py-1.5 rounded border border-transparent hover:border-red/20 outline-none cursor-pointer"
-        >
-          <Trash2 size={13} />
-          Papelera ({borradas.length})
-        </button>
-      </div>
     </div>
   )
 }
