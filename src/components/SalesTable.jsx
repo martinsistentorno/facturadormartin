@@ -29,6 +29,7 @@ const COLUMN_CONFIG = [
   { id: 'status', label: 'Status', default: true },
   { id: 'factura', label: 'Factura', default: true },
   { id: 'cae', label: 'CAE', default: true },
+  { id: 'fecha_facturacion', label: 'Fch. Facturación', default: false },
 ];
 
 const OrigenBadge = ({ origen, mpId }) => {
@@ -525,6 +526,15 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
                             <div className="text-text-muted text-xs">Vto: {formatDate(venta.vto_cae)}</div>
                           )}
                         </div>
+                      ) : (
+                        <span className="text-text-muted text-xs">—</span>
+                      )}
+                    </td>
+                  )}
+                  {isVisible('fecha_facturacion') && (
+                    <td className="px-4 py-3">
+                      {venta.datos_fiscales?.fecha_emision ? (
+                        <div className="text-text-primary text-xs font-mono">{new Date(venta.datos_fiscales.fecha_emision + 'T12:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })}</div>
                       ) : (
                         <span className="text-text-muted text-xs">—</span>
                       )}
