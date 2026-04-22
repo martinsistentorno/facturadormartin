@@ -81,7 +81,7 @@ export default function StatsCards({ ventas, onCardClick }) {
           </div>
           
           <h3 className="font-bold uppercase tracking-[0.1em] text-[12px] text-text-primary/90 mb-1">
-            Facturado y Cobrado
+            Facturado
           </h3>
           
           <div className="font-black text-4xl lg:text-5xl tracking-tighter text-green mb-3 transition-all">

@@ -6,10 +6,10 @@
 const PAYMENT_METHOD_MAP = {
   'credit_card':      'Tarjeta de Crédito',
   'debit_card':       'Tarjeta de Débito',
-  'account_money':    'Dinero en Cuenta',
+  'account_money':    'Mercado Pago',
   'ticket':           'Efectivo',
-  'bank_transfer':    'Transferencia',
-  'transfer':         'Transferencia',
+  'bank_transfer':    'Transferencia Bancaria',
+  'transfer':         'Transferencia Bancaria',
   'prepaid_card':     'Tarjeta Prepaga',
   'digital_currency': 'Cripto / Digital',
   'customer_credits': 'Crédito MP',
@@ -27,8 +27,8 @@ const PAYMENT_METHOD_MAP = {
   'debmaster':        'Tarjeta de Débito',
   'rapipago':         'Efectivo',
   'pagofacil':        'Efectivo',
-  'cvu':              'Transferencia',
-  'mercado pago':     'Dinero en Cuenta',
+  'cvu':              'Transferencia Bancaria',
+  'mercado pago':     'Mercado Pago',
 }
 
 /**

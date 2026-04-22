@@ -430,14 +430,7 @@ export default async function handler(req, res) {
 
           // Forma de pago
           const firstPayment = order.payments?.[0]
-          const paymentTypeMap = {
-            'credit_card': 'Tarjeta de Crédito',
-            'debit_card': 'Tarjeta de Débito',
-            'account_money': 'Mercado Pago',
-            'ticket': 'Efectivo',
-            'bank_transfer': 'Transferencia'
-          }
-          const formaPago = paymentTypeMap[firstPayment?.payment_type] || firstPayment?.payment_type || 'Mercado Libre'
+          const formaPago = translatePaymentMethod(firstPayment?.payment_type, firstPayment?.payment_method_id)
 
           // Si es Consumidor Final, NO guardar CUIT
           const finalCuit = clienteNombre === 'Consumidor Final' ? '' : resolvedCuit
