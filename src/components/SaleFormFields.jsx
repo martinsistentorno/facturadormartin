@@ -275,7 +275,16 @@ export default function SaleFormFields({
           label="Cantidad"
           type="number"
           value={form.cantidad}
-          onChange={(e) => setForm({ ...form, cantidad: e.target.value })}
+          onChange={(e) => {
+            const val = e.target.value;
+            setForm({
+              ...form,
+              cantidad: val,
+              monto: form.precioUnitario 
+                ? (parseFloat(form.precioUnitario || 0) * parseFloat(val || 1)).toFixed(2) 
+                : form.monto
+            });
+          }}
           min="1"
           step="0.01"
         />
@@ -289,8 +298,15 @@ export default function SaleFormFields({
           label="P. Unitario"
           icon={DollarSign}
           type="number"
-          value={form.cantidad > 0 && form.monto ? (form.monto / form.cantidad).toFixed(2) : ''}
-          onChange={(e) => setForm({ ...form, monto: (parseFloat(e.target.value || 0) * (form.cantidad || 1)).toFixed(2) })}
+          value={form.precioUnitario !== undefined ? form.precioUnitario : (form.cantidad > 0 && form.monto ? (form.monto / form.cantidad).toFixed(2) : '')}
+          onChange={(e) => {
+            const val = e.target.value;
+            setForm({
+              ...form,
+              precioUnitario: val,
+              monto: val ? (parseFloat(val || 0) * parseFloat(form.cantidad || 1)).toFixed(2) : form.monto
+            });
+          }}
           min="0"
           step="0.01"
           placeholder="0.00"
@@ -364,7 +380,14 @@ export default function SaleFormFields({
             placeholder="0.00"
             className="w-full px-3 py-2.5 rounded-xl border-2 border-[#2D8F5E]/30 bg-white text-lg font-bold text-text-primary focus:outline-none focus:ring-2 focus:ring-[#2D8F5E]/15 focus:border-[#2D8F5E] transition-all tabular-nums"
             value={form.monto}
-            onChange={(e) => setForm({ ...form, monto: e.target.value })}
+            onChange={(e) => {
+              const val = e.target.value;
+              setForm({ 
+                ...form, 
+                monto: val,
+                precioUnitario: val && form.cantidad > 0 ? (parseFloat(val) / parseFloat(form.cantidad)).toFixed(2) : ''
+              });
+            }}
           />
         </div>
 
