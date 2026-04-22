@@ -307,7 +307,11 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
   }
 
   const handleRowClick = (venta) => {
-    onToggleSelect(venta.id)
+    if (onRowClick) {
+      onRowClick(venta)
+    } else {
+      onToggleSelect(venta.id)
+    }
   }
 
   // ─── Sort header helper ───
