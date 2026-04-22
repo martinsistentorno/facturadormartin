@@ -99,46 +99,40 @@ export default function StatsCards({ ventas, onCardClick }) {
           {/* Total Ventas */}
           <button
             onClick={() => onCardClick('Total Ventas', activas, timeframe)}
-            className="flex-1 bg-white border border-border rounded-xl px-4 py-2 flex items-center gap-4 transition-all duration-300 hover:shadow-sm hover:border-blue outline-none cursor-pointer group"
+            className="flex-1 bg-white border border-border rounded-xl px-4 py-2 flex flex-col items-center justify-center text-center transition-all duration-300 hover:shadow-sm hover:border-blue outline-none cursor-pointer group"
           >
-            <div className="bg-blue/10 p-2.5 rounded-lg shrink-0">
-              <Activity size={20} className="text-blue" />
+            <div className="font-bold uppercase text-[9px] text-text-muted tracking-widest mb-1">Total Movimientos</div>
+            <div className="flex items-center gap-2 mb-0.5">
+               <Activity size={15} className="text-blue" />
+               <div className="font-bold text-[19px] text-text-primary tracking-tighter">{renderMoney(totalActivasAmount)}</div>
             </div>
-            <div className="text-left flex flex-col justify-center h-full">
-              <div className="font-bold uppercase text-[10px] text-text-muted tracking-wider leading-none mb-1">Total Movimientos</div>
-              <div className="font-bold text-[17px] text-text-primary leading-none mb-1">{renderMoney(totalActivasAmount)}</div>
-              <div className="font-medium text-[11px] text-text-secondary leading-none">{activas.length} op. registradas</div>
-            </div>
+            <div className="font-medium text-[10px] text-text-secondary opacity-70">{activas.length} op. registradas</div>
           </button>
 
           {/* Pendientes */}
           <button
             onClick={() => onCardClick('Pendientes', pendientes, timeframe)}
-            className="flex-1 bg-white border border-border rounded-xl px-4 py-2 flex items-center gap-4 transition-all duration-300 hover:shadow-sm hover:border-amber-400 outline-none cursor-pointer group"
+            className="flex-1 bg-white border border-border rounded-xl px-4 py-2 flex flex-col items-center justify-center text-center transition-all duration-300 hover:shadow-sm hover:border-amber-400 outline-none cursor-pointer group"
           >
-            <div className="bg-yellow/20 p-2.5 rounded-lg shrink-0">
-              <Clock size={20} className="text-amber-500" />
+            <div className="font-bold uppercase text-[9px] text-text-muted tracking-widest mb-1">Pendiente de Cobro</div>
+            <div className="flex items-center gap-2 mb-0.5">
+               <Clock size={15} className="text-amber-500" />
+               <div className="font-bold text-[19px] text-text-primary tracking-tighter">{renderMoney(pendientesAmount)}</div>
             </div>
-            <div className="text-left flex flex-col justify-center h-full">
-              <div className="font-bold uppercase text-[10px] text-text-muted tracking-wider leading-none mb-1">Pendiente de Cobro</div>
-              <div className="font-bold text-[17px] text-text-primary leading-none mb-1">{renderMoney(pendientesAmount)}</div>
-              <div className="font-medium text-[11px] text-text-secondary leading-none">{pendientes.length} fact.</div>
-            </div>
+            <div className="font-medium text-[10px] text-text-secondary opacity-70">{pendientes.length} facturas</div>
           </button>
 
           {/* Con Error */}
           <button
             onClick={() => onCardClick('Con Error', conError, timeframe)}
-            className="flex-1 bg-white border border-border rounded-xl px-4 py-2 flex items-center gap-4 transition-all duration-300 hover:shadow-sm hover:border-red outline-none cursor-pointer group"
+            className="flex-1 bg-white border border-border rounded-xl px-4 py-2 flex flex-col items-center justify-center text-center transition-all duration-300 hover:shadow-sm hover:border-red outline-none cursor-pointer group"
           >
-            <div className="bg-red/10 p-2.5 rounded-lg shrink-0">
-              <AlertCircle size={20} className="text-red" />
+            <div className="font-bold uppercase text-[9px] text-text-muted tracking-widest mb-1">Errores AFIP</div>
+            <div className="flex items-center gap-2 mb-0.5">
+               <AlertCircle size={15} className="text-red" />
+               <div className="font-bold text-[19px] text-text-primary tracking-tighter text-red">{renderMoney(conErrorAmount)}</div>
             </div>
-            <div className="text-left flex flex-col justify-center h-full">
-              <div className="font-bold uppercase text-[10px] text-text-muted tracking-wider leading-none mb-1">Errores AFIP</div>
-              <div className="font-bold text-[17px] text-text-primary leading-none mb-1">{renderMoney(conErrorAmount)}</div>
-              <div className="font-medium text-[11px] text-red leading-none">{conError.length} reintentos</div>
-            </div>
+            <div className="font-medium text-[10px] text-red opacity-80">{conError.length} reintentos</div>
           </button>
         </div>
 
