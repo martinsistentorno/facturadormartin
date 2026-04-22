@@ -226,12 +226,22 @@ export default function Home() {
 
   const handleResetVenta = async (id) => {
     try {
+      const v = ventas.find(x => x.id === id)
+      const cleanDatosFiscales = v?.datos_fiscales ? {
+        ...v.datos_fiscales,
+        comprobante_numero: null,
+        cae: null,
+        cae_vto: null,
+        afip_envio_fecha: null,
+        error_detalle: null
+      } : null
+
       await updateVenta(id, { 
         status: 'pendiente', 
         cae: null, 
         nro_comprobante: null, 
         vto_cae: null, 
-        datos_fiscales: null 
+        datos_fiscales: cleanDatosFiscales 
       })
       showToast('Venta reiniciada a pendiente', 'success')
       setModalData(prev => ({
@@ -245,35 +255,60 @@ export default function Home() {
   }
 
   const handleResetAllVentas = async (ids) => {
-    if (!confirm(`¿Estás seguro de que quieres reiniciar las ${ids.length} ventas seleccionadas? Se borrarán todos los datos fiscales previos.`)) return;
+    if (!confirm(`¿Estás seguro de que quieres reiniciar las ${ids.length} ventas seleccionadas? Se mantendrán los CUITs pero se borrarán los datos de facturación previos.`)) return;
     
     try {
-      // Bulk update in Supabase
-      const { error: upError } = await supabase
-        .from('ventas')
-        .update({ 
+      // Loop to preserve individual datos_fiscales while clearing AFIP data
+      // For bulk, let's use Promise.all to be reasonably fast
+      const updates = ids.map(id => {
+        const v = ventas.find(x => x.id === id)
+        const cleanDatosFiscales = v?.datos_fiscales ? {
+          ...v.datos_fiscales,
+          comprobante_numero: null,
+          cae: null,
+          cae_vto: null,
+          afip_envio_fecha: null,
+          error_detalle: null
+        } : null
+
+        return supabase
+          .from('ventas')
+          .update({ 
+            status: 'pendiente', 
+            cae: null, 
+            nro_comprobante: null, 
+            vto_cae: null, 
+            datos_fiscales: cleanDatosFiscales 
+          })
+          .eq('id', id)
+      })
+
+      const results = await Promise.all(updates)
+      const errors = results.filter(r => r.error)
+      if (errors.length > 0) throw errors[0].error
+
+      // Local update
+      setVentas(prev => prev.map(v => {
+        if (!ids.includes(v.id)) return v
+        return { 
+          ...v, 
           status: 'pendiente', 
           cae: null, 
           nro_comprobante: null, 
           vto_cae: null, 
-          datos_fiscales: null 
-        })
-        .in('id', ids)
-
-      if (upError) throw upError
-
-      // Local update
-      setVentas(prev => prev.map(v => ids.includes(v.id) ? { 
-        ...v, 
-        status: 'pendiente', 
-        cae: null, 
-        nro_comprobante: null, 
-        vto_cae: null, 
-        datos_fiscales: null 
-      } : v))
+          datos_fiscales: v.datos_fiscales ? {
+            ...v.datos_fiscales,
+            comprobante_numero: null,
+            cae: null,
+            cae_vto: null,
+            afip_envio_fecha: null,
+            error_detalle: null
+          } : null
+        }
+      }))
 
       showToast(`${ids.length} ventas reiniciadas correctamente`, 'success')
-      setIsModalOpen(false) // Close modal since data changed radically
+      setIsModalOpen(false) 
     } catch (err) {
       console.error('Error en reinicio masivo:', err)
       showToast('Error en reinicio masivo: ' + err.message, 'error')
