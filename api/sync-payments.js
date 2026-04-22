@@ -72,6 +72,7 @@ export default async function handler(req, res) {
 
     let inserted = 0
     let skipped = 0
+    let repaired = 0
     let outgoing = 0
     const results = []
 
@@ -109,8 +110,24 @@ export default async function handler(req, res) {
 
         // Ya existe?
         const { data: existing } = await supabaseAdmin
-          .from('ventas').select('id').eq('mp_payment_id', paymentId).maybeSingle()
-        if (existing) { skipped++; continue }
+          .from('ventas').select('id, datos_fiscales').eq('mp_payment_id', paymentId).maybeSingle()
+
+        if (existing) {
+          // MODO REPARACIÓN: Si existe pero le faltan los datos fiscales, los recuperamos
+          if (!existing.datos_fiscales) {
+            console.log(`[Sync] 🛠️ Reparando datos en pago MP ${paymentId}`)
+            const repairRecord = await buildVentaRecord(payment, myUserId, accessToken, getUserName)
+            if (repairRecord && !repairRecord.skip) {
+              await supabaseAdmin.from('ventas').update({ 
+                cliente: repairRecord.cliente,
+                datos_fiscales: repairRecord.datos_fiscales 
+              }).eq('id', existing.id)
+              repaired++
+            }
+          }
+          skipped++
+          continue
+        }
 
         // MÚLTIPLE DE DUPLICADOS: Si es un pago de Mercado Libre, ignorarlo por completo.
         // Orders API ya procesa las ventas de Mercado Libre con todos los datos correctos del comprador.
@@ -120,42 +137,52 @@ export default async function handler(req, res) {
           continue
         }
 
-        // ─── Extraer nombre del cliente ───
+        const ventaRecord = await buildVentaRecord(payment, myUserId, accessToken, getUserName)
+
+        const { error: insertError } = await supabaseAdmin.from('ventas').insert([ventaRecord])
+        if (insertError) {
+          results.push({ paymentId, error: insertError.message })
+        } else {
+          inserted++
+          results.push({ paymentId, cliente: ventaRecord.cliente, monto: payment.transaction_amount, tipo: 'MP', formaPago: ventaRecord.datos_fiscales.forma_pago })
+        }
+      }
+    }
+
+    // ─── Help Function: Construir record de venta desde un pago MP ───
+    async function buildVentaRecord(payment, myUserId, accessToken, getUserName) {
+        const paymentId = String(payment.id)
         const payer = payment.payer || {}
         let clienteNombre = 'Consumidor Final'
         let docNumber = String(payer.identification?.number || '')
         let docType = payer.identification?.type || 'DNI'
         let email = payer.email || ''
-        let resolvedCuit = docNumber  // Guardar DNI o CUIT original por defecto
+        let resolvedCuit = docNumber
         const payerIdStr = String(payer.id || '')
-        const isOwnAccount = payerIdStr === myId
-
-        // Para transferencias bancarias: MP pone payer.id = dueño de la cuenta
-        // En ese caso, el nombre del payer es realmente el destinatario, no el remitente
-        // Lo detectamos y dejamos "Consumidor Final" + sin CUIT
-
+        const isOwnAccount = payerIdStr === myUserId
         let condicionIvaFallback = null
 
-        // 1. Consultar AFIP SOLO si es un CUIT (11 dígitos)
-        //    y el payer NO es el dueño de la cuenta
         if (!isOwnAccount && docNumber && docNumber.length === 11) {
           const afipResult = await getAfipRazonSocial(docNumber)
           if (afipResult) {
             clienteNombre = afipResult.razonSocial
             resolvedCuit = afipResult.cuit
-            if (afipResult.condicion_iva) condicionIvaFallback = afipResult.condicion_iva
+            if (afipResult.condicion_iva) {
+              const map = {
+                'Monotributista': 'Responsable Monotributo',
+                'Responsable Inscripto': 'IVA Responsable Inscripto',
+                'Exento': 'IVA Sujeto Exento',
+              }
+              condicionIvaFallback = map[afipResult.condicion_iva] || afipResult.condicion_iva
+            }
           }
         }
 
-        // 2. Si no vino de AFIP, intentar procesar los demás datos del payer...
         if (clienteNombre === 'Consumidor Final' && !isOwnAccount) {
           if (payer.id && (!payer.first_name || payer.first_name === null)) {
             const realName = await getUserName(payer.id)
-            if (realName) {
-              clienteNombre = realName
-            } else if (email) {
-              clienteNombre = email.split('@')[0]
-            }
+            if (realName) clienteNombre = realName
+            else if (email) clienteNombre = email.split('@')[0]
           } else if (payer.first_name) {
             clienteNombre = `${payer.first_name} ${payer.last_name || ''}`.trim()
           } else if (email) {
@@ -163,14 +190,11 @@ export default async function handler(req, res) {
           }
         }
 
-        // Forma de pago
         const formaPago = translatePaymentMethod(payment.payment_type_id, payment.payment_method_id)
-
-        // Si es Consumidor Final, NO guardar CUIT (ni el del dueño de la cuenta)
         const finalCuit = clienteNombre === 'Consumidor Final' ? '' : resolvedCuit
         const condicionIva = condicionIvaFallback || ((finalCuit && finalCuit.length === 11) ? 'Responsable Inscripto' : 'Consumidor Final')
 
-        const ventaRecord = {
+        return {
           fecha: payment.date_approved || payment.date_created || new Date().toISOString(),
           cliente: clienteNombre,
           monto: payment.transaction_amount || 0,
@@ -189,15 +213,6 @@ export default async function handler(req, res) {
             descripcion: payment.description || 'Venta Mercado Pago'
           }
         }
-
-        const { error: insertError } = await supabaseAdmin.from('ventas').insert([ventaRecord])
-        if (insertError) {
-          results.push({ paymentId, error: insertError.message })
-        } else {
-          inserted++
-          results.push({ paymentId, cliente: clienteNombre, monto: payment.transaction_amount, tipo: 'MP', formaPago })
-        }
-      }
     }
 
     // ══════════════════════════════════════════════════════════
@@ -230,8 +245,47 @@ export default async function handler(req, res) {
 
           // Ya existe?
           const { data: existing } = await supabaseAdmin
-            .from('ventas').select('id').eq('mp_payment_id', mpId).maybeSingle()
-          if (existing) { skipped++; continue }
+            .from('ventas').select('id, datos_fiscales').eq('mp_payment_id', mpId).maybeSingle()
+          
+          if (existing) {
+            // REPARACIÓN MeLi:
+            if (!existing.datos_fiscales) {
+              console.log(`[Sync] 🛠️ Reparando datos en orden MeLi ${orderId}`)
+              // (Aquí llamaríamos al helper de construcción pero para ir rápido inyectamos la lógica directa por ahora)
+              try {
+                const billingRes = await fetch(`https://api.mercadolibre.com/orders/${orderId}/billing_info`, {
+                  headers: { 'Authorization': `Bearer ${accessToken}` }
+                })
+                if (billingRes.ok) {
+                  const billingData = await billingRes.json()
+                  const b = billingData.billing_info
+                  let finalCuit = ''
+                  let docNumber = b?.doc_number || ''
+                  let docType = b?.doc_type || 'DNI'
+                  if (docNumber && docNumber.length === 11) finalCuit = docNumber
+
+                  const firstPayment = order.payments?.[0] || {}
+                  const formaPago = translatePaymentMethod(firstPayment.payment_type_id, firstPayment.payment_method_id)
+
+                  await supabaseAdmin.from('ventas').update({ 
+                    cliente: b?.name || `${order.buyer?.first_name} ${order.buyer?.last_name}`.trim(),
+                    datos_fiscales: {
+                      email: order.buyer?.email,
+                      identification: { type: docType, number: docNumber },
+                      cuit: finalCuit,
+                      condicion_iva: (finalCuit.length === 11) ? 'Responsable Inscripto' : 'Consumidor Final',
+                      forma_pago: formaPago,
+                      meli_order_id: orderId,
+                      origen: 'mercadolibre',
+                      descripcion: order.order_items?.[0]?.item?.title || `Venta MeLi #${orderId}`
+                    }
+                  }).eq('id', existing.id)
+                  repaired++
+                }
+              } catch (e) {}
+            }
+            skipped++; continue 
+          }
 
           // También verificar por payment IDs individuales
           const orderPaymentIds = (order.payments || []).map(p => String(p.id))
@@ -414,6 +468,7 @@ export default async function handler(req, res) {
       success: true,
       inserted,
       skipped,
+      repaired,
       outgoing,
       results
     })

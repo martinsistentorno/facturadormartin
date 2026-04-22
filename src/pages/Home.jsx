@@ -465,16 +465,27 @@ export default function Home() {
         showToast('No se emitió ningún comprobante. Comprobá los errores en la tabla.', 'error')
       }
 
-    } catch (err) {
-      console.error('[handleInvoice] Error:', err.message)
-      showToast('Error al procesar facturas: ' + err.message, 'error')
+    }
+  }
+
+  const handleSyncMeLi = async () => {
+    setLoading(true)
+    showToast('⚓ Sincronizando con Mercado Libre...', 'info')
+    try {
+      const res = await fetch('/api/sync-payments')
+      const data = await res.json()
       
-      // Si falló el request entero, marcar las que estaban en proceso como error
-      setVentas(prev => prev.map(v => 
-        v.status === 'procesando' 
-          ? { ...v, status: 'error', datos_fiscales: { ...v.datos_fiscales, error_detalle: err.message } } 
-          : v
-      ))
+      if (data.success) {
+        showToast(`✓ Sincronización completa: ${data.inserted} nuevos, ${data.repaired} recuperados.`, 'success')
+        refetch()
+      } else {
+        throw new Error(data.error || 'Error desconocido')
+      }
+    } catch (err) {
+      console.error('[handleSyncMeLi] Error:', err.message)
+      showToast('Error al sincronizar: ' + err.message, 'error')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -500,21 +511,40 @@ export default function Home() {
   }
 
   const headerActions = (
-    <button
-      onClick={refetch}
-      disabled={loading}
-      className="
-        flex items-center gap-2 px-4 py-2 rounded-xl
-        bg-surface border border-border mr-2
-        text-text-secondary text-[11px] font-bold tracking-widest uppercase
-        hover:bg-surface-alt hover:text-[var(--color-cmd-blue)] hover:border-[var(--color-cmd-blue)]/30 hover:shadow-sm
-        transition-all duration-200
-        disabled:opacity-50 cursor-pointer
-      "
-    >
-      <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
-      <span className="hidden sm:inline">ACTUALIZAR</span>
-    </button>
+    <div className="flex items-center gap-2">
+      <button
+        onClick={handleSyncMeLi}
+        disabled={loading}
+        className="
+          flex items-center gap-2 px-4 py-2 rounded-xl
+          bg-[#FFE100]/10 border border-[#FFE100]/30
+          text-[#D6B500] text-[11px] font-bold tracking-widest uppercase
+          hover:bg-[#FFE100]/20 hover:border-[#FFE100]/50 hover:shadow-sm
+          transition-all duration-200
+          disabled:opacity-50 cursor-pointer
+        "
+        title="Sincronizar ventas de Mercado Libre y Mercado Pago"
+      >
+        <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
+        <span className="hidden sm:inline">SINCRONIZAR MELI</span>
+      </button>
+
+      <button
+        onClick={refetch}
+        disabled={loading}
+        className="
+          flex items-center gap-2 px-4 py-2 rounded-xl
+          bg-surface border border-border
+          text-text-secondary text-[11px] font-bold tracking-widest uppercase
+          hover:bg-surface-alt hover:text-[var(--color-cmd-blue)] hover:border-[var(--color-cmd-blue)]/30 hover:shadow-sm
+          transition-all duration-200
+          disabled:opacity-50 cursor-pointer
+        "
+      >
+        <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
+        <span className="hidden sm:inline">ACTUALIZAR</span>
+      </button>
+    </div>
   )
 
   return (
