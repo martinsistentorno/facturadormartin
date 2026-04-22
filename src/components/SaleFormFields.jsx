@@ -263,7 +263,7 @@ export default function SaleFormFields({
       {/* ── Detalle ── */}
       <SectionDivider label="Detalle del Comprobante" icon={Package} />
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-4 gap-3">
         <MiniSelect
           label="Concepto"
           icon={Package}
@@ -277,14 +277,23 @@ export default function SaleFormFields({
           value={form.cantidad}
           onChange={(e) => setForm({ ...form, cantidad: e.target.value })}
           min="1"
-          step="1"
-          className="col-span-1"
+          step="0.01"
         />
         <MiniSelect
           label="Unidad"
           value={form.unidadMedida}
           onChange={(e) => setForm({ ...form, unidadMedida: parseInt(e.target.value) })}
           options={UNIDADES_MEDIDA}
+        />
+        <MiniInput
+          label="P. Unitario"
+          icon={DollarSign}
+          type="number"
+          value={form.cantidad > 0 && form.monto ? (form.monto / form.cantidad).toFixed(2) : ''}
+          onChange={(e) => setForm({ ...form, monto: (parseFloat(e.target.value || 0) * (form.cantidad || 1)).toFixed(2) })}
+          min="0"
+          step="0.01"
+          placeholder="0.00"
         />
       </div>
 
