@@ -3,7 +3,7 @@ import StatusBadge from './StatusBadge';
 import { Trash2, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 import { useState } from 'react';
 
-export default function SummaryModal({ isOpen, onClose, title, ventas, onDelete, onRestore, onHardDelete, onShowError }) {
+export default function SummaryModal({ isOpen, onClose, title, ventas, onDelete, onRestore, onHardDelete, onReset, onResetAll, onShowError }) {
   const [deletingId, setDeletingId] = useState(null)
 
   const formatDate = (dateStr) => {
@@ -59,7 +59,18 @@ export default function SummaryModal({ isOpen, onClose, title, ventas, onDelete,
         <div className="space-y-6">
           {/* Total summary - Hidden for Trash */}
           {!isTrashView && (
-            <div className="flex justify-end p-4 bg-surface-alt rounded-lg border border-border">
+            <div className="flex justify-between items-center p-4 bg-surface-alt rounded-lg border border-border">
+              <div>
+                {title.toLowerCase().includes('facturado') && ventas.length > 0 && (
+                  <button
+                    onClick={() => onResetAll && onResetAll(ventas.map(v => v.id))}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-orange-500/10 text-orange-600 border border-orange-500/20 hover:bg-orange-500/20 transition-all text-xs font-bold uppercase tracking-wider"
+                  >
+                    <RefreshCw size={14} />
+                    Reiniciar Todo
+                  </button>
+                )}
+              </div>
               <div className="text-right">
                 <p className="text-xs text-text-secondary uppercase tracking-wider mb-1">Total del Período</p>
                 <p className="text-xl font-bold text-accent">{formatCurrency(totalMonto)}</p>
@@ -124,14 +135,29 @@ export default function SummaryModal({ isOpen, onClose, title, ventas, onDelete,
                           </button>
                         </div>
                       ) : (
-                        <button
-                          onClick={() => handleDelete(venta.id)}
-                          disabled={deletingId === venta.id}
-                          className="p-1.5 rounded-lg text-text-muted hover:text-red hover:bg-red-subtle/30 transition-colors disabled:opacity-50"
-                          title="Mover a papelera"
-                        >
-                          {deletingId === venta.id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
-                        </button>
+                        <div className="flex justify-end gap-2">
+                          {venta.status === 'facturado' && (
+                            <button
+                              onClick={() => {
+                                if (confirm('¿Quieres reiniciar esta venta a pendiente? Se borrará el CAE y número de factura.')) {
+                                  onReset && onReset(venta.id)
+                                }
+                              }}
+                              className="p-1.5 rounded-lg text-orange-500 bg-orange-500/5 border border-orange-500/10 hover:bg-orange-500/20 hover:border-orange-500/30 transition-all"
+                              title="Reiniciar a pendiente"
+                            >
+                              <RefreshCw size={16} />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleDelete(venta.id)}
+                            disabled={deletingId === venta.id}
+                            className="p-1.5 rounded-lg text-text-muted hover:text-red hover:bg-red-subtle/30 transition-colors disabled:opacity-50"
+                            title="Mover a papelera"
+                          >
+                            {deletingId === venta.id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                          </button>
+                        </div>
                       )}
                     </td>
                   </tr>

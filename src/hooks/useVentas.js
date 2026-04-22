@@ -97,6 +97,9 @@ export function useVentas() {
       .eq('id', id)
 
     if (updateError) throw updateError
+
+    // Optimistic local update
+    setVentas(prev => prev.map(v => v.id === id ? { ...v, ...payload } : v))
   }, [])
 
   const createVenta = useCallback(async (payload) => {

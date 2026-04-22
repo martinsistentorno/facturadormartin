@@ -224,6 +224,62 @@ export default function Home() {
     }
   }
 
+  const handleResetVenta = async (id) => {
+    try {
+      await updateVenta(id, { 
+        status: 'pendiente', 
+        cae: null, 
+        nro_comprobante: null, 
+        vto_cae: null, 
+        datos_fiscales: null 
+      })
+      showToast('Venta reiniciada a pendiente', 'success')
+      setModalData(prev => ({
+        ...prev,
+        ventas: prev.ventas.filter(v => v.id !== id)
+      }))
+    } catch (err) {
+      console.error('Error al reiniciar:', err)
+      showToast('Error al reiniciar: ' + err.message, 'error')
+    }
+  }
+
+  const handleResetAllVentas = async (ids) => {
+    if (!confirm(`¿Estás seguro de que quieres reiniciar las ${ids.length} ventas seleccionadas? Se borrarán todos los datos fiscales previos.`)) return;
+    
+    try {
+      // Bulk update in Supabase
+      const { error: upError } = await supabase
+        .from('ventas')
+        .update({ 
+          status: 'pendiente', 
+          cae: null, 
+          nro_comprobante: null, 
+          vto_cae: null, 
+          datos_fiscales: null 
+        })
+        .in('id', ids)
+
+      if (upError) throw upError
+
+      // Local update
+      setVentas(prev => prev.map(v => ids.includes(v.id) ? { 
+        ...v, 
+        status: 'pendiente', 
+        cae: null, 
+        nro_comprobante: null, 
+        vto_cae: null, 
+        datos_fiscales: null 
+      } : v))
+
+      showToast(`${ids.length} ventas reiniciadas correctamente`, 'success')
+      setIsModalOpen(false) // Close modal since data changed radically
+    } catch (err) {
+      console.error('Error en reinicio masivo:', err)
+      showToast('Error en reinicio masivo: ' + err.message, 'error')
+    }
+  }
+
   // ─── Bulk delete ───
   const handleBulkDelete = async () => {
     if (selectedVentas.length === 0) return
@@ -582,6 +638,8 @@ export default function Home() {
         onDelete={handleDeleteVenta}
         onRestore={handleRestoreVenta}
         onHardDelete={handleHardDeleteVenta}
+        onReset={handleResetVenta}
+        onResetAll={handleResetAllVentas}
         onShowError={(msg) => showToast(msg, 'error')}
       />
 
