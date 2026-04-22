@@ -119,7 +119,7 @@ export async function generateInvoicePdf(venta, emisor) {
     
     const qrData = {
       ver: 1,
-      fecha: venta.fecha ? venta.fecha.split('T')[0] : new Date().toISOString().split('T')[0],
+      fecha: venta.datos_fiscales?.fecha_emision || (venta.fecha ? venta.fecha.split('T')[0] : new Date().toISOString().split('T')[0]),
       cuit: Number(cleanCuit(e.cuit)),
       ptoVta: Number(nroCompPto[0]),
       tipoCmp: Number(e.tipoCbte || 11),

@@ -68,25 +68,34 @@ export default async function handler(req, res) {
         // Buscar por nro_comprobante (no por status!)
         const { data: matches } = await supabase
           .from('ventas')
-          .select('id, cliente, monto, status, fecha')
+          .select('id, cliente, monto, status, fecha, datos_fiscales')
           .eq('nro_comprobante', nComp)
 
         if (matches && matches.length > 0) {
           // Actualizar TODOS los registros con ese nro_comprobante
-          const { error: upErr } = await supabase.from('ventas').update({
-            status: 'facturado',
-            cae: cae,
-            fecha: afipFecha,
-            vto_cae: `${vtoCae.substring(0,4)}-${vtoCae.substring(4,6)}-${vtoCae.substring(6,8)}`
-          }).eq('nro_comprobante', nComp)
+          // Guardar fecha AFIP en datos_fiscales, NO en fecha (para no romper el orden cronológico)
+          for (const m of matches) {
+            const { error: upErr } = await supabase.from('ventas').update({
+              status: 'facturado',
+              cae: cae,
+              vto_cae: `${vtoCae.substring(0,4)}-${vtoCae.substring(4,6)}-${vtoCae.substring(6,8)}`,
+              datos_fiscales: {
+                ...(m.datos_fiscales || {}),
+                fecha_emision: afipFecha.split('T')[0]
+              }
+            }).eq('id', m.id)
+            
+            if (upErr) {
+              results.push({ voucher: i, nComp, status: 'Error', error: upErr.message })
+            }
+          }
           
           results.push({ 
             voucher: i, 
             nComp,
-            status: upErr ? 'Error' : 'Synced', 
-            error: upErr?.message,
+            status: 'Synced (fecha_emision)', 
             afipDate: afipFecha.split('T')[0],
-            dbDate: matches[0].fecha?.split('T')[0],
+            saleDate: matches[0].fecha?.split('T')[0],
             monto,
             matches: matches.length
           })
@@ -94,7 +103,7 @@ export default async function handler(req, res) {
           // No encontrado por nro_comprobante, buscar por CAE
           const { data: caeMatch } = await supabase
             .from('ventas')
-            .select('id, nro_comprobante')
+            .select('id, nro_comprobante, datos_fiscales')
             .eq('cae', cae)
             .limit(1)
 
@@ -102,8 +111,11 @@ export default async function handler(req, res) {
             await supabase.from('ventas').update({
               status: 'facturado',
               nro_comprobante: nComp,
-              fecha: afipFecha,
-              vto_cae: `${vtoCae.substring(0,4)}-${vtoCae.substring(4,6)}-${vtoCae.substring(6,8)}`
+              vto_cae: `${vtoCae.substring(0,4)}-${vtoCae.substring(4,6)}-${vtoCae.substring(6,8)}`,
+              datos_fiscales: {
+                ...(caeMatch[0].datos_fiscales || {}),
+                fecha_emision: afipFecha.split('T')[0]
+              }
             }).eq('cae', cae)
             
             results.push({ voucher: i, nComp, status: 'Synced via CAE', monto, afipDate: afipFecha.split('T')[0] })

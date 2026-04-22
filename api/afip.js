@@ -323,6 +323,9 @@ export default async function handler(req, res) {
           console.error(`⚠️ Error manejando PDF (no fatal):`, pdfErr.message)
         }
 
+        const cbteFchStr = data.CbteFch.toString()
+        const fechaEmision = `${cbteFchStr.substring(0,4)}-${cbteFchStr.substring(4,6)}-${cbteFchStr.substring(6,8)}`
+
         const { error: upError } = await supabaseAdmin
           .from('ventas')
           .update({
@@ -330,7 +333,11 @@ export default async function handler(req, res) {
             cae: resAFIP.CAE,
             nro_comprobante: nroComprobante,
             vto_cae: resAFIP.CAEFchVto,
-            pdf_url: finalPdfUrl
+            pdf_url: finalPdfUrl,
+            datos_fiscales: {
+              ...v.datos_fiscales,
+              fecha_emision: fechaEmision
+            }
           })
           .eq('id', v.id)
 
