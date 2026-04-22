@@ -9,7 +9,7 @@ import Layout from '../components/Layout'
 import FilterBar from '../components/FilterBar'
 import SaleDetailDrawer from '../components/SaleDetailDrawer'
 import ToastContainer, { createToast } from '../components/ToastContainer'
-import { RefreshCw, Plus, Download, ChevronDown, Trash2 } from 'lucide-react'
+import { RefreshCw, Plus, Download, ChevronDown, Trash2, ShieldCheck } from 'lucide-react'
 import AddSaleModal from '../components/AddSaleModal'
 import BulkImportModal from '../components/BulkImportModal'
 import { exportToCSV, exportToExcel } from '../utils/exportUtils'
@@ -478,6 +478,23 @@ export default function Home() {
     }
   }
 
+  const handleRecoverAfip = async () => {
+    try {
+      showToast('Iniciando recuperación de AFIP...', 'info');
+      const res = await fetch('/api/recover');
+      const data = await res.json();
+      
+      if (data.success) {
+        showToast(`✓ Recuperación finalizada. Procesadas: ${data.processed}`, 'success');
+        refetch(); // Recargar datos
+      } else {
+        showToast('Error en recuperación: ' + data.error, 'error');
+      }
+    } catch (err) {
+      showToast('Error de conexión: ' + err.message, 'error');
+    }
+  };
+
   const handleSyncMeLi = async () => {
     setLoading(true)
     showToast('⚓ Sincronizando con Mercado Libre...', 'info')
@@ -537,6 +554,23 @@ export default function Home() {
       >
         <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
         <span className="hidden sm:inline">SINCRONIZAR MELI</span>
+      </button>
+
+      <button
+        onClick={handleRecoverAfip}
+        disabled={loading}
+        className="
+          flex items-center gap-2 px-4 py-2 rounded-xl
+          bg-green/10 border border-green/30
+          text-green text-[11px] font-bold tracking-widest uppercase
+          hover:bg-green/20 hover:border-green/50 hover:shadow-sm
+          transition-all duration-200
+          disabled:opacity-50 cursor-pointer
+        "
+        title="Recuperar CAEs perdidos desde AFIP"
+      >
+        <ShieldCheck size={12} />
+        <span className="hidden sm:inline">RECUPERAR CAEs</span>
       </button>
 
       <button
