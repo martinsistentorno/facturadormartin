@@ -99,40 +99,40 @@ export default function StatsCards({ ventas, onCardClick }) {
           {/* Total Ventas */}
           <button
             onClick={() => onCardClick('Total Ventas', activas, timeframe)}
-            className="flex-1 bg-white border border-border rounded-xl px-4 py-2 flex flex-col items-center justify-center text-center transition-all duration-300 hover:shadow-sm hover:border-blue outline-none cursor-pointer group"
+            className="flex-1 min-h-0 bg-white border border-border rounded-xl px-2 py-1 flex flex-col items-center justify-center text-center transition-all duration-300 hover:shadow-sm hover:border-blue outline-none cursor-pointer group"
           >
-            <div className="font-bold uppercase text-[9px] text-text-muted tracking-widest mb-1">Total Movimientos</div>
-            <div className="flex items-center gap-2 mb-0.5">
-               <Activity size={15} className="text-blue" />
-               <div className="font-bold text-[19px] text-text-primary tracking-tighter">{renderMoney(totalActivasAmount)}</div>
+            <div className="font-bold uppercase text-[9px] text-text-muted tracking-widest leading-none mb-0.5 truncate w-full px-1">Total Movimientos</div>
+            <div className="flex items-center justify-center gap-1.5 w-full">
+               <Activity size={14} className="text-blue shrink-0" />
+               <div className="font-bold text-[17px] text-text-primary tracking-tighter leading-none truncate">{renderMoney(totalActivasAmount)}</div>
             </div>
-            <div className="font-medium text-[10px] text-text-secondary opacity-70">{activas.length} op. registradas</div>
+            <div className="font-medium text-[9px] text-text-secondary opacity-70 leading-none mt-0.5 truncate w-full px-1">{activas.length} op. registradas</div>
           </button>
 
           {/* Pendientes */}
           <button
             onClick={() => onCardClick('Pendientes', pendientes, timeframe)}
-            className="flex-1 bg-white border border-border rounded-xl px-4 py-2 flex flex-col items-center justify-center text-center transition-all duration-300 hover:shadow-sm hover:border-amber-400 outline-none cursor-pointer group"
+            className="flex-1 min-h-0 bg-white border border-border rounded-xl px-2 py-1 flex flex-col items-center justify-center text-center transition-all duration-300 hover:shadow-sm hover:border-amber-400 outline-none cursor-pointer group"
           >
-            <div className="font-bold uppercase text-[9px] text-text-muted tracking-widest mb-1">Pendiente de Cobro</div>
-            <div className="flex items-center gap-2 mb-0.5">
-               <Clock size={15} className="text-amber-500" />
-               <div className="font-bold text-[19px] text-text-primary tracking-tighter">{renderMoney(pendientesAmount)}</div>
+            <div className="font-bold uppercase text-[9px] text-text-muted tracking-widest leading-none mb-0.5 truncate w-full px-1">Pendiente de Cobro</div>
+            <div className="flex items-center justify-center gap-1.5 w-full">
+               <Clock size={14} className="text-amber-500 shrink-0" />
+               <div className="font-bold text-[17px] text-text-primary tracking-tighter leading-none truncate">{renderMoney(pendientesAmount)}</div>
             </div>
-            <div className="font-medium text-[10px] text-text-secondary opacity-70">{pendientes.length} facturas</div>
+            <div className="font-medium text-[9px] text-text-secondary opacity-70 leading-none mt-0.5 truncate w-full px-1">{pendientes.length} facturas</div>
           </button>
 
           {/* Con Error */}
           <button
             onClick={() => onCardClick('Con Error', conError, timeframe)}
-            className="flex-1 bg-white border border-border rounded-xl px-4 py-2 flex flex-col items-center justify-center text-center transition-all duration-300 hover:shadow-sm hover:border-red outline-none cursor-pointer group"
+            className="flex-1 min-h-0 bg-white border border-border rounded-xl px-2 py-1 flex flex-col items-center justify-center text-center transition-all duration-300 hover:shadow-sm hover:border-red outline-none cursor-pointer group"
           >
-            <div className="font-bold uppercase text-[9px] text-text-muted tracking-widest mb-1">Errores AFIP</div>
-            <div className="flex items-center gap-2 mb-0.5">
-               <AlertCircle size={15} className="text-red" />
-               <div className="font-bold text-[19px] text-text-primary tracking-tighter text-red">{renderMoney(conErrorAmount)}</div>
+            <div className="font-bold uppercase text-[9px] text-text-muted tracking-widest leading-none mb-0.5 truncate w-full px-1">Errores AFIP</div>
+            <div className="flex items-center justify-center gap-1.5 w-full">
+               <AlertCircle size={14} className="text-red shrink-0" />
+               <div className="font-bold text-[17px] text-text-primary tracking-tighter text-red leading-none truncate">{renderMoney(conErrorAmount)}</div>
             </div>
-            <div className="font-medium text-[10px] text-red opacity-80">{conError.length} reintentos</div>
+            <div className="font-medium text-[9px] text-red opacity-80 leading-none mt-0.5 truncate w-full px-1">{conError.length} reintentos</div>
           </button>
         </div>
 
