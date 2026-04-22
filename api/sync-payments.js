@@ -378,11 +378,13 @@ export default async function handler(req, res) {
             }
           }
 
+          let isOwnAccount = false
           // Filtrar CUIT/DNI propio de Martin
           if (docNumber === '20354302684' || docNumber === '35430268') {
             docNumber = ''
             extractedBillingName = ''
             clienteNombre = 'Consumidor Final'
+            isOwnAccount = true
           }
 
           // 1. Consultar AFIP SOLO si es un CUIT (11 dígitos)
@@ -398,7 +400,7 @@ export default async function handler(req, res) {
           }
 
           // 2. Si AFIP no devolvió nada, intentar usar nombres extraídos
-          if (clienteNombre === 'Consumidor Final') {
+          if (clienteNombre === 'Consumidor Final' && !isOwnAccount) {
             if (extractedBillingName) {
               clienteNombre = extractedBillingName
             } else if (buyer.first_name) {
