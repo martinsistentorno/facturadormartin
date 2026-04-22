@@ -82,7 +82,7 @@ export default async function handler(req, res) {
     // ══════════════════════════════════════════════════════════
     console.log('[Sync] ── Buscando pagos de Mercado Pago ──')
 
-    const searchUrl = `https://api.mercadopago.com/v1/payments/search?sort=date_created&criteria=desc&limit=20&status=approved`
+    const searchUrl = `https://api.mercadopago.com/v1/payments/search?sort=date_created&criteria=desc&limit=100&status=approved`
     const searchRes = await fetch(searchUrl, {
       headers: { 'Authorization': `Bearer ${accessToken}` }
     })
@@ -224,7 +224,7 @@ export default async function handler(req, res) {
     console.log('[Sync] ── Buscando órdenes de Mercado Libre ──')
 
     if (myUserId) {
-      const ordersUrl = `https://api.mercadolibre.com/orders/search?seller=${myUserId}&sort=date_desc&limit=20`
+      const ordersUrl = `https://api.mercadolibre.com/orders/search?seller=${myUserId}&sort=date_desc&limit=50`
       const ordersRes = await fetch(ordersUrl, {
         headers: { 'Authorization': `Bearer ${accessToken}` }
       })
