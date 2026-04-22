@@ -114,18 +114,21 @@ export async function generateInvoicePdf(venta, emisor) {
 
   // ─── QR de AFIP ───
   try {
+    const cleanCuit = (val) => String(val || '').replace(/\D/g, '');
+    const nroCompPto = (venta.nro_comprobante || '0-0').split('-');
+    
     const qrData = {
       ver: 1,
       fecha: venta.fecha ? venta.fecha.split('T')[0] : new Date().toISOString().split('T')[0],
-      cuit: Number(e.cuit),
-      ptoVta: Number(nroCompArr[0]),
-      tipoCmp: e.tipoCbte,
-      nroCmp: Number(nroCompArr[1]),
-      importe: Number(venta.monto),
+      cuit: Number(cleanCuit(e.cuit)),
+      ptoVta: Number(nroCompPto[0]),
+      tipoCmp: Number(e.tipoCbte || 11),
+      nroCmp: Number(nroCompPto[1]),
+      importe: parseFloat(Number(venta.monto).toFixed(2)),
       moneda: "PES",
       ctz: 1,
       tipoDocRec: cuitCliente === 'Consumidor Final' ? 99 : 80,
-      nroDocRec: cuitCliente === 'Consumidor Final' ? 0 : Number(cuitCliente.replace(/-/g, '')),
+      nroDocRec: cuitCliente === 'Consumidor Final' ? 0 : Number(cleanCuit(cuitCliente)),
       tipoCodAut: "E",
       codAut: Number(venta.cae)
     };
