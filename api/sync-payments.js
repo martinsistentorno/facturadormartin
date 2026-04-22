@@ -162,6 +162,13 @@ export default async function handler(req, res) {
         const isOwnAccount = payerIdStr === myUserId
         let condicionIvaFallback = null
 
+        // Filtrar CUIT/DNI propio de Martin
+        if (docNumber === '20354302684' || docNumber === '35430268') {
+          docNumber = ''
+          resolvedCuit = ''
+          docType = 'DNI'
+        }
+
         if (!isOwnAccount && docNumber && docNumber.length === 11) {
           const afipResult = await getAfipRazonSocial(docNumber)
           if (afipResult) {
@@ -369,6 +376,13 @@ export default async function handler(req, res) {
               docNumber = String(buyer.identification.number)
               docType = buyer.identification.type || 'DNI'
             }
+          }
+
+          // Filtrar CUIT/DNI propio de Martin
+          if (docNumber === '20354302684' || docNumber === '35430268') {
+            docNumber = ''
+            extractedBillingName = ''
+            clienteNombre = 'Consumidor Final'
           }
 
           // 1. Consultar AFIP SOLO si es un CUIT (11 dígitos)
