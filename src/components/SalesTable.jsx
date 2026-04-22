@@ -438,6 +438,18 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
                   )}
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-1">
+                      {venta.status === 'facturado' && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (onEdit) onEdit(venta);
+                          }}
+                          className="p-2 transition-all cursor-pointer rounded-lg text-text-muted hover:text-accent hover:bg-accent/5"
+                          title="Ver detalle"
+                        >
+                          <Eye size={16} />
+                        </button>
+                      )}
                       {venta.status === 'pendiente' && (
                         <button
                           onClick={(e) => {
