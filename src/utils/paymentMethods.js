@@ -8,10 +8,10 @@ const PAYMENT_METHOD_MAP = {
   // Mercado Pago payment_type_id values
   'credit_card':      'Tarjeta de Crédito',
   'debit_card':       'Tarjeta de Débito',
-  'account_money':    'Dinero en Cuenta',
+  'account_money':    'Mercado Pago',
   'ticket':           'Efectivo',
-  'bank_transfer':    'Transferencia',
-  'transfer':         'Transferencia',
+  'bank_transfer':    'Transferencia Bancaria',
+  'transfer':         'Transferencia Bancaria',
   'prepaid_card':     'Tarjeta Prepaga',
   'digital_currency': 'Cripto / Digital',
   'customer_credits': 'Crédito MP',
@@ -38,13 +38,13 @@ const PAYMENT_METHOD_MAP = {
   'tarjeta de débito':    'Tarjeta de Débito',
   'dinero en cuenta':     'Dinero en Cuenta',
   'efectivo':             'Efectivo',
-  'transferencia':        'Transferencia',
+  'transferencia':        'Transferencia Bancaria',
   'transferencia bancaria': 'Transferencia Bancaria',
   'tarjeta prepaga':      'Tarjeta Prepaga',
   'cripto / digital':     'Cripto / Digital',
   'crédito mp':           'Crédito MP',
   'contado - efectivo':   'Contado - Efectivo',
-  'mercado pago':         'Dinero en Cuenta',
+  'mercado pago':         'Mercado Pago',
 }
 
 /**
@@ -74,7 +74,7 @@ export function getPaymentBadgeStyle(method) {
     'Tarjeta de Crédito':   { bg: 'bg-[#E8A34A]/10',    text: 'text-[#9A641A]' },
     'Tarjeta de Débito':    { bg: 'bg-[#E8A34A]/10',    text: 'text-[#9A641A]' },
     'Tarjeta Prepaga':      { bg: 'bg-[#E8A34A]/10',    text: 'text-[#9A641A]' },
-    'Dinero en Cuenta':     { bg: 'bg-[#009EE3]/10',    text: 'text-[#009EE3]' },
+    'Mercado Pago':         { bg: 'bg-[#009EE3]/10',    text: 'text-[#009EE3]' },
     'Crédito MP':           { bg: 'bg-[#2D8F5E]/10',    text: 'text-[#2D8F5E]' },
     'Cripto / Digital':     { bg: 'bg-[#7C4DFF]/10',    text: 'text-[#7C4DFF]' },
     'Billetera Digital':    { bg: 'bg-[#009EE3]/10',    text: 'text-[#009EE3]' },

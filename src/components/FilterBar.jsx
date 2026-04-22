@@ -124,10 +124,10 @@ export default function FilterBar({ filters, onFilterChange, totalCount, filtere
               className="w-full bg-surface-alt border border-border rounded-lg px-3 py-2 text-sm text-text-primary focus:outline-none focus:border-accent cursor-pointer"
             >
               <option value="">Todos</option>
-              <option value="Transferencia">Transferencia</option>
+              <option value="Transferencia Bancaria">Transferencia</option>
               <option value="Tarjeta">Tarjeta (Cred/Deb)</option>
               <option value="Contado">Contado / Efectivo</option>
-              <option value="Dinero en Cuenta">Dinero en Cuenta</option>
+              <option value="Mercado Pago">Mercado Pago</option>
               <option value="Crédito MP">Crédito MP</option>
               <option value="Cripto / Digital">Cripto / Digital</option>
             </select>
