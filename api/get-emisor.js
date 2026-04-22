@@ -1,4 +1,4 @@
-import { getAfipRazonSocial } from './lib/afip-helper.js'
+import { getAfipRazonSocial } from './_lib/afip-helper.js'
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')

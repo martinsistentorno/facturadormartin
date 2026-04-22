@@ -5,7 +5,7 @@ import path from 'path'
 import os from 'os'
 import tls from 'tls'
 import crypto from 'crypto'
-import { getAfipRazonSocial } from './lib/afip-helper.js'
+import { getAfipRazonSocial } from './_lib/afip-helper.js'
 
 // AFIP servers use 1024-bit DH keys which OpenSSL 3.0+ (Node 18+) rejects.
 // Force SECLEVEL=0 on ALL TLS connections — the SOAP lib inside the SDK creates its own.

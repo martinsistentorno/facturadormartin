@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
-import { getValidAccessToken } from './lib/meli-token.js'
-import { getAfipRazonSocial } from './lib/afip-helper.js'
-import { translatePaymentMethod, simplifyPaymentMethod } from './lib/payment-methods.js'
+import { getValidAccessToken } from './_lib/meli-token.js'
+import { getAfipRazonSocial } from './_lib/afip-helper.js'
+import { translatePaymentMethod, simplifyPaymentMethod } from './_lib/payment-methods.js'
 
 /**
  * Endpoint de sincronización manual.
