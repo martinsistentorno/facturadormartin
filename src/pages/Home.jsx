@@ -82,13 +82,11 @@ export default function Home() {
       if (filters.status && v.status !== filters.status) return false
 
       // Date range
-      if (filters.dateFrom) {
-        const vDate = new Date(v.fecha).toISOString().split('T')[0]
-        if (vDate < filters.dateFrom) return false
-      }
-      if (filters.dateTo) {
-        const vDate = new Date(v.fecha).toISOString().split('T')[0]
-        if (vDate > filters.dateTo) return false
+      if (filters.dateFrom || filters.dateTo) {
+        const d = new Date(v.fecha);
+        const vDateLocal = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        if (filters.dateFrom && vDateLocal < filters.dateFrom) return false;
+        if (filters.dateTo && vDateLocal > filters.dateTo) return false;
       }
 
       // Monto range
