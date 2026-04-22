@@ -6,7 +6,7 @@
 const PAYMENT_METHOD_MAP = {
   'credit_card':      'Tarjeta de Crédito',
   'debit_card':       'Tarjeta de Débito',
-  'account_money':    'Mercado Pago',
+  'account_money':    'Dinero en Cuenta',
   'ticket':           'Efectivo',
   'bank_transfer':    'Transferencia Bancaria',
   'transfer':         'Transferencia Bancaria',
@@ -28,7 +28,7 @@ const PAYMENT_METHOD_MAP = {
   'rapipago':         'Efectivo',
   'pagofacil':        'Efectivo',
   'cvu':              'Transferencia Bancaria',
-  'mercado pago':     'Mercado Pago',
+  'mercado pago':     'Dinero en Cuenta',
 }
 
 /**
@@ -42,4 +42,19 @@ export function translatePaymentMethod(typeId, methodId) {
   const key1 = (typeId || '').trim().toLowerCase()
   const key2 = (methodId || '').trim().toLowerCase()
   return PAYMENT_METHOD_MAP[key1] || PAYMENT_METHOD_MAP[key2] || typeId || methodId || 'Mercado Pago'
+}
+
+/**
+ * Agrupa un método de pago detallado en una categoría genérica y prolija
+ * para figurar en la factura PDF de AFIP.
+ */
+export function simplifyPaymentMethod(method) {
+  const m = (method || '').toLowerCase()
+  if (m.includes('tarjeta')) return 'Tarjeta'
+  if (m.includes('efectivo') || m.includes('contado') || m.includes('ticket') || m.includes('rapipago')) return 'Contado - Efectivo'
+  if (m.includes('transferencia') || m.includes('cvu')) return 'Transferencia Bancaria'
+  if (m === 'dinero en cuenta' || m.includes('mercado') || m.includes('crédito mp') || m.includes('billetera')) return 'Mercado Pago'
+  if (m.includes('cripto') || m.includes('digital')) return 'Cripto / Digital'
+  
+  return method || 'Mercado Pago'
 }

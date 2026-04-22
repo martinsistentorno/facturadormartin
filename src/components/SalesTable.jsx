@@ -482,7 +482,7 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
                   )}
                   {isVisible('medio') && (
                     <td className="px-4 py-3">
-                      <PaymentBadge method={venta.datos_fiscales?.forma_pago} />
+                      <PaymentBadge method={venta.datos_fiscales?.medio_pago || venta.datos_fiscales?.forma_pago} />
                     </td>
                   )}
                   {isVisible('status') && (

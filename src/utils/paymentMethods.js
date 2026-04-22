@@ -8,10 +8,10 @@ const PAYMENT_METHOD_MAP = {
   // Mercado Pago payment_type_id values
   'credit_card':      'Tarjeta de Crédito',
   'debit_card':       'Tarjeta de Débito',
-  'account_money':    'Mercado Pago',
+  'account_money':    'Dinero en Cuenta',
   'ticket':           'Efectivo',
-  'bank_transfer':    'Transferencia Bancaria',
-  'transfer':         'Transferencia Bancaria',
+  'bank_transfer':    'Transferencia',
+  'transfer':         'Transferencia',
   'prepaid_card':     'Tarjeta Prepaga',
   'digital_currency': 'Cripto / Digital',
   'customer_credits': 'Crédito MP',
@@ -38,13 +38,28 @@ const PAYMENT_METHOD_MAP = {
   'tarjeta de débito':    'Tarjeta de Débito',
   'dinero en cuenta':     'Dinero en Cuenta',
   'efectivo':             'Efectivo',
-  'transferencia':        'Transferencia Bancaria',
+  'transferencia':        'Transferencia',
   'transferencia bancaria': 'Transferencia Bancaria',
   'tarjeta prepaga':      'Tarjeta Prepaga',
   'cripto / digital':     'Cripto / Digital',
   'crédito mp':           'Crédito MP',
   'contado - efectivo':   'Contado - Efectivo',
-  'mercado pago':         'Mercado Pago',
+  'mercado pago':         'Dinero en Cuenta',
+}
+
+/**
+ * Agrupa un método de pago detallado en una categoría genérica y prolija
+ * para el Formulario de Edición o Facturas generadas manuales.
+ */
+export function simplifyPaymentMethod(method) {
+  const m = (method || '').toLowerCase()
+  if (m.includes('tarjeta')) return 'Tarjeta'
+  if (m.includes('efectivo') || m.includes('contado') || m.includes('ticket') || m.includes('rapipago')) return 'Contado - Efectivo'
+  if (m.includes('transferencia') || m.includes('cvu')) return 'Transferencia Bancaria'
+  if (m === 'dinero en cuenta' || m.includes('mercado') || m.includes('crédito mp') || m.includes('billetera')) return 'Mercado Pago'
+  if (m.includes('cripto') || m.includes('digital')) return 'Cripto / Digital'
+  
+  return method || 'Mercado Pago'
 }
 
 /**
@@ -74,6 +89,7 @@ export function getPaymentBadgeStyle(method) {
     'Tarjeta de Crédito':   { bg: 'bg-[#E8A34A]/10',    text: 'text-[#9A641A]' },
     'Tarjeta de Débito':    { bg: 'bg-[#E8A34A]/10',    text: 'text-[#9A641A]' },
     'Tarjeta Prepaga':      { bg: 'bg-[#E8A34A]/10',    text: 'text-[#9A641A]' },
+    'Dinero en Cuenta':     { bg: 'bg-[#009EE3]/10',    text: 'text-[#009EE3]' },
     'Mercado Pago':         { bg: 'bg-[#009EE3]/10',    text: 'text-[#009EE3]' },
     'Crédito MP':           { bg: 'bg-[#2D8F5E]/10',    text: 'text-[#2D8F5E]' },
     'Cripto / Digital':     { bg: 'bg-[#7C4DFF]/10',    text: 'text-[#7C4DFF]' },

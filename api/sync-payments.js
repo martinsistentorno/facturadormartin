@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { getValidAccessToken } from './lib/meli-token.js'
 import { getAfipRazonSocial } from './lib/afip-helper.js'
-import { translatePaymentMethod } from './lib/payment-methods.js'
+import { translatePaymentMethod, simplifyPaymentMethod } from './lib/payment-methods.js'
 
 /**
  * Endpoint de sincronización manual.
@@ -197,7 +197,8 @@ export default async function handler(req, res) {
           }
         }
 
-        const formaPago = translatePaymentMethod(payment.payment_type_id, payment.payment_method_id)
+        const medioPagoDetail = translatePaymentMethod(payment.payment_type_id, payment.payment_method_id)
+        const formaPago = simplifyPaymentMethod(medioPagoDetail)
         const finalCuit = clienteNombre === 'Consumidor Final' ? '' : resolvedCuit
         const condicionIva = condicionIvaFallback || ((finalCuit && finalCuit.length === 11) ? 'Responsable Inscripto' : 'Consumidor Final')
 
@@ -213,6 +214,7 @@ export default async function handler(req, res) {
             cuit: finalCuit,
             condicion_iva: condicionIva,
             forma_pago: formaPago,
+            medio_pago: medioPagoDetail,
             mp_status: payment.status,
             mp_method: payment.payment_method_id || '',
             mp_type: payment.payment_type_id || '',
@@ -428,9 +430,10 @@ export default async function handler(req, res) {
             }
           }
 
-          // Forma de pago
+          // Forma de pago y Medio de Pago
           const firstPayment = order.payments?.[0]
-          const formaPago = translatePaymentMethod(firstPayment?.payment_type, firstPayment?.payment_method_id)
+          const medioPagoDetail = translatePaymentMethod(firstPayment?.payment_type, firstPayment?.payment_method_id)
+          const formaPago = simplifyPaymentMethod(medioPagoDetail)
 
           // Si es Consumidor Final, NO guardar CUIT
           const finalCuit = clienteNombre === 'Consumidor Final' ? '' : resolvedCuit
@@ -448,6 +451,7 @@ export default async function handler(req, res) {
               cuit: finalCuit,
               condicion_iva: condicionIva,
               forma_pago: formaPago,
+              medio_pago: medioPagoDetail,
               meli_order_id: orderId,
               meli_payment_ids: orderPaymentIds,
               meli_status: order.status,
