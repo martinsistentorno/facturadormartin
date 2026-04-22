@@ -314,8 +314,8 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
                   key={venta.id}
                   onClick={() => handleRowClick(venta)}
                   className={`
-                    transition-all duration-150 cursor-pointer
-                    border-b border-border hover:bg-white/50
+                    transition-all duration-150 cursor-pointer border-b border-border
+                    ${!isSelected && !isError ? 'hover:bg-white/50' : ''}
                     ${isError ? 'bg-red-subtle/50 hover:bg-red-subtle' : ''}
                     ${isSelected ? 'bg-blue-subtle border-l-[3px] border-l-blue hover:bg-blue/10 relative' : 'border-l-[3px] border-l-transparent'}
                   `}
