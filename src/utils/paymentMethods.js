@@ -56,11 +56,13 @@ export function simplifyPaymentMethod(method) {
   if (m.includes('tarjeta de crédito')) return 'Tarjeta de Crédito'
   if (m.includes('tarjeta de débito')) return 'Tarjeta de Débito'
   if (m.includes('tarjeta') || m.includes('prepaga')) return 'Tarjeta de Débito'
-  if (m.includes('transferencia') || m.includes('cvu')) return 'Transferencia'
-  if (m.includes('cuenta') || m.includes('mercado') || m.includes('crédito mp') || m.includes('billetera')) return 'Contado'
+  if (m.includes('transferencia') || m.includes('cvu')) return 'Transferencia Bancaria'
+  if (m.includes('cuenta') || m.includes('mercado') || m.includes('crédito mp') || m.includes('billetera')) return 'Otros medios de pago electrónico'
   if (m.includes('efectivo') || m.includes('contado') || m.includes('ticket') || m.includes('rapipago')) return 'Contado'
+  if (m.includes('cheque')) return 'Cheque'
+  if (m.includes('corriente')) return 'Cuenta Corriente'
   
-  return 'Contado'
+  return 'Otra'
 }
 
 /**
@@ -71,6 +73,7 @@ export function simplifyPaymentMethod(method) {
  */
 export function translatePaymentMethod(raw) {
   if (!raw) return '—'
+  // Si ya es uno de los simplificados, devolverlo tal cual (idempotencia)
   const key = raw.trim().toLowerCase()
   return PAYMENT_METHOD_MAP[key] || raw
 }
@@ -80,18 +83,20 @@ export function translatePaymentMethod(raw) {
  * Devuelve { bg, text, label } para el badge.
  */
 export function getPaymentBadgeStyle(method) {
-  const label = simplifyPaymentMethod(method)
+  const label = translatePaymentMethod(method) // Mostrar el nombre DETALLADO en la tabla
+  const category = simplifyPaymentMethod(method) // Usar la categoría AFIP para el estilo
 
   const styles = {
-    'Contado':              { bg: 'bg-accent/10',       text: 'text-accent' },
-    'Transferencia':        { bg: 'bg-[#7C4DFF]/10',    text: 'text-[#7C4DFF]' },
-    'Tarjeta de Crédito':   { bg: 'bg-[#E8A34A]/10',    text: 'text-[#9A641A]' },
-    'Tarjeta de Débito':    { bg: 'bg-[#E8A34A]/10',    text: 'text-[#9A641A]' },
-    'Cuenta Corriente':     { bg: 'bg-[#3460A8]/10',    text: 'text-[#3460A8]' },
-    'Cheque':               { bg: 'bg-surface-alt/80',  text: 'text-text-muted' },
-    'Otra':                 { bg: 'bg-surface-alt/50',  text: 'text-text-secondary' },
+    'Contado':                          { bg: 'bg-accent/10',       text: 'text-accent' },
+    'Transferencia Bancaria':           { bg: 'bg-[#7C4DFF]/10',    text: 'text-[#7C4DFF]' },
+    'Tarjeta de Crédito':               { bg: 'bg-[#E8A34A]/10',    text: 'text-[#9A641A]' },
+    'Tarjeta de Débito':                { bg: 'bg-[#E8A34A]/10',    text: 'text-[#9A641A]' },
+    'Cuenta Corriente':                 { bg: 'bg-[#3460A8]/10',    text: 'text-[#3460A8]' },
+    'Cheque':                           { bg: 'bg-surface-alt/80',  text: 'text-text-muted' },
+    'Otros medios de pago electrónico': { bg: 'bg-[#009EE3]/10',    text: 'text-[#009EE3]' },
+    'Otra':                             { bg: 'bg-surface-alt/50',  text: 'text-text-secondary' },
   }
 
-  const style = styles[label] || { bg: 'bg-surface-alt/50', text: 'text-text-secondary' }
+  const style = styles[category] || { bg: 'bg-surface-alt/50', text: 'text-text-secondary' }
   return { ...style, label }
 }

@@ -6,10 +6,11 @@ const FORMAS_PAGO = [
   'Contado',
   'Tarjeta de Débito',
   'Tarjeta de Crédito',
-  'Transferencia',
   'Cuenta Corriente',
   'Cheque',
+  'Transferencia Bancaria',
   'Otra',
+  'Otros medios de pago electrónico',
 ];
 
 const TIPOS_COMPROBANTE = [

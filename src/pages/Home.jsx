@@ -700,7 +700,8 @@ export default function Home() {
           }}
           onEdit={(venta) => {
             setDetailVenta(venta)
-            setDetailVentaEditMode(true)
+            // Solo entrar en modo edición si NO está facturada
+            setDetailVentaEditMode(venta.status !== 'facturado')
           }}
           onSaveEdit={handleEditVenta}
           onRetry={handleRetry}

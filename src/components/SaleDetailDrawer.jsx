@@ -3,7 +3,7 @@ import StatusBadge from './StatusBadge';
 import { generateInvoicePdf } from '../utils/invoicePdf';
 import { useEffect, useState } from 'react';
 import { useConfig } from '../context/ConfigContext';
-import { translatePaymentMethod } from '../utils/paymentMethods';
+import { translatePaymentMethod, simplifyPaymentMethod } from '../utils/paymentMethods';
 import SaleFormFields, { CONCEPTOS, UNIDADES_MEDIDA } from './SaleFormFields';
 
 export default function SaleDetailDrawer({ venta, isOpen, onClose, onSave, onRetry, initialEditMode = false }) {
@@ -34,7 +34,7 @@ export default function SaleDetailDrawer({ venta, isOpen, onClose, onSave, onRet
         periodoHasta: df.periodo_hasta || '',
         vtoPago: df.vto_pago || '',
         monto: venta.monto || 0,
-        formaPago: df.forma_pago || 'Contado - Efectivo',
+        formaPago: simplifyPaymentMethod(df.forma_pago || 'Contado'),
         fechaEmision: df.fecha_emision || new Date().toISOString().split('T')[0],
         tipoCbte: df.tipo_cbte || emisor?.tipo_cbte || 11,
       });
