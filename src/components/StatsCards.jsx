@@ -94,64 +94,66 @@ export default function StatsCards({ ventas, onCardClick }) {
         </button>
 
         {/* 2. STACK OF 3 MINI CARDS - Takes 4 columns */}
-        <div className="lg:col-span-4 flex flex-col gap-3 h-[220px]">
-          
-          {/* Total Ventas */}
-          <button
-            onClick={() => onCardClick('Total Ventas', activas, timeframe)}
-            className="flex-1 min-h-0 bg-white border border-border rounded-xl px-4 py-2 flex items-center justify-between transition-all duration-300 hover:shadow-sm hover:border-blue outline-none cursor-pointer group"
-          >
-            {/* Left Box: Text + Principal Number (Quantity) */}
-            <div className="flex items-center gap-3">
-              <div className="font-bold uppercase text-[10px] text-text-muted tracking-widest leading-tight text-left w-20">Total<br/>Movim.</div>
-              <div className="font-black text-2xl text-text-primary tracking-tighter">{activas.length}</div>
-            </div>
-            {/* Right Box: Money + Icon */}
-            <div className="flex items-center gap-2.5">
-               <div className="font-medium text-[11px] text-text-secondary tracking-tight">{renderMoney(totalActivasAmount)}</div>
-               <div className="bg-blue/10 p-2 rounded-lg shrink-0">
-                 <Activity size={16} className="text-blue" />
-               </div>
-            </div>
-          </button>
+        <div className="lg:col-span-4 flex justify-center items-center h-[220px]">
+          <div className="flex flex-col gap-3 w-max h-full">
+            
+            {/* Total Ventas */}
+            <button
+              onClick={() => onCardClick('Total Ventas', activas, timeframe)}
+              className="flex-1 min-h-0 bg-white border border-border rounded-xl px-4 py-2 flex items-center gap-8 justify-between transition-all duration-300 hover:shadow-sm hover:border-blue outline-none cursor-pointer group"
+            >
+              {/* Left Box: Text + Principal Number (Quantity) */}
+              <div className="flex items-center gap-3">
+                <div className="font-bold uppercase text-[10px] text-text-muted tracking-widest leading-tight text-left w-20">Total<br/>Movim.</div>
+                <div className="font-black text-2xl text-text-primary tracking-tighter">{activas.length}</div>
+              </div>
+              {/* Right Box: Money + Icon */}
+              <div className="flex items-center gap-2.5">
+                 <div className="font-medium text-[11px] text-text-secondary tracking-tight">{renderMoney(totalActivasAmount)}</div>
+                 <div className="bg-blue/10 p-2 rounded-lg shrink-0">
+                   <Activity size={16} className="text-blue" />
+                 </div>
+              </div>
+            </button>
 
-          {/* Pendientes */}
-          <button
-            onClick={() => onCardClick('Pendientes', pendientes, timeframe)}
-            className="flex-1 min-h-0 bg-white border border-border rounded-xl px-4 py-2 flex items-center justify-between transition-all duration-300 hover:shadow-sm hover:border-amber-400 outline-none cursor-pointer group"
-          >
-            {/* Left Box: Text + Principal Number (Quantity) */}
-            <div className="flex items-center gap-3">
-              <div className="font-bold uppercase text-[10px] text-text-muted tracking-widest leading-tight text-left w-20">Pendiente<br/>Cobro</div>
-              <div className="font-black text-2xl text-text-primary tracking-tighter">{pendientes.length}</div>
-            </div>
-            {/* Right Box: Money + Icon */}
-            <div className="flex items-center gap-2.5">
-               <div className="font-medium text-[11px] text-text-secondary tracking-tight">{renderMoney(pendientesAmount)}</div>
-               <div className="bg-yellow/20 p-2 rounded-lg shrink-0">
-                 <Clock size={16} className="text-amber-500" />
-               </div>
-            </div>
-          </button>
+            {/* Pendientes */}
+            <button
+              onClick={() => onCardClick('Pendientes', pendientes, timeframe)}
+              className="flex-1 min-h-0 bg-white border border-border rounded-xl px-4 py-2 flex items-center gap-8 justify-between transition-all duration-300 hover:shadow-sm hover:border-amber-400 outline-none cursor-pointer group"
+            >
+              {/* Left Box: Text + Principal Number (Quantity) */}
+              <div className="flex items-center gap-3">
+                <div className="font-bold uppercase text-[10px] text-text-muted tracking-widest leading-tight text-left w-20">Pendiente<br/>Cobro</div>
+                <div className="font-black text-2xl text-text-primary tracking-tighter">{pendientes.length}</div>
+              </div>
+              {/* Right Box: Money + Icon */}
+              <div className="flex items-center gap-2.5">
+                 <div className="font-medium text-[11px] text-text-secondary tracking-tight">{renderMoney(pendientesAmount)}</div>
+                 <div className="bg-yellow/20 p-2 rounded-lg shrink-0">
+                   <Clock size={16} className="text-amber-500" />
+                 </div>
+              </div>
+            </button>
 
-          {/* Con Error */}
-          <button
-            onClick={() => onCardClick('Con Error', conError, timeframe)}
-            className="flex-1 min-h-0 bg-white border border-border rounded-xl px-4 py-2 flex items-center justify-between transition-all duration-300 hover:shadow-sm hover:border-red outline-none cursor-pointer group"
-          >
-            {/* Left Box: Text + Principal Number (Quantity) */}
-            <div className="flex items-center gap-3">
-              <div className="font-bold uppercase text-[10px] text-text-muted tracking-widest leading-tight text-left w-20">Errores<br/>AFIP</div>
-              <div className="font-black text-2xl text-red tracking-tighter">{conError.length}</div>
-            </div>
-            {/* Right Box: Money + Icon */}
-            <div className="flex items-center gap-2.5">
-               <div className="font-medium text-[11px] text-red opacity-80 tracking-tight">{renderMoney(conErrorAmount)}</div>
-               <div className="bg-red/10 p-2 rounded-lg shrink-0">
-                 <AlertCircle size={16} className="text-red" />
-               </div>
-            </div>
-          </button>
+            {/* Con Error */}
+            <button
+              onClick={() => onCardClick('Con Error', conError, timeframe)}
+              className="flex-1 min-h-0 bg-white border border-border rounded-xl px-4 py-2 flex items-center gap-8 justify-between transition-all duration-300 hover:shadow-sm hover:border-red outline-none cursor-pointer group"
+            >
+              {/* Left Box: Text + Principal Number (Quantity) */}
+              <div className="flex items-center gap-3">
+                <div className="font-bold uppercase text-[10px] text-text-muted tracking-widest leading-tight text-left w-20">Errores<br/>AFIP</div>
+                <div className="font-black text-2xl text-red tracking-tighter">{conError.length}</div>
+              </div>
+              {/* Right Box: Money + Icon */}
+              <div className="flex items-center gap-2.5">
+                 <div className="font-medium text-[11px] text-red opacity-80 tracking-tight">{renderMoney(conErrorAmount)}</div>
+                 <div className="bg-red/10 p-2 rounded-lg shrink-0">
+                   <AlertCircle size={16} className="text-red" />
+                 </div>
+              </div>
+            </button>
+          </div>
         </div>
 
       </div>
