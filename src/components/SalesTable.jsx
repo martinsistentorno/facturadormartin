@@ -347,7 +347,19 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
                   )}
                   {isVisible('monto') && (
                     <td className="px-4 py-3 text-right">
-                      <span className="text-text-primary font-semibold tabular-nums">{formatCurrency(venta.monto)}</span>
+                      {[3, 8, 13, 113].includes(venta.datos_fiscales?.tipo_cbte) ? (
+                        <div className="flex flex-col items-end">
+                          <span className="text-[#C0443C] font-semibold tabular-nums">- {formatCurrency(venta.monto)}</span>
+                          <span className="text-[9px] font-bold text-[#C0443C]/80 uppercase tracking-wider">Nota de Crédito</span>
+                        </div>
+                      ) : [2, 7, 12, 112].includes(venta.datos_fiscales?.tipo_cbte) ? (
+                        <div className="flex flex-col items-end">
+                          <span className="text-[#3460A8] font-semibold tabular-nums">{formatCurrency(venta.monto)}</span>
+                          <span className="text-[9px] font-bold text-[#3460A8]/80 uppercase tracking-wider">Nota de Débito</span>
+                        </div>
+                      ) : (
+                        <span className="text-text-primary font-semibold tabular-nums">{formatCurrency(venta.monto)}</span>
+                      )}
                     </td>
                   )}
                   {isVisible('iva') && (

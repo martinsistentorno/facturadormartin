@@ -14,10 +14,16 @@ export default function StatsCards({ ventas, onCardClick }) {
   const pendientes = activas.filter(v => v.status === 'pendiente' || v.status === 'procesando')
   const borradas = filteredVentas.filter(v => v.status === 'borrada')
 
-  const totalActivasAmount = activas.reduce((s, v) => s + (Number(v.monto) || 0), 0)
-  const facturadasAmount = facturadas.reduce((s, v) => s + (Number(v.monto) || 0), 0)
-  const pendientesAmount = pendientes.reduce((s, v) => s + (Number(v.monto) || 0), 0)
-  const conErrorAmount = conError.reduce((s, v) => s + (Number(v.monto) || 0), 0)
+  const getAmount = (v) => {
+    const isCreditNote = [3, 8, 13, 113].includes(v.datos_fiscales?.tipo_cbte);
+    const amount = Number(v.monto) || 0;
+    return isCreditNote ? -Math.abs(amount) : Math.abs(amount);
+  };
+
+  const totalActivasAmount = activas.reduce((s, v) => s + getAmount(v), 0)
+  const facturadasAmount = facturadas.reduce((s, v) => s + getAmount(v), 0)
+  const pendientesAmount = pendientes.reduce((s, v) => s + getAmount(v), 0)
+  const conErrorAmount = conError.reduce((s, v) => s + getAmount(v), 0)
 
   const handleToggleValues = (e) => {
     e.stopPropagation()
