@@ -24,7 +24,12 @@ export default function SummaryModal({ isOpen, onClose, title, ventas, onDelete,
     }).format(Number(amount) || 0);
   };
 
-  const totalMonto = ventas.reduce((s, v) => s + (Number(v.monto) || 0), 0);
+  const getAmount = (v) => {
+    const isCreditNote = [3, 8, 13, 113].includes(v.datos_fiscales?.tipo_cbte);
+    const amount = Number(v.monto) || 0;
+    return isCreditNote ? -Math.abs(amount) : Math.abs(amount);
+  };
+  const totalMonto = ventas.reduce((s, v) => s + getAmount(v), 0);
   const isTrashView = ventas.length > 0 && ventas.every(v => v.status === 'borrada');
 
   const handleDelete = async (id) => {
@@ -95,7 +100,21 @@ export default function SummaryModal({ isOpen, onClose, title, ventas, onDelete,
                   <tr key={venta.id} className="hover:bg-surface-hover transition-colors">
                     <td className="px-4 py-3 text-text-primary whitespace-nowrap">{formatDate(venta.fecha)}</td>
                     <td className="px-4 py-3 text-text-primary">{venta.cliente}</td>
-                    <td className="px-4 py-3 text-right text-text-primary font-semibold tabular-nums">{formatCurrency(venta.monto)}</td>
+                    <td className="px-4 py-3 text-right">
+                      {[3, 8, 13, 113].includes(venta.datos_fiscales?.tipo_cbte) ? (
+                        <div className="flex flex-col items-end">
+                          <span className="text-[#C0443C] font-semibold tabular-nums">- {formatCurrency(venta.monto)}</span>
+                          <span className="text-[9px] font-bold text-[#C0443C]/80 uppercase tracking-wider">Nota de Crédito</span>
+                        </div>
+                      ) : [2, 7, 12, 112].includes(venta.datos_fiscales?.tipo_cbte) ? (
+                        <div className="flex flex-col items-end">
+                          <span className="text-[#3460A8] font-semibold tabular-nums">{formatCurrency(venta.monto)}</span>
+                          <span className="text-[9px] font-bold text-[#3460A8]/80 uppercase tracking-wider">Nota de Débito</span>
+                        </div>
+                      ) : (
+                        <span className="text-text-primary font-semibold tabular-nums">{formatCurrency(venta.monto)}</span>
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-left">
                       <span className="text-text-primary text-xs font-mono whitespace-nowrap">
                         {venta.datos_fiscales?.comprobante_numero || <span className="text-text-muted">—</span>}
