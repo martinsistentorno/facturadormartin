@@ -68,10 +68,28 @@ export default async function handler(req, res) {
       if (!orderId) return res.status(200).json({ processed: false, reason: 'No order ID' })
       console.log('[Webhook] → MeLi Order:', orderId)
 
-      // Duplicado por orderId
-      const { data: existingOrder } = await supabaseAdmin
+      const { data: existingOrder, error: checkError } = await supabaseAdmin
         .from('ventas').select('id').eq('mp_payment_id', `order-${orderId}`).maybeSingle()
-      if (existingOrder) return res.status(200).json({ received: true, duplicate: true })
+      
+      if (existingOrder || checkError) {
+        console.log('[Webhook] Orden MeLi ya existe o error en chequeo, saltando')
+        return res.status(200).json({ received: true, duplicate: true })
+      }
+
+      // ─── LOCK PREVENTIVO ───
+      // Insertamos un registro mínimo de inmediato para bloquear duplicados mientras hacemos el trabajo pesado (AFIP, MeLi APIs)
+      const { error: lockError } = await supabaseAdmin.from('ventas').insert([{
+        mp_payment_id: `order-${orderId}`,
+        cliente: 'PROCESANDO...',
+        status: 'pendiente',
+        monto: 0,
+        fecha: new Date().toISOString()
+      }])
+      
+      if (lockError) {
+        console.log('[Webhook] Error al crear lock preventivo (posible duplicado simultáneo):', lockError.message)
+        return res.status(200).json({ received: true, duplicate: true })
+      }
 
       // Consultar la orden completa
       const orderRes = await fetch(`https://api.mercadolibre.com/orders/${orderId}`, {
@@ -211,10 +229,15 @@ export default async function handler(req, res) {
         }
       }
 
-      const { error: insertError } = await supabaseAdmin.from('ventas').insert([ventaRecord])
-      if (insertError) throw new Error(`DB Insert Error: ${insertError.message}`)
+      // Actualizar el registro que creamos en el lock con la info completa
+      const { error: updateError } = await supabaseAdmin
+        .from('ventas')
+        .update(ventaRecord)
+        .eq('mp_payment_id', `order-${orderId}`)
+      
+      if (updateError) throw new Error(`DB Update Error: ${updateError.message}`)
 
-      console.log('[Webhook] MeLi Order registrada OK')
+      console.log('[Webhook] MeLi Order registrada y actualizada OK')
       return res.status(200).json({ received: true, processed: true, orderId })
     }
 
@@ -293,11 +316,25 @@ export default async function handler(req, res) {
 async function processPayment(supabaseAdmin, accessToken, paymentId, res) {
   console.log('[Webhook] → Procesando Payment:', paymentId)
 
-  // Duplicado directo
-  const { data: existingPayment } = await supabaseAdmin
+  const { data: existingPayment, error: checkError } = await supabaseAdmin
     .from('ventas').select('id').eq('mp_payment_id', paymentId).maybeSingle()
-  if (existingPayment) {
-    console.log('[Webhook] Pago duplicado, saltando')
+  
+  if (existingPayment || checkError) {
+    console.log('[Webhook] Pago ya existe o error en chequeo, saltando')
+    return res.status(200).json({ received: true, duplicate: true })
+  }
+
+  // ─── LOCK PREVENTIVO ───
+  const { error: lockError } = await supabaseAdmin.from('ventas').insert([{
+    mp_payment_id: paymentId,
+    cliente: 'PROCESANDO...',
+    status: 'pendiente',
+    monto: 0,
+    fecha: new Date().toISOString()
+  }])
+
+  if (lockError) {
+    console.log('[Webhook] Error al crear lock preventivo para pago:', lockError.message)
     return res.status(200).json({ received: true, duplicate: true })
   }
 
@@ -445,9 +482,14 @@ async function processPayment(supabaseAdmin, accessToken, paymentId, res) {
     }
   }
 
-  const { error: insertError } = await supabaseAdmin.from('ventas').insert([ventaRecord])
-  if (insertError) throw new Error(`DB Insert Error: ${insertError.message}`)
+  // Actualizar el registro que creamos en el lock con la info completa
+  const { error: updateError } = await supabaseAdmin
+    .from('ventas')
+    .update(ventaRecord)
+    .eq('mp_payment_id', paymentId)
+  
+  if (updateError) throw new Error(`DB Update Error: ${updateError.message}`)
 
-  console.log(`[Webhook] ✅ Payment ${paymentId} registrado OK (${formaPago})`)
+  console.log(`[Webhook] ✅ Payment ${paymentId} registrado y actualizado OK (${formaPago})`)
   return res.status(200).json({ received: true, processed: true, paymentId })
 }
