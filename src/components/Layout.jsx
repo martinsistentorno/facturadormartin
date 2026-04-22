@@ -50,6 +50,18 @@ export default function Layout({ children, headerActions }) {
               </div>
             )}
 
+            {/* MercadoLibre / MercadoPago Status Indicator */}
+            <div className="flex flex-col gap-1 pr-3 border-r border-border min-w-max justify-center">
+              <div className="flex items-center gap-1.5">
+                <div className={`w-1.5 h-1.5 rounded-full ${emisor?.meli_refresh_token ? 'bg-[#FFE100]' : 'bg-red'}`} />
+                <span className="text-[9px] font-bold uppercase tracking-widest text-text-secondary leading-none">M. LIBRE</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className={`w-1.5 h-1.5 rounded-full ${emisor?.meli_refresh_token ? 'bg-[#009EE3]' : 'bg-red'}`} />
+                <span className="text-[9px] font-bold uppercase tracking-widest text-text-secondary leading-none">M. PAGO</span>
+              </div>
+            </div>
+
             {headerActions}
 
             {/* Emisor name + config button */}
