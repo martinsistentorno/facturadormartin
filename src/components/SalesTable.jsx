@@ -1,5 +1,5 @@
 import StatusBadge from './StatusBadge'
-import { AlertCircle, Edit2, FileDown, RotateCcw, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Save, Loader2, X, Settings2, Check } from 'lucide-react'
+import { AlertCircle, Edit2, FileDown, RotateCcw, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Save, Loader2, X, Settings2, Check, Eye } from 'lucide-react'
 import { generateInvoicePdf } from '../utils/invoicePdf'
 import { useState, Fragment, useEffect, useRef } from 'react'
 import { useConfig } from '../context/ConfigContext'
@@ -205,11 +205,7 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
   }
 
   const handleRowClick = (venta) => {
-    if (onRowClick) {
-      onRowClick(venta)
-    } else {
-      onToggleSelect(venta.id)
-    }
+    onToggleSelect(venta.id)
   }
 
   // ─── Sort header helper ───
@@ -430,6 +426,18 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
                   )}
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-1">
+                      {onRowClick && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onRowClick(venta);
+                          }}
+                          className="p-2 transition-all cursor-pointer rounded-lg text-text-muted hover:text-blue hover:bg-blue/10"
+                          title="Ver detalles"
+                        >
+                          <Eye size={16} />
+                        </button>
+                      )}
                       {venta.status === 'pendiente' && (
                         <button
                           onClick={(e) => {
