@@ -1,16 +1,34 @@
 import Afip from '@afipsdk/afip.js'
-
-// Need to use Vercel environment vars basically, let's prompt the user or try if we have them.
-// Wait, I don't have the AFIP_CERT or AFIP_KEY on my local environment!
-// I must run this check using Vercel or tell the user how to do it.
+import fs from 'fs'
+import path from 'path'
+import os from 'os'
 
 export default async function handler(req, res) {
   try {
+    const certBase64 = process.env.AFIP_CERT_BASE64
+    const keyBase64 = process.env.AFIP_KEY_BASE64
+    const cuit = process.env.AFIP_CUIT
+
+    if (!cuit || !certBase64 || !keyBase64) {
+      return res.status(500).json({ error: 'Faltan credenciales de AFIP' })
+    }
+
+    const certContent = Buffer.from(certBase64, 'base64').toString('utf8')
+    const keyContent = Buffer.from(keyBase64, 'base64').toString('utf8')
+
+    const tmpDir = os.tmpdir()
+    const certPath = path.join(tmpDir, 'afip_cert_check.crt')
+    const keyPath = path.join(tmpDir, 'afip_key_check.key')
+    
+    fs.writeFileSync(certPath, certContent)
+    fs.writeFileSync(keyPath, keyContent)
+
     const afip = new Afip({
-      CUIT: 20354302684,
-      cert: process.env.AFIP_CERT_BASE64 ? Buffer.from(process.env.AFIP_CERT_BASE64, 'base64').toString('ascii') : null,
-      key: process.env.AFIP_KEY_BASE64 ? Buffer.from(process.env.AFIP_KEY_BASE64, 'base64').toString('ascii') : null,
-      res_folder: '/tmp',
+      CUIT: parseInt(cuit),
+      res_folder: tmpDir,
+      ta_folder: tmpDir,
+      cert: 'afip_cert_check.crt',
+      key: 'afip_key_check.key',
       production: true
     })
 
