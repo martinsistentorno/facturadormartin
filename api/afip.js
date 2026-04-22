@@ -302,10 +302,13 @@ export default async function handler(req, res) {
               } else {
                 const { data } = supabaseAdmin.storage
                   .from('facturas')
-                .getPublicUrl(fileName)
-              finalPdfUrl = data.publicUrl
-              console.log(`💾 PDF guardado permanentemente: ${finalPdfUrl}`)
+                  .getPublicUrl(fileName)
+                finalPdfUrl = data.publicUrl
+                console.log(`💾 PDF guardado permanentemente: ${finalPdfUrl}`)
+              }
             }
+          } else {
+            console.log('📄 Generación de PDF por AFIP SDK omitida (conexión directa)')
           }
         } catch (pdfErr) {
           console.error(`⚠️ Error manejando PDF (no fatal):`, pdfErr.message)
