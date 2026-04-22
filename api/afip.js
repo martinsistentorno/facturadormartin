@@ -204,6 +204,8 @@ export default async function handler(req, res) {
     console.log(`Key empieza con: ${keyContent.substring(0, 30)}...`)
     console.log(`Cert largo: ${certContent.length} chars`)
     console.log(`Key largo: ${keyContent.length} chars`)
+    console.log(`Cert hash: ${crypto.createHash('sha256').update(certContent).digest('hex').substring(0, 16)}`)
+    console.log(`Key hash: ${crypto.createHash('sha256').update(keyContent).digest('hex').substring(0, 16)}`)
     console.log(`Token: ${sdkToken ? sdkToken.substring(0, 10) + '...' : 'NO DEFINIDO'}`)
 
     const resultados = []
