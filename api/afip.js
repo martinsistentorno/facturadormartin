@@ -169,13 +169,6 @@ export default async function handler(req, res) {
 
     const certContent = Buffer.from(certBase64, 'base64').toString('utf8')
     const keyContent = Buffer.from(keyBase64, 'base64').toString('utf8')
-    const sdkToken = process.env.AFIP_SDK_TOKEN
-
-    if (!sdkToken) {
-      return res.status(500).json({
-        error: 'Falta la variable AFIP_SDK_TOKEN en Vercel. Registrate en app.afipsdk.com para obtener tu token.'
-      })
-    }
 
     // Escribir certs a /tmp para evitar ENAMETOOLONG (afip.js v0.7.6 en Vercel)
     const tmpDir = os.tmpdir()
@@ -185,15 +178,25 @@ export default async function handler(req, res) {
     fs.writeFileSync(certPath, certContent)
     fs.writeFileSync(keyPath, keyContent)
 
-    const afip = new Afip({
+    const afipConfig = {
       CUIT: parseInt(cuit),
       res_folder: tmpDir,
       ta_folder: tmpDir,
       cert: 'afip_cert.crt',
       key: 'afip_key.key',
-      production: isProduction,
-      access_token: sdkToken
-    })
+      production: isProduction
+    }
+
+    // SDK token es OPCIONAL — sin él, AFIP SDK se conecta directo a los servers de AFIP
+    const sdkToken = process.env.AFIP_SDK_TOKEN
+    if (sdkToken) {
+      afipConfig.access_token = sdkToken
+      console.log('Usando SDK Token (proxy mode)')
+    } else {
+      console.log('Conectando directo a AFIP (sin proxy)')
+    }
+
+    const afip = new Afip(afipConfig)
 
     // Debug: mostrar info de diagnóstico
     console.log('AFIP SDK inicializado correctamente')
