@@ -30,6 +30,7 @@ export default function Home() {
 
   // ─── Drawer State ───
   const [detailVenta, setDetailVenta] = useState(null)
+  const [detailVentaEditMode, setDetailVentaEditMode] = useState(false)
 
   // ─── Filters State ───
   const [filters, setFilters] = useState({
@@ -693,7 +694,14 @@ export default function Home() {
           onToggleAll={handleToggleAll}
           loading={loading}
           onShowError={(msg) => showToast(msg, 'error')}
-          onRowClick={(venta) => setDetailVenta(venta)}
+          onRowClick={(venta) => {
+            setDetailVenta(venta)
+            setDetailVentaEditMode(false)
+          }}
+          onEdit={(venta) => {
+            setDetailVenta(venta)
+            setDetailVentaEditMode(true)
+          }}
           onSaveEdit={handleEditVenta}
           onRetry={handleRetry}
         />
@@ -714,9 +722,13 @@ export default function Home() {
       <SaleDetailDrawer
         venta={detailVenta}
         isOpen={!!detailVenta}
-        onClose={() => setDetailVenta(null)}
+        onClose={() => {
+          setDetailVenta(null)
+          setDetailVentaEditMode(false)
+        }}
         onRetry={handleRetry}
         onSave={handleEditVenta}
+        initialEditMode={detailVentaEditMode}
       />
 
       {/* ─── Add Sale Modal ─── */}

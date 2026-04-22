@@ -63,12 +63,6 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
   const [page, setPage] = useState(0)
   const [pageSize, setPageSize] = useState(25)
 
-  const [editingId, setEditingId] = useState(null)
-  const [editForm, setEditForm] = useState({})
-  const [savingEdit, setSavingEdit] = useState(false)
-  const [lookingUpAFIP, setLookingUpAFIP] = useState(false)
-  const [confirmingEdit, setConfirmingEdit] = useState(false)
-
   // ─── Column visibility state ───
   const [visibleColumns, setVisibleColumns] = useState(() => {
     const saved = localStorage.getItem('salesTableVisibleColumns');
@@ -108,102 +102,6 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
   };
 
   const isVisible = (columnId) => visibleColumns.includes(columnId);
-
-  const handleStartEdit = (e, venta) => {
-    e.stopPropagation();
-    if (editingId === venta.id) {
-       setEditingId(null);
-       setConfirmingEdit(false);
-    } else {
-       setEditingId(venta.id);
-       setConfirmingEdit(false);
-       setEditForm({
-         cliente: venta.cliente || '',
-         cuit: venta.datos_fiscales?.cuit || '',
-         condicionIva: venta.datos_fiscales?.condicion_iva || (venta.datos_fiscales?.cuit?.length === 11 ? 'Responsable Inscripto' : 'Consumidor Final'),
-         descripcion: venta.datos_fiscales?.descripcion || 'Varios',
-         monto: venta.monto || '',
-         formaPago: venta.datos_fiscales?.forma_pago || 'Contado - Efectivo',
-       });
-    }
-  }
-
-  const handleCuitBlur = async () => {
-    const val = editForm.cuit?.replace(/\D/g, '');
-    if (!val || val.length < 8) return;
-
-    setLookingUpAFIP(true);
-    try {
-      const res = await fetch(`/api/lookup-cuit?cuit=${val}`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data.razonSocial && data.razonSocial.razonSocial) {
-           setEditForm(prev => ({
-              ...prev,
-              cliente: data.razonSocial.razonSocial,
-              condicionIva: data.razonSocial.condicion_iva || (val.length === 11 ? 'Responsable Inscripto' : 'Consumidor Final'),
-              cuit: val
-           }));
-        }
-      }
-    } catch(err) {
-      console.error('Error fetching CUIT', err);
-    } finally {
-      setLookingUpAFIP(false);
-    }
-  };
-
-  const submitEdit = async (e) => {
-    e.preventDefault();
-    if (!onSaveEdit) return;
-
-    const ventaOrig = ventas.find(v => v.id === editingId);
-    if (!ventaOrig) return;
-
-    // Extra safety check for changes
-    const hasChanges = (
-      editForm.cliente !== (ventaOrig.cliente || '') ||
-      parseFloat(editForm.monto || 0) !== parseFloat(ventaOrig.monto || 0) ||
-      editForm.cuit !== (ventaOrig.datos_fiscales?.cuit || '') ||
-      editForm.condicionIva !== (ventaOrig.datos_fiscales?.condicion_iva || (ventaOrig.datos_fiscales?.cuit?.length === 11 ? 'Responsable Inscripto' : 'Consumidor Final')) ||
-      editForm.descripcion !== (ventaOrig.datos_fiscales?.descripcion || 'Varios') ||
-      editForm.formaPago !== (ventaOrig.datos_fiscales?.forma_pago || 'Contado - Efectivo')
-    );
-
-    if (!hasChanges) {
-       setEditingId(null);
-       return;
-    }
-
-    const origenVal = ventaOrig.datos_fiscales?.origen?.toLowerCase();
-    const isManual = origenVal === 'manual' || (!origenVal && !ventaOrig.mp_payment_id);
-
-    if (!isManual && !confirmingEdit) {
-       setConfirmingEdit(true);
-       return;
-    }
-
-    setSavingEdit(true);
-    try {
-       await onSaveEdit(editingId, {
-          cliente: editForm.cliente,
-          monto: parseFloat(editForm.monto),
-          datos_fiscales: {
-             ...ventaOrig?.datos_fiscales,
-             cuit: editForm.cuit,
-             condicion_iva: editForm.condicionIva,
-             descripcion: editForm.descripcion,
-             forma_pago: editForm.formaPago
-          }
-       });
-       setEditingId(null);
-       setConfirmingEdit(false);
-    } catch (err) {
-       onShowError('Error al guardar: ' + err.message);
-    } finally {
-       setSavingEdit(false);
-    }
-  }
 
   // ─── Sorting ───
   const handleSort = (key) => {
@@ -414,30 +312,16 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
             {pagedVentas.map((venta, i) => {
               const isSelected = selectedIds.has(venta.id)
               const isError = venta.status === 'error'
-              const isEditing = editingId === venta.id
-              const origenVal = venta.datos_fiscales?.origen?.toLowerCase()
-              const isManual = origenVal === 'manual' || (!origenVal && !venta.mp_payment_id)
-
-              // Check for changes
-              const hasChanges = isEditing && (
-                editForm.cliente !== (venta.cliente || '') ||
-                parseFloat(editForm.monto || 0) !== parseFloat(venta.monto || 0) ||
-                editForm.cuit !== (venta.datos_fiscales?.cuit || '') ||
-                editForm.condicionIva !== (venta.datos_fiscales?.condicion_iva || (venta.datos_fiscales?.cuit?.length === 11 ? 'Responsable Inscripto' : 'Consumidor Final')) ||
-                editForm.descripcion !== (venta.datos_fiscales?.descripcion || 'Varios') ||
-                editForm.formaPago !== (venta.datos_fiscales?.forma_pago || 'Contado - Efectivo')
-              )
 
               return (
-                <Fragment key={venta.id}>
                 <tr
+                  key={venta.id}
                   onClick={() => handleRowClick(venta)}
                   className={`
                     transition-all duration-150 cursor-pointer
-                    ${isEditing ? 'border-b-0 bg-white shadow-sm relative z-10 font-medium' : 'border-b border-border'}
-                    ${!isEditing && !isSelected && !isError ? 'hover:bg-white/50' : ''}
-                    ${isError && !isEditing ? 'bg-red-subtle/50 hover:bg-red-subtle' : ''}
-                    ${isSelected && !isEditing ? 'bg-blue-subtle border-l-[3px] border-l-blue hover:bg-blue/10 relative' : 'border-l-[3px] border-l-transparent'}
+                    border-b border-border hover:bg-white/50
+                    ${isError ? 'bg-red-subtle/50 hover:bg-red-subtle' : ''}
+                    ${isSelected ? 'bg-blue-subtle border-l-[3px] border-l-blue hover:bg-blue/10 relative' : 'border-l-[3px] border-l-transparent'}
                   `}
                 >
                   <td className="px-4 py-3">
@@ -548,11 +432,14 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
                     <div className="flex items-center justify-end gap-1">
                       {venta.status === 'pendiente' && (
                         <button
-                          onClick={(e) => handleStartEdit(e, venta)}
-                          className={`p-2 transition-all cursor-pointer rounded-lg ${isEditing ? 'bg-accent text-white hover:bg-accent/80' : 'text-text-muted hover:text-accent hover:bg-accent/5'}`}
-                          title={isEditing ? "Cerrar edición" : "Editar datos"}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (onEdit) onEdit(venta);
+                          }}
+                          className="p-2 transition-all cursor-pointer rounded-lg text-text-muted hover:text-accent hover:bg-accent/5"
+                          title="Editar datos"
                         >
-                          {isEditing ? <ChevronUp size={16} /> : <Edit2 size={16} />}
+                          <Edit2 size={16} />
                         </button>
                       )}
                       {isError && onRetry && (
@@ -588,97 +475,6 @@ export default function SalesTable({ ventas, selectedIds, onToggleSelect, onTogg
                     </div>
                   </td>
                 </tr>
-
-                {isEditing && (
-                  <tr className="border-b border-border bg-surface-alt/10">
-                    <td colSpan="12" className="p-0">
-                      <div className="animate-fade-in pl-10 pr-6 py-8 border-l-[4px] border-accent shadow-[inset_0_20px_40px_-20px_rgba(0,0,0,0.05)] relative z-0">
-                        <form onSubmit={submitEdit} className="grid grid-cols-6 gap-6 items-end">
-                          <div className="col-span-2">
-                             <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-2 opacity-60">Cliente / Nombre</label>
-                             <input type="text" value={editForm.cliente} onChange={e => setEditForm({...editForm, cliente: e.target.value})} className="w-full bg-white border border-border rounded-xl px-4 py-3 text-sm text-text-primary focus:border-accent focus:ring-4 focus:ring-accent/5 transition-all outline-none" />
-                          </div>
-
-                          <div className="col-span-1 relative">
-                             <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-2 opacity-60">DNI / CUIT</label>
-                             <input type="text" value={editForm.cuit} onChange={e => setEditForm({...editForm, cuit: e.target.value})} onBlur={handleCuitBlur} className="w-full bg-white border border-border rounded-xl px-4 py-3 text-sm text-text-primary focus:border-accent focus:ring-4 focus:ring-accent/5 transition-all outline-none font-mono" />
-                             {lookingUpAFIP && <Loader2 size={12} className="absolute right-3 top-[42px] animate-spin text-accent" />}
-                          </div>
-
-                          <div className="col-span-1">
-                             <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-2 opacity-60">IVA</label>
-                             <select value={editForm.condicionIva} onChange={e => setEditForm({...editForm, condicionIva: e.target.value})} className="w-full bg-white border border-border rounded-xl px-4 py-3 text-sm text-text-primary focus:border-accent focus:ring-4 focus:ring-accent/5 transition-all outline-none appearance-none cursor-pointer">
-                               <option>Consumidor Final</option>
-                               <option>Responsable Inscripto</option>
-                               <option>Monotributista</option>
-                               <option>Exento</option>
-                             </select>
-                          </div>
-
-                          <div className="col-span-2">
-                             <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-2 opacity-60">Descripción Venta</label>
-                             <input type="text" value={editForm.descripcion} onChange={e => setEditForm({...editForm, descripcion: e.target.value})} className="w-full bg-white border border-border rounded-xl px-4 py-3 text-sm text-text-primary focus:border-accent focus:ring-4 focus:ring-accent/5 transition-all outline-none" />
-                          </div>
-
-                          <div className="col-span-3 relative">
-                             <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-2 opacity-60">Monto a Procesar</label>
-                             <div className="relative">
-                               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted font-bold">$</span>
-                               <input type="number" step="0.01" value={editForm.monto} onChange={e => setEditForm({...editForm, monto: e.target.value})} className="w-full bg-white border border-border rounded-xl pl-9 pr-4 py-4 text-xl font-bold text-text-primary focus:border-accent focus:ring-4 focus:ring-accent/5 transition-all outline-none" required />
-                             </div>
-                          </div>
-
-                          <div className="col-span-3">
-                             <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-2 opacity-60">Forma de Pago</label>
-                             <select value={editForm.formaPago} onChange={e => setEditForm({...editForm, formaPago: e.target.value})} className="w-full bg-white border border-border rounded-xl px-4 py-4 text-sm text-text-primary focus:border-accent focus:ring-4 focus:ring-accent/5 transition-all outline-none appearance-none cursor-pointer">
-                               {FORMAS_PAGO.map(fp => <option key={fp} value={fp}>{fp}</option>)}
-                             </select>
-                          </div>
-
-                          <div className="col-span-6 flex flex-col md:flex-row gap-6 items-center justify-between mt-4 pt-6 border-t border-border/60 min-h-[60px]">
-                            <div className="flex-1 w-full relative">
-                               {confirmingEdit && (
-                                 <div className="flex items-center gap-2 text-[11px] text-[#C0443C] leading-tight max-w-[420px] font-medium p-3 bg-[#C0443C]/5 border border-[#C0443C]/20 rounded-xl animate-fade-in mx-auto md:mx-0">
-                                   <AlertCircle size={16} className="shrink-0" />
-                                   <p><strong>Atención:</strong> Estás por alterar datos automáticos. Podría generar inconsistencias de conciliación. ¿Confirmás?</p>
-                                 </div>
-                               )}
-                            </div>
-                            
-                            <div className="flex gap-3 min-w-[280px] w-full md:w-auto">
-                               {confirmingEdit ? (
-                                 <>
-                                   <button type="button" onClick={() => setConfirmingEdit(false)} className="flex-1 md:flex-none px-6 py-3 rounded-xl text-xs font-bold text-text-muted hover:bg-surface-alt transition-all cursor-pointer uppercase tracking-widest">
-                                     Volver
-                                   </button>
-                                   <button type="submit" disabled={savingEdit} className="flex-1 md:flex-none flex gap-2 items-center justify-center px-8 py-3 bg-[#C0443C] text-white rounded-xl text-xs font-black uppercase tracking-[0.15em] hover:-translate-y-1 hover:shadow-lg hover:shadow-accent/30 transition-all cursor-pointer animate-pulse-once">
-                                     {savingEdit ? <Loader2 size={14} className="animate-spin" /> : null}
-                                     CONFIRMAR
-                                   </button>
-                                 </>
-                               ) : (
-                                 <>
-                                   <button type="button" onClick={() => setEditingId(null)} className="flex-1 md:flex-none px-6 py-3 rounded-xl text-xs font-bold text-text-muted hover:bg-surface-alt transition-all cursor-pointer uppercase tracking-widest">
-                                     Cancelar
-                                   </button>
-                                   <button 
-                                     type="submit" 
-                                     disabled={savingEdit || !hasChanges} 
-                                     className={`flex-1 md:flex-none flex gap-2 items-center justify-center px-8 py-3 rounded-xl text-xs font-black uppercase tracking-[0.15em] transition-all cursor-pointer ${!hasChanges ? 'bg-text-muted/10 text-text-muted/50 cursor-not-allowed' : 'bg-text-primary text-white hover:-translate-y-1 hover:shadow-xl hover:shadow-black/20'}`}
-                                   >
-                                     {savingEdit ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-                                     ACTUALIZAR
-                                   </button>
-                                 </>
-                               )}
-                            </div>
-                          </div>
-                        </form>
-                      </div>
-                    </td>
-                  </tr>
-                )}
-                </Fragment>
               )
             })}
           </tbody>
