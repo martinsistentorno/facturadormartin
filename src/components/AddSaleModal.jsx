@@ -1,60 +1,43 @@
-import { useState, useRef, useEffect } from 'react';
-import { Plus, Loader2, X, User, CreditCard, DollarSign, FileText, Hash } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Plus, Loader2, X } from 'lucide-react';
+import SaleFormFields from './SaleFormFields';
+import { useConfig } from '../context/ConfigContext';
 
-const FORMAS_PAGO = [
-  'Contado - Efectivo',
-  'Transferencia Bancaria',
-  'Tarjeta de Débito',
-  'Tarjeta de Crédito',
-  'Mercado Pago',
-  'Crédito MP',
-  'Otro',
-];
+const TODAY = new Date().toISOString().split('T')[0];
 
-// Reutilizamos el diseño del campo minimalista
-function MinimalField({ label, icon: Icon, type = "text", value, onChange, placeholder, required, full = false, onFocus, onBlur, step, min }) {
-  return (
-    <div className={`flex flex-col gap-1 ${!full && 'col-span-1'}`}>
-      <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted/80 flex items-center gap-1.5 ml-1">
-        {Icon && <Icon size={11} />}
-        {label} {required && '*'}
-      </span>
-        <input
-        type={type}
-        value={value}
-        onChange={onChange}
-        onFocus={onFocus}
-        onBlur={onBlur}
-        placeholder={placeholder}
-        required={required}
-        step={step}
-        min={min}
-        autoComplete="off"
-        className="w-full px-4 py-3 rounded-xl border border-border bg-white text-sm focus:outline-none focus:ring-4 focus:ring-accent/5 focus:border-accent transition-all font-medium placeholder:font-normal placeholder:text-text-muted/40"
-      />
-    </div>
-  )
+function getEmptyForm(conceptoDefault = 1) {
+  return {
+    cliente: '',
+    cuit: '',
+    condicionIva: 'Consumidor Final',
+    email: '',
+    domicilio: '',
+    concepto: conceptoDefault,
+    descripcion: 'Varios',
+    cantidad: '1',
+    unidadMedida: 7,
+    periodoDesde: '',
+    periodoHasta: '',
+    vtoPago: '',
+    monto: '',
+    formaPago: 'Contado - Efectivo',
+    fechaEmision: TODAY,
+    tipoCbte: 11,
+  };
 }
 
 export default function AddSaleModal({ isOpen, onClose, onSave, searchClientes }) {
+  const { emisor } = useConfig();
+  const conceptoDefault = emisor?.concepto_default || 1;
+
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    cliente: '',
-    cuit: '',
-    descripcion: 'Varios',
-    monto: '',
-    condicionIva: 'Consumidor Final',
-    formaPago: 'Contado - Efectivo',
-  });
-  const [suggestions, setSuggestions] = useState([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [formData, setFormData] = useState(getEmptyForm(conceptoDefault));
   const [lookingUp, setLookingUp] = useState(false);
-  const suggestionsRef = useRef(null);
+  const [afipLocked, setAfipLocked] = useState(false);
 
   const resetForm = () => {
-    setFormData({ cliente: '', cuit: '', descripcion: 'Varios', monto: '', condicionIva: 'Consumidor Final', formaPago: 'Contado - Efectivo' });
-    setSuggestions([]);
-    setShowSuggestions(false);
+    setFormData(getEmptyForm(conceptoDefault));
+    setAfipLocked(false);
   };
 
   const handleClose = () => {
@@ -74,41 +57,8 @@ export default function AddSaleModal({ isOpen, onClose, onSave, searchClientes }
     };
   }, [isOpen]);
 
-  useEffect(() => {
-    const handler = (e) => {
-      if (suggestionsRef.current && !suggestionsRef.current.contains(e.target)) {
-        setShowSuggestions(false);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
-
-  const handleClienteChange = (e) => {
-    const value = e.target.value.toUpperCase();
-    setFormData({ ...formData, cliente: value });
-    if (searchClientes && value.length >= 2) {
-      const results = searchClientes(value);
-      setSuggestions(results);
-      setShowSuggestions(results.length > 0);
-    } else {
-      setSuggestions([]);
-      setShowSuggestions(false);
-    }
-  };
-
-  const handleSelectSuggestion = (cliente) => {
-    setFormData({
-      ...formData,
-      cliente: cliente.nombre,
-      cuit: cliente.cuit || formData.cuit,
-      formaPago: cliente.formaPago || formData.formaPago,
-    });
-    setShowSuggestions(false);
-  };
-
-  const handleCuitBlur = async () => {
-    const val = formData.cuit.replace(/\D/g, '');
+  const handleCuitLookup = async (rawCuit) => {
+    const val = (rawCuit || '').replace(/\D/g, '');
     if (!val || val.length < 8) return;
 
     setLookingUp(true);
@@ -117,12 +67,14 @@ export default function AddSaleModal({ isOpen, onClose, onSave, searchClientes }
       if (res.ok) {
         const data = await res.json();
         if (data.razonSocial && data.razonSocial.razonSocial) {
-           setFormData(prev => ({
-              ...prev,
-              cliente: data.razonSocial.razonSocial,
-              condicionIva: data.razonSocial.condicion_iva || (val.length === 11 ? 'Responsable Inscripto' : 'Consumidor Final'),
-              cuit: val
-           }));
+          setFormData(prev => ({
+            ...prev,
+            cliente: data.razonSocial.razonSocial,
+            condicionIva: data.razonSocial.condicion_iva || (val.length === 11 ? 'Responsable Inscripto' : 'Consumidor Final'),
+            cuit: val,
+            domicilio: data.razonSocial.domicilio || prev.domicilio,
+          }));
+          setAfipLocked(true);
         }
       }
     } catch(err) {
@@ -136,6 +88,8 @@ export default function AddSaleModal({ isOpen, onClose, onSave, searchClientes }
     e.preventDefault();
     setLoading(true);
     try {
+      const needsService = formData.concepto === 2 || formData.concepto === 3;
+
       await onSave({
         cliente: formData.cliente,
         monto: parseFloat(formData.monto),
@@ -144,9 +98,21 @@ export default function AddSaleModal({ isOpen, onClose, onSave, searchClientes }
         datos_fiscales: {
           cuit: formData.cuit,
           condicion_iva: formData.condicionIva,
-          forma_pago: formData.formaPago,
+          email: formData.email,
+          domicilio: formData.domicilio,
+          concepto: formData.concepto,
           descripcion: formData.descripcion,
-          origen: 'Manual'
+          cantidad: parseFloat(formData.cantidad) || 1,
+          unidad_medida: formData.unidadMedida,
+          ...(needsService ? {
+            periodo_desde: formData.periodoDesde,
+            periodo_hasta: formData.periodoHasta,
+            vto_pago: formData.vtoPago,
+          } : {}),
+          forma_pago: formData.formaPago,
+          fecha_emision: formData.fechaEmision,
+          tipo_cbte: formData.tipoCbte,
+          origen: 'manual',
         }
       });
       resetForm();
@@ -161,170 +127,66 @@ export default function AddSaleModal({ isOpen, onClose, onSave, searchClientes }
   if (!isOpen) return null;
 
   return (
-    <div 
+    <div
       className="fixed inset-0 z-[150] bg-black/20 backdrop-blur-sm flex items-center justify-center p-3 transition-opacity"
       onClick={handleClose}
     >
-      <div 
-        className="bg-[#F9F7F2] rounded-2xl shadow-xl border border-white/50 w-full max-w-[500px] max-h-[95vh] flex flex-col animate-slide-down relative z-[151]"
+      <div
+        className="bg-[#F9F7F2] rounded-2xl shadow-xl border border-white/50 w-full max-w-[600px] max-h-[95vh] flex flex-col animate-slide-down relative z-[151]"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header Minimalista */}
-        <div className="bg-white/80 backdrop-blur-md px-8 py-5 flex items-center justify-between border-b border-border/40 shrink-0">
+        {/* Header */}
+        <div className="bg-white/80 backdrop-blur-md px-6 py-4 flex items-center justify-between border-b border-border/40 shrink-0">
           <div>
-            <span className="text-[10px] font-bold tracking-[0.2em] text-[var(--color-cmd-green)] uppercase mb-0.5 block opacity-80">
+            <span className="text-[10px] font-bold tracking-[0.2em] text-[#2D8F5E] uppercase mb-0.5 block opacity-80">
               Operaciones
             </span>
-            <h2 className="text-xl font-bold uppercase text-text-primary tracking-tight leading-none">
+            <h2 className="text-lg font-black uppercase text-text-primary tracking-tight leading-none">
               Nueva Venta
             </h2>
           </div>
-          <button onClick={handleClose} className="w-9 h-9 rounded-full bg-white border border-border flex items-center justify-center text-text-muted hover:text-[var(--color-cmd-red)] hover:border-[var(--color-cmd-red)] hover:shadow-lg hover:-translate-y-0.5 transition-all cursor-pointer">
+          <button onClick={handleClose} className="w-9 h-9 rounded-full bg-white border border-border flex items-center justify-center text-text-muted hover:text-[#C0443C] hover:border-[#C0443C] hover:shadow-lg hover:-translate-y-0.5 transition-all cursor-pointer">
             <X size={16} />
           </button>
         </div>
 
-        <form 
-          id="add-sale-form" 
-          onSubmit={handleSubmit} 
+        {/* Form Body */}
+        <form
+          id="add-sale-form"
+          onSubmit={handleSubmit}
           onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}
-          className="overflow-y-auto p-6 scrollbar-hide flex flex-col gap-6"
+          className="overflow-y-auto px-6 py-5 scrollbar-hide"
         >
-          
-          {/* Cliente & CUIT */}
-          <div className="space-y-4">
-            <div className="relative" ref={suggestionsRef}>
-              <MinimalField 
-                label="Cliente / Razón Social" icon={User} full
-                value={formData.cliente}
-                onChange={handleClienteChange}
-                onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-                placeholder="Juan Pérez" required
-              />
-              {showSuggestions && (
-                <div className="absolute left-0 right-0 mt-1 bg-white border border-border rounded-xl shadow-xl z-50 max-h-48 overflow-y-auto">
-                  {suggestions.map((c, i) => (
-                    <button
-                      key={i}
-                      type="button"
-                      onClick={() => handleSelectSuggestion(c)}
-                      className="w-full text-left px-5 py-3.5 hover:bg-accent/5 transition-colors flex items-center justify-between gap-2 cursor-pointer border-b border-border/40 last:border-0"
-                    >
-                      <span className="text-sm text-text-primary font-semibold">{c.nombre}</span>
-                      {c.cuit && <span className="text-[10px] text-text-muted font-mono bg-surface-alt px-2.5 py-1 rounded-lg">{c.cuit}</span>}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="relative">
-              <MinimalField 
-                label="CUIT / DNI" icon={Hash} full
-                value={formData.cuit}
-                onChange={(e) => setFormData({ ...formData, cuit: e.target.value })}
-                onBlur={handleCuitBlur}
-                placeholder="Ingresá y deseleccioná para buscar..."
-              />
-              {lookingUp && <Loader2 size={14} className="absolute right-3 top-9 animate-spin text-accent" />}
-            </div>
-
-            {/* Condición IVA */}
-            <div className="flex flex-col gap-1 w-full mt-2">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted/80 flex items-center gap-1.5 ml-1">
-                Condición frente al IVA
-              </span>
-              <select
-                value={formData.condicionIva}
-                onChange={(e) => setFormData({ ...formData, condicionIva: e.target.value })}
-                className="w-full px-4 py-3 border border-border bg-white text-sm focus:outline-none focus:ring-4 focus:ring-accent/5 focus:border-accent transition-all font-medium appearance-none rounded-xl cursor-pointer"
-              >
-                <option value="Consumidor Final">Consumidor Final</option>
-                <option value="Responsable Inscripto">Responsable Inscripto</option>
-                <option value="Monotributista">Monotributista</option>
-                <option value="Exento">Exento</option>
-              </select>
-            </div>
-
-            <MinimalField 
-              label="Descripción Venta" icon={FileText} full
-              value={formData.descripcion}
-              onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
-              placeholder="Ej: Varios / Servicios Profesionales"
-            />
-          </div>
-
-          <div className="h-px bg-border/40 w-full" />
-
-          {/* Monto & Forma de Pago */}
-          <div className="space-y-4">
-            <div className="flex flex-col gap-1">
-              <span className="text-[9px] font-bold uppercase tracking-widest text-[var(--color-cmd-green)] flex items-center gap-1">
-                <DollarSign size={10} />
-                Monto Total (ARS) *
-              </span>
-              <input
-                type="number"
-                required
-                step="0.01"
-                min="1"
-                placeholder="0.00"
-                className="w-full px-4 py-3 rounded-xl border border-border bg-white text-xl font-bold text-text-primary focus:outline-none focus:ring-4 focus:ring-[var(--color-cmd-green)]/10 focus:border-[var(--color-cmd-green)] transition-all tabular-nums"
-                value={formData.monto}
-                onChange={(e) => setFormData({ ...formData, monto: e.target.value })}
-              />
-            </div>
-
-            <div>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted/80 flex items-center gap-1.5 ml-1 mb-2">
-                <CreditCard size={11} />
-                Forma de Pago
-              </span>
-              <div className="grid grid-cols-2 gap-3">
-                {FORMAS_PAGO.map(fp => (
-                  <button
-                    key={fp}
-                    type="button"
-                    onClick={() => setFormData({ ...formData, formaPago: fp })}
-                    className={`
-                      px-3 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest text-center transition-all cursor-pointer border
-                      ${formData.formaPago === fp
-                        ? 'bg-accent border-accent text-white shadow-lg shadow-accent/20'
-                        : 'bg-white border-border text-text-secondary hover:border-accent/40 hover:text-accent'
-                      }
-                    `}
-                  >
-                    {fp}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
+          <SaleFormFields
+            form={formData}
+            setForm={setFormData}
+            showTipoComprobante={true}
+            searchClientes={searchClientes}
+            onCuitLookup={handleCuitLookup}
+            lookingUp={lookingUp}
+            afipLocked={afipLocked}
+            conceptoDefault={conceptoDefault}
+          />
         </form>
 
-        {/* Footer Minimalista */}
-        <div className="bg-surface-alt/30 px-8 py-8 border-t border-border/40 shrink-0">
-          <div className="flex flex-col gap-5">
-            {/* Resumen */}
-            <div className="flex items-center justify-between px-2 text-[11px] font-bold uppercase tracking-[0.1em]">
-               <span className="text-text-muted opacity-80">Monto Final</span>
-               <span className="text-2xl font-bold text-text-primary">
-                 {formData.monto ? `$ ${Number(formData.monto).toLocaleString('es-AR', { minimumFractionDigits: 2 })}` : '$ 0.00'}
-               </span>
-            </div>
-            {/* Submit */}
-            <button
-              form="add-sale-form"
-              type="submit"
-              disabled={loading}
-              className="w-full h-14 rounded-2xl bg-[#121212] text-white flex items-center justify-center gap-3 font-bold uppercase tracking-[0.2em] text-xs hover:-translate-y-1 hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.3)] transition-all duration-300 disabled:opacity-50 disabled:hover:translate-y-0 cursor-pointer"
-            >
-              {loading ? <Loader2 className="animate-spin text-white" size={20} /> : <Plus size={20} />}
-              {loading ? 'PROCESANDO...' : 'GENERAR VENTA'}
-            </button>
+        {/* Footer */}
+        <div className="bg-white/60 backdrop-blur-md px-6 py-4 border-t border-border/40 shrink-0">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted/60">Monto Final</span>
+            <span className="text-xl font-bold text-text-primary tabular-nums">
+              {formData.monto ? `$ ${Number(formData.monto).toLocaleString('es-AR', { minimumFractionDigits: 2 })}` : '$ 0.00'}
+            </span>
           </div>
+          <button
+            form="add-sale-form"
+            type="submit"
+            disabled={loading}
+            className="w-full h-12 rounded-2xl bg-[#121212] text-white flex items-center justify-center gap-3 font-bold uppercase tracking-[0.2em] text-xs hover:-translate-y-1 hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.3)] transition-all duration-300 disabled:opacity-50 disabled:hover:translate-y-0 cursor-pointer"
+          >
+            {loading ? <Loader2 className="animate-spin text-white" size={18} /> : <Plus size={18} />}
+            {loading ? 'PROCESANDO...' : 'GENERAR VENTA'}
+          </button>
         </div>
-
       </div>
     </div>
   );

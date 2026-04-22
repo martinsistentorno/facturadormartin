@@ -239,17 +239,24 @@ export default async function handler(req, res) {
         if (condStr.includes('exento')) condicionIvaReceptor = 4
         if (condStr.includes('no responsable')) condicionIvaReceptor = 3
 
-        // Armar el comprobante (Factura C - tipo 11)
+        // Armar el comprobante
+        const conceptoVenta = v.datos_fiscales?.concepto || emisorConfig?.concepto_default || 1
+        const cbteTipoVenta = v.datos_fiscales?.tipo_cbte || tipoCbte
+
+        // Fecha de emisión: usar la del formulario si existe, sino hoy
+        const fechaEmisionRaw = v.datos_fiscales?.fecha_emision || new Date().toISOString().split('T')[0]
+        const cbteFch = parseInt(fechaEmisionRaw.replace(/-/g, ''))
+
         const data = {
           'CantReg': 1,
           'PtoVta': ptoVta,
-          'CbteTipo': tipoCbte,
-          'Concepto': 1,               // Productos
+          'CbteTipo': cbteTipoVenta,
+          'Concepto': conceptoVenta,
           'DocTipo': docTipo,
           'DocNro': docNro,
           'CbteDesde': nextVoucher,
           'CbteHasta': nextVoucher,
-          'CbteFch': parseInt(new Date().toISOString().split('T')[0].replace(/-/g, '')),
+          'CbteFch': cbteFch,
           'ImpTotal': parseFloat(v.monto),
           'ImpTotConc': 0,
           'ImpNeto': parseFloat(v.monto),
@@ -259,6 +266,17 @@ export default async function handler(req, res) {
           'MonId': 'PES',
           'MonCotiz': 1,
           'CondicionIvaReceptor': condicionIvaReceptor
+        }
+
+        // Campos obligatorios para Servicios (2) y Productos y Servicios (3)
+        if (conceptoVenta === 2 || conceptoVenta === 3) {
+          const periodoDesde = v.datos_fiscales?.periodo_desde
+          const periodoHasta = v.datos_fiscales?.periodo_hasta
+          const vtoPago = v.datos_fiscales?.vto_pago
+
+          if (periodoDesde) data['FchServDesde'] = parseInt(periodoDesde.replace(/-/g, ''))
+          if (periodoHasta) data['FchServHasta'] = parseInt(periodoHasta.replace(/-/g, ''))
+          if (vtoPago) data['FchVtoPago'] = parseInt(vtoPago.replace(/-/g, ''))
         }
 
         console.log(`Enviando comprobante a AFIP...`)

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Building2, MapPin, FileText, Hash, Calendar, Receipt, X, Save, AlertCircle, Lock, Loader2 } from 'lucide-react'
+import { Building2, MapPin, FileText, Hash, Calendar, Receipt, X, Save, AlertCircle, Lock, Loader2, Package } from 'lucide-react'
 
 const CONDICION_IVA_OPTIONS = [
   'Responsable Monotributo',
@@ -14,6 +14,12 @@ const TIPO_CBTE_OPTIONS = [
   { value: 6, label: 'Factura B (Resp. Inscripto → C.F.)' },
 ]
 
+const CONCEPTO_OPTIONS = [
+  { value: 1, label: 'Productos' },
+  { value: 2, label: 'Servicios' },
+  { value: 3, label: 'Productos y Servicios' },
+]
+
 const emptyForm = {
   razon_social: '',
   cuit: '',
@@ -24,6 +30,7 @@ const emptyForm = {
   ingresos_brutos: '',
   pto_vta: 1,
   tipo_cbte: 11,
+  concepto_default: 1,
 }
 
 // Campos que vienen de AFIP y se bloquean siempre
@@ -102,6 +109,7 @@ export default function EmisorSetupModal({ isOpen, onClose, onSave, currentData,
         ingresos_brutos: currentData.ingresos_brutos || '',
         pto_vta: currentData.pto_vta || 1,
         tipo_cbte: currentData.tipo_cbte || 11,
+        concepto_default: currentData.concepto_default || 1,
       })
       setAfipLoaded(true)
     } else if (!afipLoaded) {
@@ -127,6 +135,7 @@ export default function EmisorSetupModal({ isOpen, onClose, onSave, currentData,
         ingresos_brutos: data.ingresos_brutos || '',
         pto_vta: data.pto_vta || 1,
         tipo_cbte: data.tipo_cbte || 11,
+        concepto_default: 1,
       })
       setAfipLoaded(true)
     } catch (err) {
@@ -301,6 +310,18 @@ export default function EmisorSetupModal({ isOpen, onClose, onSave, currentData,
                         locked={hasAfipData}
                       />
                     </div>
+                  </div>
+
+                  <div className="h-px bg-border/40 w-full" />
+
+                  {/* Concepto por Defecto */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <MinimalField 
+                      label="Concepto por Defecto" icon={Package} isSelect full
+                      value={form.concepto_default}
+                      onChange={(e) => setForm(p => ({ ...p, concepto_default: parseInt(e.target.value) }))}
+                      options={CONCEPTO_OPTIONS}
+                    />
                   </div>
 
                 </form>
