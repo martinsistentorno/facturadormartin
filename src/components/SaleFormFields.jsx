@@ -210,7 +210,6 @@ export default function SaleFormFields({
           value={form.condicionIva}
           onChange={(e) => setForm({ ...form, condicionIva: e.target.value })}
           options={CONDICIONES_IVA}
-          disabled={afipLocked}
         />
       </div>
 
@@ -224,7 +223,6 @@ export default function SaleFormFields({
           onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
           placeholder="Juan Pérez"
           required
-          disabled={afipLocked}
         />
         {showSuggestions && (
           <div className="absolute left-0 right-0 mt-1 bg-white border border-border rounded-xl shadow-xl z-50 max-h-40 overflow-y-auto">
