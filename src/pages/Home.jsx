@@ -514,26 +514,6 @@ export default function Home() {
     }
   };
 
-  const handleSyncMeLi = async () => {
-    setLoading(true)
-    showToast('⚓ Sincronizando con Mercado Libre...', 'info')
-    try {
-      const res = await fetch('/api/sync-payments')
-      const data = await res.json()
-      
-      if (data.success) {
-        showToast(`✓ Sincronización completa: ${data.inserted} nuevos, ${data.repaired} recuperados.`, 'success')
-        refetch()
-      } else {
-        throw new Error(data.error || 'Error desconocido')
-      }
-    } catch (err) {
-      console.error('[handleSyncMeLi] Error:', err.message)
-      showToast('Error al sincronizar: ' + err.message, 'error')
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const handleEditVenta = async (id, payload) => {
     try {
@@ -559,20 +539,20 @@ export default function Home() {
   const headerActions = (
     <div className="flex items-center gap-2">
       <button
-        onClick={handleSyncMeLi}
-        disabled={loading}
-        className="
+        onClick={handleSync}
+        disabled={isSyncing}
+        className={`
           flex items-center gap-2 px-4 py-2 rounded-xl
-          bg-[#FFE100]/10 border border-[#FFE100]/30
-          text-[#D6B500] text-[11px] font-bold tracking-widest uppercase
-          hover:bg-[#FFE100]/20 hover:border-[#FFE100]/50 hover:shadow-sm
-          transition-all duration-200
-          disabled:opacity-50 cursor-pointer
-        "
+          bg-[#009EE3]/10 border border-[#009EE3]/30
+          text-[#009EE3] text-[11px] font-bold tracking-widest uppercase
+          hover:bg-[#009EE3]/20 hover:border-[#009EE3]/50 hover:shadow-sm
+          transition-all duration-200 cursor-pointer
+          ${isSyncing ? 'opacity-70 cursor-not-allowed' : ''}
+        `}
         title="Sincronizar ventas de Mercado Libre y Mercado Pago"
       >
-        <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
-        <span className="hidden sm:inline">SINCRONIZAR MELI</span>
+        <RefreshCw size={12} className={isSyncing ? 'animate-spin' : ''} />
+        <span className="hidden sm:inline">{isSyncing ? 'Sincronizando...' : 'Sincronizar MP/ML'}</span>
       </button>
 
       <button
@@ -679,21 +659,6 @@ export default function Home() {
               )}
             </div>
 
-            <button
-              onClick={handleSync}
-              disabled={isSyncing}
-              className={`
-                flex items-center gap-2 px-6 py-3 rounded-xl
-                bg-[#009EE3]/10 text-[#009EE3] text-[11px] font-bold uppercase tracking-widest
-                border border-[#009EE3]/20
-                hover:-translate-y-1 hover:bg-[#009EE3]/20 hover:shadow-lg hover:shadow-[#009EE3]/10
-                transition-all duration-300 cursor-pointer
-                ${isSyncing ? 'opacity-70 cursor-not-allowed' : ''}
-              `}
-            >
-              <RefreshCw size={16} className={isSyncing ? 'animate-spin' : ''} />
-              {isSyncing ? 'Sincronizando...' : 'Sincronizar MP/ML'}
-            </button>
 
             <button
               onClick={() => setBulkImportModalOpen(true)}
