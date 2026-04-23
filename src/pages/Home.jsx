@@ -572,21 +572,7 @@ export default function Home() {
         <span className="hidden sm:inline">RECUPERAR CAEs</span>
       </button>
 
-      <button
-        onClick={refetch}
-        disabled={loading}
-        className="
-          flex items-center gap-2 px-4 py-2 rounded-xl
-          bg-surface border border-border
-          text-text-secondary text-[11px] font-bold tracking-widest uppercase
-          hover:bg-surface-alt hover:text-[var(--color-cmd-blue)] hover:border-[var(--color-cmd-blue)]/30 hover:shadow-sm
-          transition-all duration-200
-          disabled:opacity-50 cursor-pointer
-        "
-      >
-        <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
-        <span className="hidden sm:inline">ACTUALIZAR</span>
-      </button>
+
     </div>
   )
 
