@@ -538,41 +538,41 @@ export default function Home() {
 
   const headerActions = (
     <div className="flex items-center gap-2">
-      <button
-        onClick={handleSync}
-        disabled={isSyncing}
-        className={`
-          flex items-center gap-2 px-4 py-2 rounded-xl
-          bg-[#009EE3]/10 border border-[#009EE3]/30
-          text-[#009EE3] text-[11px] font-bold tracking-widest uppercase
-          hover:bg-[#009EE3]/20 hover:border-[#009EE3]/50 hover:shadow-sm
-          transition-all duration-200 cursor-pointer
-          ${isSyncing ? 'opacity-70 cursor-not-allowed' : ''}
-        `}
-        title="Sincronizar ventas de Mercado Libre y Mercado Pago"
-      >
-        <RefreshCw size={12} className={isSyncing ? 'animate-spin' : ''} />
-        <span className="hidden sm:inline">{isSyncing ? 'Sincronizando...' : 'Sincronizar MP/ML'}</span>
-      </button>
+      <div className="flex flex-col gap-1 w-[160px]">
+        <button
+          onClick={handleSync}
+          disabled={isSyncing}
+          className={`
+            flex items-center justify-center gap-1.5 px-3 py-1 rounded-md
+            bg-[#009EE3]/10 border border-[#009EE3]/30
+            text-[#009EE3] text-[9px] font-bold tracking-widest uppercase
+            hover:bg-[#009EE3]/20 hover:border-[#009EE3]/50 hover:shadow-sm
+            transition-all duration-200 cursor-pointer w-full
+            ${isSyncing ? 'opacity-70 cursor-not-allowed' : ''}
+          `}
+          title="Sincronizar ventas de Mercado Libre y Mercado Pago"
+        >
+          <RefreshCw size={10} className={isSyncing ? 'animate-spin' : ''} />
+          <span className="hidden sm:inline">{isSyncing ? 'Sincronizando...' : 'Sincronizar MP/ML'}</span>
+        </button>
 
-      <button
-        onClick={handleRecoverAfip}
-        disabled={loading}
-        className="
-          flex items-center gap-2 px-4 py-2 rounded-xl
-          bg-green/10 border border-green/30
-          text-green text-[11px] font-bold tracking-widest uppercase
-          hover:bg-green/20 hover:border-green/50 hover:shadow-sm
-          transition-all duration-200
-          disabled:opacity-50 cursor-pointer
-        "
-        title="Recuperar CAEs perdidos desde AFIP"
-      >
-        <ShieldCheck size={12} />
-        <span className="hidden sm:inline">RECUPERAR CAEs</span>
-      </button>
-
-
+        <button
+          onClick={handleRecoverAfip}
+          disabled={loading}
+          className="
+            flex items-center justify-center gap-1.5 px-3 py-1 rounded-md
+            bg-green/10 border border-green/30
+            text-green text-[9px] font-bold tracking-widest uppercase
+            hover:bg-green/20 hover:border-green/50 hover:shadow-sm
+            transition-all duration-200 w-full
+            disabled:opacity-50 cursor-pointer
+          "
+          title="Recuperar CAEs perdidos desde AFIP"
+        >
+          <ShieldCheck size={10} />
+          <span className="hidden sm:inline">RECUPERAR CAEs</span>
+        </button>
+      </div>
     </div>
   )
 
