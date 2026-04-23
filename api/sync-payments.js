@@ -219,7 +219,7 @@ export default async function handler(req, res) {
             mp_method: payment.payment_method_id || '',
             mp_type: payment.payment_type_id || '',
             origen: 'mercadopago',
-            descripcion: payment.description || 'Venta Mercado Pago'
+            descripcion: (payment.description && !payment.description.toLowerCase().includes('transfer')) ? payment.description : 'Varios'
           }
         }
     }
