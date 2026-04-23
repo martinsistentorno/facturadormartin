@@ -163,7 +163,19 @@ export default async function handler(req, res) {
       // 1. Consultar AFIP SOLO si es un CUIT (11 dígitos)
       let resolvedCuit = docNumber
       let condicionIvaFallback = null
-      if (docNumber && docNumber.length === 11) {
+      let isOwnAccount = false
+
+      // Filtrar CUIT/DNI propio de Martin
+      if (docNumber === '20354302684' || docNumber === '35430268') {
+        docNumber = ''
+        extractedBillingName = ''
+        clienteNombre = 'Consumidor Final'
+        isOwnAccount = true
+        resolvedCuit = ''
+        docType = 'DNI'
+      }
+
+      if (!isOwnAccount && docNumber && docNumber.length === 11) {
         const afipResult = await getAfipRazonSocial(docNumber)
         if (afipResult) {
           clienteNombre = afipResult.razonSocial
@@ -430,6 +442,15 @@ async function processPayment(supabaseAdmin, accessToken, paymentId, res) {
   let resolvedCuit = docNumber
   let condicionIvaFallback = null
   let isOwnAccount = payerIdStr === ownerIdStr
+
+  // Filtrar CUIT/DNI propio de Martin
+  if (docNumber === '20354302684' || docNumber === '35430268') {
+    docNumber = ''
+    clienteNombre = 'Consumidor Final'
+    isOwnAccount = true
+    resolvedCuit = ''
+    docType = 'DNI'
+  }
 
   if (!isOwnAccount && docNumber && docNumber.length === 11) {
     const afipResult = await getAfipRazonSocial(docNumber)
