@@ -82,7 +82,7 @@ export default async function handler(req, res) {
     // ══════════════════════════════════════════════════════════
     console.log('[Sync] ── Buscando pagos de Mercado Pago ──')
 
-    const searchUrl = `https://api.mercadopago.com/v1/payments/search?sort=date_created&criteria=desc&limit=100&status=approved`
+    const searchUrl = `https://api.mercadopago.com/v1/payments/search?sort=date_created&criteria=desc&limit=200&status=approved`
     const searchRes = await fetch(searchUrl, {
       headers: { 'Authorization': `Bearer ${accessToken}` }
     })

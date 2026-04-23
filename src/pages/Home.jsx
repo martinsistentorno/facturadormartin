@@ -23,6 +23,7 @@ export default function Home() {
   const [addModalOpen, setAddModalOpen] = useState(false)
   const [bulkImportModalOpen, setBulkImportModalOpen] = useState(false)
   const [exportMenuOpen, setExportMenuOpen] = useState(false)
+  const [isSyncing, setIsSyncing] = useState(false)
   
   // ─── Modal State ───
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -348,6 +349,25 @@ export default function Home() {
     }
   }
 
+  // ─── Sync handler ───
+  const handleSync = async () => {
+    setIsSyncing(true)
+    try {
+      const res = await fetch('/api/sync-payments')
+      const data = await res.json()
+      if (res.ok) {
+        showToast(`Sync completado: ${data.inserted} nuevos, ${data.repaired} reparados`, 'success')
+        refetch() // Recargar ventas de la DB
+      } else {
+        throw new Error(data.error || 'Error en sync')
+      }
+    } catch (err) {
+      showToast('Error sincronizando: ' + err.message, 'error')
+    } finally {
+      setIsSyncing(false)
+    }
+  }
+
   // ─── Bulk retry ───
   const handleBulkRetry = async () => {
     const errorVentas = selectedVentas.filter(v => v.status === 'error')
@@ -658,6 +678,22 @@ export default function Home() {
                 </>
               )}
             </div>
+
+            <button
+              onClick={handleSync}
+              disabled={isSyncing}
+              className={`
+                flex items-center gap-2 px-6 py-3 rounded-xl
+                bg-[#009EE3]/10 text-[#009EE3] text-[11px] font-bold uppercase tracking-widest
+                border border-[#009EE3]/20
+                hover:-translate-y-1 hover:bg-[#009EE3]/20 hover:shadow-lg hover:shadow-[#009EE3]/10
+                transition-all duration-300 cursor-pointer
+                ${isSyncing ? 'opacity-70 cursor-not-allowed' : ''}
+              `}
+            >
+              <RefreshCw size={16} className={isSyncing ? 'animate-spin' : ''} />
+              {isSyncing ? 'Sincronizando...' : 'Sincronizar MP/ML'}
+            </button>
 
             <button
               onClick={() => setBulkImportModalOpen(true)}

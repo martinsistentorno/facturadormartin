@@ -107,7 +107,9 @@ export default async function handler(req, res) {
         const { data: existingByPayment } = await supabaseAdmin
           .from('ventas').select('id').in('mp_payment_id', orderPaymentIds).limit(1)
         if (existingByPayment && existingByPayment.length > 0) {
-          console.log('[Webhook] Orden ya registrada via payment, saltando')
+          console.log('[Webhook] Orden ya registrada via payment, limpiando lock y saltando')
+          // Limpiar el lock que creamos
+          await supabaseAdmin.from('ventas').delete().eq('mp_payment_id', `order-${orderId}`).eq('cliente', 'PROCESANDO...')
           return res.status(200).json({ received: true, duplicate: true })
         }
       }
@@ -338,6 +340,11 @@ async function processPayment(supabaseAdmin, accessToken, paymentId, res) {
     return res.status(200).json({ received: true, duplicate: true })
   }
 
+  // ─── Helper: limpiar lock huérfano ───
+  const cleanupLock = async () => {
+    await supabaseAdmin.from('ventas').delete().eq('mp_payment_id', paymentId).eq('cliente', 'PROCESANDO...')
+  }
+
   // Duplicado cruzado: si ya entró como order y la order tiene este paymentId
   const { data: existingViaOrder } = await supabaseAdmin
     .from('ventas')
@@ -345,7 +352,8 @@ async function processPayment(supabaseAdmin, accessToken, paymentId, res) {
     .contains('datos_fiscales', { meli_payment_ids: [paymentId] })
     .limit(1)
   if (existingViaOrder && existingViaOrder.length > 0) {
-    console.log('[Webhook] Pago ya registrado via order, saltando')
+    console.log('[Webhook] Pago ya registrado via order, saltando y limpiando lock')
+    await cleanupLock()
     return res.status(200).json({ received: true, duplicate: true })
   }
 
@@ -375,7 +383,8 @@ async function processPayment(supabaseAdmin, accessToken, paymentId, res) {
       console.log(`[Webhook] Pago ${paymentId}: collector=${collectorId}, myId=${myId}`)
 
       if (collectorId && collectorId !== myId) {
-        console.log(`[Webhook] Pago ${paymentId} NO es para esta cuenta, ignorando`)
+        console.log(`[Webhook] Pago ${paymentId} NO es para esta cuenta, limpiando lock`)
+        await cleanupLock()
         return res.status(200).json({ received: true, processed: false, reason: 'Pago no recibido por esta cuenta' })
       }
     }
@@ -384,16 +393,16 @@ async function processPayment(supabaseAdmin, accessToken, paymentId, res) {
   }
 
   // PREVENCIÓN DE DUPLICADOS: Si es un pago de una orden de MeLi, IGNORAR COMPLETAMENTE.
-  // El webhook topic 'orders_v2' ya se encarga de procesar esta venta con la info real de facturación del cliente (CUIT, Nombre).
-  // Procesar el payment generaría un duplicado con datos de baja calidad (ej: apodo de MP).
   if (payment.order?.type === 'mercadolibre') {
-    console.log(`[Webhook] Pago ${paymentId} pertenece a orden MeLi ${payment.order.id}. Delegando a orders_v2. Saltando.`)
-    return res.status(200).json({ received: true, duplicate: false, reason: 'Delegated to orders_v2 to avoid duplicates and ensure data quality' })
+    console.log(`[Webhook] Pago ${paymentId} pertenece a orden MeLi ${payment.order.id}. Limpiando lock y delegando a orders_v2.`)
+    await cleanupLock()
+    return res.status(200).json({ received: true, duplicate: false, reason: 'Delegated to orders_v2' })
   }
 
   // Solo procesar pagos aprobados
   if (payment.status !== 'approved') {
-    console.log(`[Webhook] Pago no aprobado: ${payment.status}`)
+    console.log(`[Webhook] Pago no aprobado: ${payment.status}. Limpiando lock.`)
+    await cleanupLock()
     return res.status(200).json({ received: true, processed: false, reason: `Status: ${payment.status}` })
   }
 
