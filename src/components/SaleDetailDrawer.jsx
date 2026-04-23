@@ -103,6 +103,7 @@ export default function SaleDetailDrawer({ venta, isOpen, onClose, onSave, onRet
           setEditForm(prev => ({
             ...prev,
             cliente: data.razonSocial.razonSocial,
+            docType: 'CUIT',
             condicionIva: data.razonSocial.condicion_iva || (val.length === 11 ? 'Responsable Inscripto' : 'Consumidor Final'),
             cuit: val,
             domicilio: data.razonSocial.domicilio || prev.domicilio,

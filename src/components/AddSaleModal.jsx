@@ -71,6 +71,7 @@ export default function AddSaleModal({ isOpen, onClose, onSave, searchClientes }
           setFormData(prev => ({
             ...prev,
             cliente: data.razonSocial.razonSocial,
+            docType: 'CUIT',
             condicionIva: data.razonSocial.condicion_iva || (val.length === 11 ? 'Responsable Inscripto' : 'Consumidor Final'),
             cuit: val,
             domicilio: data.razonSocial.domicilio || prev.domicilio,
