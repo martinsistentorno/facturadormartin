@@ -23,6 +23,7 @@ export default function SaleDetailDrawer({ venta, isOpen, onClose, onSave, onRet
       setEditForm({
         cliente: venta.cliente || '',
         cuit: df.cuit || '',
+        docType: df.doc_tipo || (df.cuit?.length >= 10 ? 'CUIT' : 'DNI'),
         condicionIva: df.condicion_iva || (df.cuit?.length === 11 ? 'Responsable Inscripto' : 'Consumidor Final'),
         email: df.email || '',
         domicilio: df.domicilio || '',
@@ -129,6 +130,7 @@ export default function SaleDetailDrawer({ venta, isOpen, onClose, onSave, onRet
           datos_fiscales: {
             ...venta.datos_fiscales,
             cuit: editForm.cuit,
+            doc_tipo: editForm.docType,
             condicion_iva: editForm.condicionIva,
             email: editForm.email,
             domicilio: editForm.domicilio,

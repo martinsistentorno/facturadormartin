@@ -9,6 +9,7 @@ function getEmptyForm(conceptoDefault = 1) {
   return {
     cliente: '',
     cuit: '',
+    docType: 'DNI',
     condicionIva: 'Consumidor Final',
     email: '',
     domicilio: '',
@@ -97,6 +98,7 @@ export default function AddSaleModal({ isOpen, onClose, onSave, searchClientes }
         mp_payment_id: null,
         datos_fiscales: {
           cuit: formData.cuit,
+          doc_tipo: formData.docType || (formData.cuit?.length >= 10 ? 'CUIT' : 'DNI'),
           condicion_iva: formData.condicionIva,
           email: formData.email,
           domicilio: formData.domicilio,

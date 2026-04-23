@@ -228,8 +228,18 @@ export default async function handler(req, res) {
 
         // Determinar tipo de documento del receptor
         const cuitCliente = v.datos_fiscales?.cuit?.replace(/-/g, '')
-        const docTipo = cuitCliente && cuitCliente.length >= 10 ? 80 : 99  // 80=CUIT, 99=Consumidor Final
-        const docNro = docTipo === 80 ? parseInt(cuitCliente) : 0
+        let docTipo = 99 // Por defecto: Sin Identificar
+        const tipoDocInput = v.datos_fiscales?.doc_tipo || ''
+        
+        if (tipoDocInput === 'CUIT' || (!tipoDocInput && cuitCliente?.length >= 10)) docTipo = 80
+        else if (tipoDocInput === 'CUIL') docTipo = 86
+        else if (tipoDocInput === 'DNI') docTipo = 96
+        else if (tipoDocInput === 'Pasaporte') docTipo = 94
+
+        // Si no hay número de documento, AFIP exige 99 (Consumidor Final anónimo)
+        if (!cuitCliente) docTipo = 99
+
+        const docNro = docTipo !== 99 && cuitCliente ? parseInt(cuitCliente) : 0
 
         // Nueva reglamentación RG 5616: Condición IVA del receptor
         let condicionIvaReceptor = 5 // Consumidor Final por defecto

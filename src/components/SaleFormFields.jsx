@@ -190,11 +190,27 @@ export default function SaleFormFields({
       {/* ── Receptor ── */}
       <SectionDivider label="Receptor" icon={User} />
 
-      <div className="grid grid-cols-2 gap-3">
-        {/* CUIT */}
-        <div className="relative">
+      <div className="grid grid-cols-12 gap-3">
+        {/* Tipo Doc */}
+        <div className="col-span-4">
+          <MiniSelect
+            label="Tipo Doc"
+            value={form.docType || (form.cuit?.length >= 10 ? 'CUIT' : 'DNI')}
+            onChange={(e) => setForm({ ...form, docType: e.target.value })}
+            options={[
+              { value: 'CUIT', label: 'CUIT' },
+              { value: 'CUIL', label: 'CUIL' },
+              { value: 'DNI', label: 'DNI' },
+              { value: 'Pasaporte', label: 'Pasaporte' },
+              { value: 'Sin Identificar', label: 'Ninguno' }
+            ]}
+          />
+        </div>
+
+        {/* Nro Doc */}
+        <div className="relative col-span-8">
           <MiniInput
-            label="CUIT / CUIL / DNI"
+            label="Nro de Documento"
             icon={Hash}
             value={form.cuit}
             onChange={(e) => setForm({ ...form, cuit: e.target.value })}
@@ -205,12 +221,14 @@ export default function SaleFormFields({
         </div>
 
         {/* Condición IVA */}
-        <MiniSelect
-          label="Condición IVA"
-          value={form.condicionIva}
-          onChange={(e) => setForm({ ...form, condicionIva: e.target.value })}
-          options={CONDICIONES_IVA}
-        />
+        <div className="col-span-12">
+          <MiniSelect
+            label="Condición IVA"
+            value={form.condicionIva}
+            onChange={(e) => setForm({ ...form, condicionIva: e.target.value })}
+            options={CONDICIONES_IVA}
+          />
+        </div>
       </div>
 
       {/* Razón Social — full width */}

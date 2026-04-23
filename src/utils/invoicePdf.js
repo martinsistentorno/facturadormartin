@@ -97,13 +97,16 @@ export async function generateInvoicePdf(venta, emisor) {
   doc.line(margin, 60, pageWidth - margin, 60);
 
   // ─── Datos del Receptor ───
-  const cuitCliente = df.cuit || 'Consumidor Final';
-  const fallbackIva = (cuitCliente.includes('-') || cuitCliente.length > 8) ? 'Responsable Inscripto' : 'Consumidor Final';
+  const numDocumento = df.cuit || '';
+  const tipoDocumento = df.doc_tipo || (numDocumento.length >= 10 ? 'CUIT' : 'DNI');
+  const docLabel = numDocumento ? `${tipoDocumento}: ${numDocumento}` : 'CUIT/DNI: Consumidor Final';
+
+  const fallbackIva = numDocumento.length >= 10 ? 'Responsable Inscripto' : 'Consumidor Final';
   const condIvaReceptor = df.condicion_iva || fallbackIva;
   
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
-  doc.text(`CUIL/CUIT: ${cuitCliente}`, margin + 5, 68);
+  doc.text(docLabel, margin + 5, 68);
   doc.text(`Apellido y Nombre / Razón Social: ${venta.cliente}`, margin + 5, 74);
   doc.setFont('helvetica', 'normal');
   doc.text(`Condición frente al IVA: ${condIvaReceptor}`, margin + 5, 80);
