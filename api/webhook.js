@@ -485,12 +485,6 @@ async function processPayment(supabaseAdmin, accessToken, paymentId, res) {
     }
   }
 
-  // Forzar Consumidor Final si el nombre detectado es el propio del dueño
-  if (clienteNombre.toLowerCase().includes('martin') && clienteNombre.toLowerCase().includes('sist')) {
-    clienteNombre = 'Consumidor Final'
-    isOwnAccount = true
-  }
-
   // Método de pago
   const formaPago = translatePaymentMethod(payment.payment_type_id, payment.payment_method_id)
 
