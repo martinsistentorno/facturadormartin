@@ -197,6 +197,11 @@ export default async function handler(req, res) {
           }
         }
 
+        if (clienteNombre.toLowerCase().includes('martin') && clienteNombre.toLowerCase().includes('sist')) {
+          clienteNombre = 'Consumidor Final'
+          isOwnAccount = true
+        }
+
         const medioPagoDetail = translatePaymentMethod(payment.payment_type_id, payment.payment_method_id)
         const formaPago = simplifyPaymentMethod(medioPagoDetail)
         const finalCuit = clienteNombre === 'Consumidor Final' ? '' : resolvedCuit
