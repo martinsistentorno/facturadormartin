@@ -9,7 +9,7 @@ import Layout from '../components/Layout'
 import FilterBar from '../components/FilterBar'
 import SaleDetailDrawer from '../components/SaleDetailDrawer'
 import ToastContainer, { createToast } from '../components/ToastContainer'
-import { RefreshCw, Plus, Download, ChevronDown, Trash2, ShieldCheck, Archive } from 'lucide-react'
+import { RefreshCw, Plus, Download, ChevronDown, Trash2, ShieldCheck } from 'lucide-react'
 import AddSaleModal from '../components/AddSaleModal'
 import BulkImportModal from '../components/BulkImportModal'
 import { exportToCSV, exportToExcel } from '../utils/exportUtils'
@@ -608,13 +608,6 @@ export default function Home() {
             <h2 className="text-xl font-bold text-text-primary uppercase tracking-tight mr-2 hidden lg:block">
               Lista Facturas
             </h2>
-            <button
-               onClick={() => handleCardClick('Historial / Archivo', activas, 'all')}
-               className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-border/60 text-text-muted hover:text-accent hover:border-accent/20 hover:-translate-y-0.5 hover:shadow-md transition-all cursor-pointer text-[10px] font-bold uppercase tracking-widest"
-            >
-              <Archive size={12} />
-              Archivo ({activas.length})
-            </button>
             <button
               onClick={() => handleCardClick('LISTADO_PAPELERA', borradas, 'all')}
               className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-border/60 text-text-muted hover:text-red hover:border-red/20 hover:-translate-y-0.5 hover:shadow-md transition-all cursor-pointer text-[10px] font-bold uppercase tracking-widest"
