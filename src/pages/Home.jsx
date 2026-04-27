@@ -9,7 +9,7 @@ import Layout from '../components/Layout'
 import FilterBar from '../components/FilterBar'
 import SaleDetailDrawer from '../components/SaleDetailDrawer'
 import ToastContainer, { createToast } from '../components/ToastContainer'
-import { RefreshCw, Plus, Download, ChevronDown, Trash2, ShieldCheck } from 'lucide-react'
+import { RefreshCw, Plus, Download, ChevronDown, Trash2, ShieldCheck, Archive } from 'lucide-react'
 import AddSaleModal from '../components/AddSaleModal'
 import BulkImportModal from '../components/BulkImportModal'
 import { exportToCSV, exportToExcel } from '../utils/exportUtils'
@@ -600,43 +600,54 @@ export default function Home() {
 
       {/* ─── Table section ─── */}
       <div>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-text-primary uppercase tracking-tight">
-            Lista Facturas
-          </h2>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+          {/* Lado Izquierdo: Titulo + Views */}
           <div className="flex items-center gap-3">
+            <h2 className="text-xl font-bold text-text-primary uppercase tracking-tight mr-2 hidden lg:block">
+              Lista Facturas
+            </h2>
+            <button
+               onClick={() => handleCardClick('Historial / Archivo', activas, 'all')}
+               className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-border/60 text-text-muted hover:text-accent hover:border-accent/20 hover:-translate-y-0.5 hover:shadow-md transition-all cursor-pointer text-[10px] font-bold uppercase tracking-widest"
+            >
+              <Archive size={12} />
+              Archivo ({activas.length})
+            </button>
             <button
               onClick={() => handleCardClick('LISTADO_PAPELERA', borradas, 'all')}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-border/60 text-text-muted hover:text-red hover:border-red/20 hover:-translate-y-1 hover:shadow-lg transition-all cursor-pointer text-[11px] font-bold uppercase tracking-widest"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-border/60 text-text-muted hover:text-red hover:border-red/20 hover:-translate-y-0.5 hover:shadow-md transition-all cursor-pointer text-[10px] font-bold uppercase tracking-widest"
             >
-              <Trash2 size={14} />
+              <Trash2 size={12} />
               Papelera ({borradas.length})
             </button>
+          </div>
 
+          {/* Lado Derecho: Acciones */}
+          <div className="flex items-center gap-2">
             {/* Export dropdown */}
             <div className="relative">
               <button
                 onClick={() => setExportMenuOpen(!exportMenuOpen)}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-border/60 text-text-secondary text-[11px] font-bold uppercase tracking-widest hover:-translate-y-1 hover:shadow-lg hover:border-[var(--color-cmd-blue)]/30 hover:text-[var(--color-cmd-blue)] transition-all cursor-pointer"
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-border/60 text-text-secondary text-[10px] font-bold uppercase tracking-widest hover:-translate-y-0.5 hover:shadow-md hover:border-[var(--color-cmd-blue)]/30 hover:text-[var(--color-cmd-blue)] transition-all cursor-pointer"
               >
-                <Download size={14} className="text-text-muted" />
-                Exportación Masiva
-                <ChevronDown size={14} className={`transition-transform duration-200 ${exportMenuOpen ? 'rotate-180' : ''}`} />
+                <Download size={12} className="text-text-muted" />
+                Exportar
+                <ChevronDown size={12} className={`transition-transform duration-200 ${exportMenuOpen ? 'rotate-180' : ''}`} />
               </button>
               {exportMenuOpen && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setExportMenuOpen(false)} />
-                  <div className="absolute right-0 mt-2 bg-[#F9F7F2] border border-white/50 rounded-xl shadow-xl shadow-black/10 z-50 min-w-[160px] overflow-hidden animate-slide-down">
+                  <div className="absolute right-0 mt-2 bg-[#F9F7F2] border border-white/50 rounded-xl shadow-xl shadow-black/10 z-50 min-w-[140px] overflow-hidden animate-slide-down">
                     <button
                       onClick={() => handleExportAll('csv')}
-                      className="w-full text-left px-5 py-3.5 text-[11px] font-bold uppercase tracking-widest text-text-primary hover:bg-accent/5 hover:text-accent transition-colors cursor-pointer"
+                      className="w-full text-left px-4 py-2.5 text-[10px] font-bold uppercase tracking-widest text-text-primary hover:bg-accent/5 hover:text-accent transition-colors cursor-pointer"
                     >
                       Archivo CSV
                     </button>
                     <div className="h-px bg-border/40 mx-2" />
                     <button
                       onClick={() => handleExportAll('xlsx')}
-                      className="w-full text-left px-5 py-3.5 text-[11px] font-bold uppercase tracking-widest text-text-primary hover:bg-accent/5 hover:text-accent transition-colors cursor-pointer"
+                      className="w-full text-left px-4 py-2.5 text-[10px] font-bold uppercase tracking-widest text-text-primary hover:bg-accent/5 hover:text-accent transition-colors cursor-pointer"
                     >
                       Excel (.xlsx)
                     </button>
@@ -645,31 +656,30 @@ export default function Home() {
               )}
             </div>
 
-
             <button
               onClick={() => setBulkImportModalOpen(true)}
               className="
-                flex items-center gap-2 px-6 py-3 rounded-xl
-                bg-accent/5 text-accent text-[11px] font-bold uppercase tracking-widest
+                flex items-center gap-2 px-3 py-1.5 rounded-lg
+                bg-accent/5 text-accent text-[10px] font-bold uppercase tracking-widest
                 border border-accent/10
-                hover:-translate-y-1 hover:bg-accent/10 hover:shadow-lg hover:shadow-accent/5
+                hover:-translate-y-0.5 hover:bg-accent/10 hover:shadow-md
                 transition-all duration-300 cursor-pointer
               "
             >
-              <Download size={16} />
-              Carga Masiva
+              <Download size={14} />
+              Importar
             </button>
 
             <button
               onClick={() => setAddModalOpen(true)}
               className="
-                flex items-center gap-2 px-6 py-3 rounded-xl
-                bg-text-primary text-white text-[11px] font-bold uppercase tracking-widest
-                hover:-translate-y-1 hover:shadow-xl hover:shadow-black/20
+                flex items-center gap-2 px-3 py-1.5 rounded-lg
+                bg-text-primary text-white text-[10px] font-bold uppercase tracking-widest
+                hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/10
                 transition-all duration-300 cursor-pointer
               "
             >
-              <Plus size={16} className="text-yellow" />
+              <Plus size={14} className="text-yellow" />
               Nueva Venta
             </button>
           </div>
