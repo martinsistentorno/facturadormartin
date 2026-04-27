@@ -462,7 +462,8 @@ async function processPayment(supabaseAdmin, accessToken, paymentId, res) {
   }
 
   if (clienteNombre === 'Consumidor Final' && !isOwnAccount) {
-    if (payer.id && (!payer.first_name || payer.first_name === null)) {
+    // Solo buscar perfil si el payer.id NO es el dueño de la cuenta
+    if (payer.id && payerIdStr !== ownerIdStr && (!payer.first_name || payer.first_name === null)) {
     try {
       const userRes = await fetch(`https://api.mercadolibre.com/users/${payer.id}`, {
         headers: { 'Authorization': `Bearer ${accessToken}` }
@@ -478,8 +479,11 @@ async function processPayment(supabaseAdmin, accessToken, paymentId, res) {
     } catch (e) {
       if (payer.email) clienteNombre = payer.email.split('@')[0]
     }
-    } else if (payer.first_name) {
+    } else if (payer.first_name && payerIdStr !== ownerIdStr) {
       clienteNombre = `${payer.first_name} ${payer.last_name || ''}`.trim()
+    } else if (payerIdStr === ownerIdStr) {
+      // El payer.id es el propio dueño: forzar Consumidor Final
+      clienteNombre = 'Consumidor Final'
     } else if (payer.email) {
       clienteNombre = payer.email.split('@')[0]
     }

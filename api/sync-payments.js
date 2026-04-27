@@ -186,12 +186,16 @@ export default async function handler(req, res) {
         }
 
         if (clienteNombre === 'Consumidor Final' && !isOwnAccount) {
-          if (payer.id && (!payer.first_name || payer.first_name === null)) {
+          // Solo buscar perfil si el payer.id NO es el dueño de la cuenta
+          if (payer.id && payerIdStr !== myUserId && (!payer.first_name || payer.first_name === null)) {
             const realName = await getUserName(payer.id)
             if (realName) clienteNombre = realName
             else if (email) clienteNombre = email.split('@')[0]
-          } else if (payer.first_name) {
+          } else if (payer.first_name && payerIdStr !== myUserId) {
             clienteNombre = `${payer.first_name} ${payer.last_name || ''}`.trim()
+          } else if (payerIdStr === myUserId) {
+            // El payer.id es el propio dueño: forzar Consumidor Final
+            clienteNombre = 'Consumidor Final'
           } else if (email) {
             clienteNombre = email.split('@')[0]
           }
