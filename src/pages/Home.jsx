@@ -57,7 +57,9 @@ export default function Home() {
   }, [])
 
   // ─── Filtered ventas ───
+  // ─── Filtered lists ───
   const borradas = useMemo(() => ventas.filter(v => v.status === 'borrada'), [ventas])
+  const activas = useMemo(() => ventas.filter(v => v.status !== 'borrada'), [ventas])
   const filteredVentas = useMemo(() => {
     return ventas.filter(v => {
       // Exclude borradas globally from generic UI views
