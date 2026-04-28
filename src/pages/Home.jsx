@@ -456,6 +456,32 @@ export default function Home() {
     }
   }
 
+  const handleAnularVenta = async (v) => {
+    if (!confirm('¿Estás seguro de que querés anular esta factura?')) return
+    try {
+      const nroCompArr = (v.nro_comprobante || '0-0').split('-')
+      await createVenta({
+        cliente: v.cliente,
+        monto: v.monto,
+        fecha: new Date().toISOString(),
+        status: 'pendiente',
+        datos_fiscales: {
+          ...v.datos_fiscales,
+          tipo_cbte: 13,
+          cbte_asoc: {
+            tipo: v.datos_fiscales?.tipo_cbte || 11,
+            pto_vta: parseInt(nroCompArr[0]),
+            nro: parseInt(nroCompArr[1]),
+            fecha: v.datos_fiscales?.fecha_emision || v.fecha.split('T')[0]
+          },
+          comprobante_numero: null, cae: null, cae_vto: null, afip_envio_fecha: null, error_detalle: null
+        }
+      })
+      showToast('Nota de Crédito creada', 'success')
+      setDetailVenta(null)
+    } catch (err) { showToast('Error: ' + err.message, 'error') }
+  }
+
   const headerActions = (
     <div className="flex items-center gap-2">
       <div className="flex flex-col gap-1 w-[160px]">
