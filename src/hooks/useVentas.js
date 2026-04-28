@@ -133,6 +133,16 @@ export function useVentas() {
     setVentas(prev => prev.filter(v => v.id !== id))
   }, [])
 
+  const archiveVenta = useCallback(async (id) => {
+    const { error: archiveError } = await supabase
+      .from('ventas')
+      .update({ status: 'archivada' })
+      .eq('id', id)
+
+    if (archiveError) throw archiveError
+    setVentas(prev => prev.map(v => v.id === id ? { ...v, status: 'archivada' } : v))
+  }, [])
+
   const bulkCreateVentas = useCallback(async (payloads) => {
     const { data, error: createError } = await supabase
       .from('ventas')
@@ -143,5 +153,5 @@ export function useVentas() {
     return data
   }, [])
 
-  return { ventas, setVentas, loading, error, refetch: fetchVentas, updateVentaStatus, updateVenta, createVenta, deleteVenta, hardDeleteVenta, bulkCreateVentas }
+  return { ventas, setVentas, loading, error, refetch: fetchVentas, updateVentaStatus, updateVenta, createVenta, deleteVenta, hardDeleteVenta, archiveVenta, bulkCreateVentas }
 }

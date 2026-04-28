@@ -9,14 +9,14 @@ import Layout from '../components/Layout'
 import FilterBar from '../components/FilterBar'
 import SaleDetailDrawer from '../components/SaleDetailDrawer'
 import ToastContainer, { createToast } from '../components/ToastContainer'
-import { RefreshCw, Plus, Download, ChevronDown, Trash2, ShieldCheck } from 'lucide-react'
+import { RefreshCw, Plus, Download, ChevronDown, Trash2, ShieldCheck, Archive } from 'lucide-react'
 import AddSaleModal from '../components/AddSaleModal'
 import BulkImportModal from '../components/BulkImportModal'
 import { exportToCSV, exportToExcel } from '../utils/exportUtils'
 import { translatePaymentMethod } from '../utils/paymentMethods'
 
 export default function Home() {
-  const { ventas, setVentas, loading, error, refetch, updateVentaStatus, updateVenta, createVenta, deleteVenta, hardDeleteVenta, bulkCreateVentas } = useVentas()
+  const { ventas, setVentas, loading, error, refetch, updateVentaStatus, updateVenta, createVenta, deleteVenta, hardDeleteVenta, archiveVenta, bulkCreateVentas } = useVentas()
   const { search: searchClientes } = useClientes(ventas)
   const [selectedIds, setSelectedIds] = useState(new Set())
   const [toasts, setToasts] = useState([])
@@ -57,13 +57,12 @@ export default function Home() {
   }, [])
 
   // ─── Filtered ventas ───
-  // ─── Filtered lists ───
   const borradas = useMemo(() => ventas.filter(v => v.status === 'borrada'), [ventas])
-  const activas = useMemo(() => ventas.filter(v => v.status !== 'borrada'), [ventas])
+  const archivadas = useMemo(() => ventas.filter(v => v.status === 'archivada'), [ventas])
   const filteredVentas = useMemo(() => {
     return ventas.filter(v => {
-      // Exclude borradas globally from generic UI views
-      if (v.status === 'borrada') return false
+      // Exclude borradas and archivadas globally from generic UI views
+      if (v.status === 'borrada' || v.status === 'archivada') return false
 
       // Universal search across all fields
       if (debouncedSearch) {
@@ -186,7 +185,7 @@ export default function Home() {
     setToasts(prev => prev.filter(t => t.id !== id))
   }, [])
 
-  // ─── Delete handler for Modal ───
+  // ─── Action handlers ───
   const handleDeleteVenta = async (id) => {
     try {
       await deleteVenta(id)
@@ -229,6 +228,20 @@ export default function Home() {
     }
   }
 
+  const handleArchiveVenta = async (id) => {
+    try {
+      await archiveVenta(id)
+      showToast('Venta archivada correctamente', 'success')
+      setModalData(prev => ({
+        ...prev,
+        ventas: prev.ventas.filter(v => v.id !== id)
+      }))
+    } catch (err) {
+      console.error('Error al archivar:', err)
+      showToast('Error al archivar: ' + err.message, 'error')
+    }
+  }
+
   const handleResetVenta = async (id) => {
     try {
       const v = ventas.find(x => x.id === id)
@@ -260,12 +273,9 @@ export default function Home() {
   }
 
   const handleResetAllVentas = async (ids) => {
-    if (!confirm(`¿Estás seguro de que quieres reiniciar las ${ids.length} ventas seleccionadas? Se mantendrán los CUITs pero se borrarán los datos de facturación previos.`)) return;
-    
+    if (!confirm(`¿Estás seguro de que quieres reiniciar las ${ids.length} ventas seleccionadas?`)) return;
     try {
-      // Loop to preserve individual datos_fiscales while clearing AFIP data
-      // For bulk, let's use Promise.all to be reasonably fast
-      const updates = ids.map(id => {
+      for (const id of ids) {
         const v = ventas.find(x => x.id === id)
         const cleanDatosFiscales = v?.datos_fiscales ? {
           ...v.datos_fiscales,
@@ -275,86 +285,39 @@ export default function Home() {
           afip_envio_fecha: null,
           error_detalle: null
         } : null
-
-        return supabase
-          .from('ventas')
-          .update({ 
-            status: 'pendiente', 
-            cae: null, 
-            nro_comprobante: null, 
-            vto_cae: null, 
-            datos_fiscales: cleanDatosFiscales 
-          })
-          .eq('id', id)
-      })
-
-      const results = await Promise.all(updates)
-      const errors = results.filter(r => r.error)
-      if (errors.length > 0) throw errors[0].error
-
-      // Local update
-      setVentas(prev => prev.map(v => {
-        if (!ids.includes(v.id)) return v
-        return { 
-          ...v, 
-          status: 'pendiente', 
-          cae: null, 
-          nro_comprobante: null, 
-          vto_cae: null, 
-          datos_fiscales: v.datos_fiscales ? {
-            ...v.datos_fiscales,
-            comprobante_numero: null,
-            cae: null,
-            cae_vto: null,
-            afip_envio_fecha: null,
-            error_detalle: null
-          } : null
-        }
-      }))
-
+        await updateVenta(id, { status: 'pendiente', cae: null, nro_comprobante: null, vto_cae: null, datos_fiscales: cleanDatosFiscales })
+      }
       showToast(`${ids.length} ventas reiniciadas correctamente`, 'success')
       setIsModalOpen(false) 
     } catch (err) {
-      console.error('Error en reinicio masivo:', err)
       showToast('Error en reinicio masivo: ' + err.message, 'error')
     }
   }
 
-  // ─── Bulk delete ───
   const handleBulkDelete = async () => {
     if (selectedVentas.length === 0) return
-
-    if (!confirm(`¿Mover ${selectedVentas.length} venta(s) a la papelera?\nPodrás restaurarlas o eliminarlas definitivamente luego.`)) return
-
-    let deleted = 0
-    for (const v of selectedVentas) {
-      try {
-        await deleteVenta(v.id)
-        deleted++
-      } catch (err) {
-        console.error(`Error eliminando ${v.id}:`, err)
-      }
-    }
+    if (!confirm(`¿Mover ${selectedVentas.length} venta(s) a la papelera?`)) return
+    for (const v of selectedVentas) { await deleteVenta(v.id) }
     setSelectedIds(new Set())
-    showToast(`${deleted} venta(s) eliminada(s)`, 'success')
+    showToast(`${selectedVentas.length} venta(s) eliminada(s)`, 'success')
   }
 
-  // ─── Retry handler ───
-  const handleRetry = async (ventaId) => {
-    const venta = ventas.find(v => v.id === ventaId)
-    if (!venta) return
+  const handleBulkArchive = async () => {
+    if (selectedVentas.length === 0) return
+    for (const v of selectedVentas) { await archiveVenta(v.id) }
+    setSelectedIds(new Set())
+    showToast(`${selectedVentas.length} venta(s) archivada(s)`, 'success')
+  }
 
+  const handleRetry = async (ventaId) => {
     try {
-      // Reset to pendiente
       await updateVenta(ventaId, { status: 'pendiente' })
-      setVentas(prev => prev.map(v => v.id === ventaId ? { ...v, status: 'pendiente' } : v))
-      showToast('Venta restaurada a pendiente. Selecciónala y facturá.', 'info')
+      showToast('Venta restaurada a pendiente', 'info')
     } catch (err) {
       showToast('Error al reintentar: ' + err.message, 'error')
     }
   }
 
-  // ─── Sync handler ───
   const handleSync = async () => {
     setIsSyncing(true)
     try {
@@ -362,7 +325,7 @@ export default function Home() {
       const data = await res.json()
       if (res.ok) {
         showToast(`Sync completado: ${data.inserted} nuevos, ${data.repaired} reparados`, 'success')
-        refetch() // Recargar ventas de la DB
+        refetch()
       } else {
         throw new Error(data.error || 'Error en sync')
       }
@@ -373,28 +336,14 @@ export default function Home() {
     }
   }
 
-  // ─── Bulk retry ───
   const handleBulkRetry = async () => {
     const errorVentas = selectedVentas.filter(v => v.status === 'error')
     if (errorVentas.length === 0) return
-
-    let retried = 0
-    for (const v of errorVentas) {
-      try {
-        await updateVenta(v.id, { status: 'pendiente' })
-        retried++
-      } catch (err) {
-        console.error(`Error reintentando ${v.id}:`, err)
-      }
-    }
-    setVentas(prev => prev.map(v =>
-      errorVentas.find(e => e.id === v.id) ? { ...v, status: 'pendiente' } : v
-    ))
+    for (const v of errorVentas) { await updateVenta(v.id, { status: 'pendiente' }) }
     setSelectedIds(new Set())
-    showToast(`${retried} venta(s) restauradas a pendiente`, 'info')
+    showToast(`${errorVentas.length} venta(s) restauradas a pendiente`, 'info')
   }
 
-  // ─── Export handlers ───
   const handleExportSelection = () => {
     if (selectedVentas.length === 0) return
     exportToCSV(selectedVentas, `ventas_seleccion_${new Date().toISOString().split('T')[0]}`)
@@ -404,176 +353,79 @@ export default function Home() {
   const handleExportAll = (format) => {
     const data = filteredVentas.length > 0 ? filteredVentas : ventas
     const filename = `ventas_${new Date().toISOString().split('T')[0]}`
-    if (format === 'csv') {
-      exportToCSV(data, filename)
-    } else {
-      exportToExcel(data, filename)
-    }
+    if (format === 'csv') { exportToCSV(data, filename) } else { exportToExcel(data, filename) }
     showToast(`${data.length} ventas exportadas a ${format.toUpperCase()}`, 'success')
     setExportMenuOpen(false)
   }
 
-  // ─── Emitir Factura handler ───
-  const handleInvoice = async () => {
-    const selectedVentasToInvoice = ventas.filter(v => selectedIds.has(v.id) && v.status !== 'facturado')
-    if (selectedVentasToInvoice.length === 0) {
-      showToast('No hay ventas pendientes o con error seleccionadas', 'error')
+  const handleInvoice = async (targetVentas = null) => {
+    const toInvoice = targetVentas || selectedVentas.filter(v => v.status !== 'facturado')
+    if (toInvoice.length === 0) {
+      showToast('No hay ventas facturables seleccionadas', 'error')
       return
     }
 
     try {
       showToast('Emitiendo factura...', 'info')
+      setVentas(prev => prev.map(v => toInvoice.some(tv => tv.id === v.id) ? { ...v, status: 'procesando' } : v))
       
-      setVentas(prev => prev.map(v => 
-        selectedIds.has(v.id) ? { ...v, status: 'procesando' } : v
-      ))
-      
-      const payload = {
-        ventas: selectedVentasToInvoice.map(v => ({
-          id: v.id,
-          fecha: v.fecha,
-          cliente: v.cliente,
-          monto: v.monto,
-          datos_fiscales: v.datos_fiscales || {},
-          mp_payment_id: v.mp_payment_id,
-        })),
-      }
-
       const response = await fetch('/api/afip', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ ventas: toInvoice.map(v => ({ id: v.id, fecha: v.fecha, cliente: v.cliente, monto: v.monto, datos_fiscales: v.datos_fiscales || {}, mp_payment_id: v.mp_payment_id })) }),
       });
 
       const data = await response.json()
-      
-      if (!response.ok || data.error || !data.success) {
-        throw new Error(data.error || `Error del servidor (${response.status})`)
-      }
+      if (!response.ok || !data.success) throw new Error(data.error || 'Error del servidor')
 
       const resultados = data.resultados || []
-      const successCount = resultados.filter(r => r.success).length
-      
       setVentas(prev => prev.map(v => {
         const res = resultados.find(r => r.id === v.id)
         if (res) {
-          if (res.success) {
-            return { 
-              ...v, 
-              status: 'facturado', 
-              cae: res.cae, 
-              nro_comprobante: res.nro,
-              pdf_url: res.pdf_url || null
-            }
-          } else {
-            return { 
-              ...v, 
-              status: 'error',
-              datos_fiscales: { 
-                ...v.datos_fiscales, 
-                error_detalle: res.error 
-              }
-            }
-          }
+          return res.success 
+            ? { ...v, status: 'facturado', cae: res.cae, nro_comprobante: res.nro, pdf_url: res.pdf_url || null }
+            : { ...v, status: 'error', datos_fiscales: { ...v.datos_fiscales, error_detalle: res.error } }
         }
         return v
       }))
-
       setSelectedIds(new Set())
-      
-      if (successCount === resultados.length && successCount > 0) {
-        showToast(`✓ ${successCount} comprobante(s) emitido(s) con éxito`, 'success')
-      } else if (successCount > 0) {
-        showToast(`${successCount} de ${resultados.length} emitidas. Algunos fallaron.`, 'warning')
-      } else {
-        showToast('No se emitió ningún comprobante. Comprobá los errores en la tabla.', 'error')
-      }
-
+      showToast('Proceso finalizado. Revisá los resultados en la tabla.', 'success')
     } catch (err) {
-      console.error('[handleInvoice] Error:', err.message)
-      showToast('Error al procesar facturas: ' + err.message, 'error')
-      
-      // Si falló el request entero, marcar las que estaban en proceso como error
-      setVentas(prev => prev.map(v => 
-        v.status === 'procesando' 
-          ? { ...v, status: 'error', datos_fiscales: { ...v.datos_fiscales, error_detalle: err.message } } 
-          : v
-      ))
+      showToast('Error al procesar: ' + err.message, 'error')
+      setVentas(prev => prev.map(v => v.status === 'procesando' ? { ...v, status: 'error' } : v))
     }
+  }
+
+  const handleEmitSingleInvoice = async (id) => {
+    const v = ventas.find(x => x.id === id)
+    if (v) handleInvoice([v])
   }
 
   const handleRecoverAfip = async () => {
     try {
-      showToast('Iniciando recuperación de AFIP...', 'info');
+      showToast('Recuperando CAEs...', 'info');
       const res = await fetch('/api/recover');
       const data = await res.json();
-      
-      if (data.success) {
-        showToast(`✓ Recuperación finalizada. Procesadas: ${data.processed}`, 'success');
-        refetch(); // Recargar datos
-      } else {
-        showToast('Error en recuperación: ' + data.error, 'error');
-      }
-    } catch (err) {
-      showToast('Error de conexión: ' + err.message, 'error');
-    }
+      if (data.success) { showToast(`Recuperación finalizada: ${data.processed}`, 'success'); refetch(); } else { showToast('Error: ' + data.error, 'error'); }
+    } catch (err) { showToast('Error: ' + err.message, 'error'); }
   };
 
-
   const handleEditVenta = async (id, payload) => {
-    try {
-      await updateVenta(id, payload)
-      showToast('Datos actualizados correctamente', 'success')
-    } catch (err) {
-      console.error('Error al actualizar venta:', err)
-      showToast('Error al actualizar: ' + err.message, 'error')
-    }
+    try { await updateVenta(id, payload); showToast('Datos actualizados', 'success'); } catch (err) { showToast('Error: ' + err.message, 'error'); }
   }
 
   const handleCreateVenta = async (payload) => {
-    try {
-      await createVenta(payload)
-      showToast('Venta agregada correctamente', 'success')
-    } catch (err) {
-      console.error('Error al crear venta:', err)
-      showToast('Error al crear venta: ' + err.message, 'error')
-      throw err
-    }
+    try { await createVenta(payload); showToast('Venta agregada', 'success'); } catch (err) { showToast('Error: ' + err.message, 'error'); throw err; }
   }
 
   const headerActions = (
     <div className="flex items-center gap-2">
       <div className="flex flex-col gap-1 w-[160px]">
-        <button
-          onClick={handleSync}
-          disabled={isSyncing}
-          className={`
-            flex items-center justify-center gap-1.5 px-3 py-1 rounded-md
-            bg-[#009EE3]/10 border border-[#009EE3]/30
-            text-[#009EE3] text-[9px] font-bold tracking-widest uppercase
-            hover:bg-[#009EE3]/20 hover:border-[#009EE3]/50 hover:shadow-sm
-            transition-all duration-200 cursor-pointer w-full
-            ${isSyncing ? 'opacity-70 cursor-not-allowed' : ''}
-          `}
-          title="Sincronizar ventas de Mercado Libre y Mercado Pago"
-        >
+        <button onClick={handleSync} disabled={isSyncing} className={`flex items-center justify-center gap-1.5 px-3 py-1 rounded-md bg-[#009EE3]/10 border border-[#009EE3]/30 text-[#009EE3] text-[9px] font-bold tracking-widest uppercase hover:bg-[#009EE3]/20 transition-all cursor-pointer w-full ${isSyncing ? 'opacity-70 cursor-not-allowed' : ''}`}>
           <RefreshCw size={10} className={isSyncing ? 'animate-spin' : ''} />
-          <span className="hidden sm:inline">{isSyncing ? 'Sincronizando...' : 'Sincronizar MP/ML'}</span>
+          <span className="hidden sm:inline">Sincronizar MP/ML</span>
         </button>
-
-        <button
-          onClick={handleRecoverAfip}
-          disabled={loading}
-          className="
-            flex items-center justify-center gap-1.5 px-3 py-1 rounded-md
-            bg-green/10 border border-green/30
-            text-green text-[9px] font-bold tracking-widest uppercase
-            hover:bg-green/20 hover:border-green/50 hover:shadow-sm
-            transition-all duration-200 w-full
-            disabled:opacity-50 cursor-pointer
-          "
-          title="Recuperar CAEs perdidos desde AFIP"
-        >
+        <button onClick={handleRecoverAfip} className="flex items-center justify-center gap-1.5 px-3 py-1 rounded-md bg-green/10 border border-green/30 text-green text-[9px] font-bold tracking-widest uppercase hover:bg-green/20 transition-all w-full cursor-pointer">
           <ShieldCheck size={10} />
           <span className="hidden sm:inline">RECUPERAR CAEs</span>
         </button>
@@ -584,183 +436,71 @@ export default function Home() {
   return (
     <Layout headerActions={headerActions}>
       <div className="space-y-6">
+        {error && <div className="bg-red-subtle border border-red/20 rounded-xl px-4 py-3 text-red text-sm">Error: {error}</div>}
+        <StatsCards ventas={ventas} onCardClick={handleCardClick} />
 
-      {/* ─── Error banner ─── */}
-      {error && (
-        <div className="bg-red-subtle border border-red/20 rounded-xl px-4 py-3 text-red text-sm animate-slide-down">
-          Error cargando ventas: {error}
-        </div>
-      )}
+        <div>
+          <div className="mb-4">
+            <h2 className="text-xl font-bold text-text-primary uppercase tracking-tight mb-4">Lista Facturas</h2>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="flex items-center bg-white border border-border/60 rounded-xl p-1 h-[38px] w-full md:w-auto">
+                <button onClick={() => handleCardClick('Archivo', archivadas, 'all')} className="flex-1 flex items-center justify-center h-full px-3 rounded-lg hover:bg-blue-subtle text-text-muted hover:text-blue transition-all cursor-pointer group">
+                  <Archive size={14} /><span className="ml-2 text-[9px] font-bold uppercase tracking-widest">Archivo ({archivadas.length})</span>
+                </button>
+                <div className="w-px h-5 bg-border/40" />
+                <button onClick={() => handleCardClick('LISTADO_PAPELERA', borradas, 'all')} className="flex-1 flex items-center justify-center h-full px-3 rounded-lg hover:bg-red-subtle text-text-muted hover:text-red transition-all cursor-pointer group">
+                  <Trash2 size={14} /><span className="ml-2 text-[9px] font-bold uppercase tracking-widest">Papelera ({borradas.length})</span>
+                </button>
+              </div>
 
-      {/* ─── Stats ─── */}
-      <StatsCards ventas={ventas} onCardClick={handleCardClick} />
-
-      {/* ─── Filters ─── */}
-      <FilterBar
-        filters={filters}
-        onFilterChange={handleFilterChange}
-        totalCount={ventas.length}
-        filteredCount={filteredVentas.length}
-      />
-
-      {/* ─── Table section ─── */}
-      <div>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-          {/* Lado Izquierdo: Titulo + Views */}
-          <div className="flex items-center gap-3">
-            <h2 className="text-xl font-bold text-text-primary uppercase tracking-tight mr-2 hidden lg:block">
-              Lista Facturas
-            </h2>
-            <button
-              onClick={() => handleCardClick('LISTADO_PAPELERA', borradas, 'all')}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-border/60 text-text-muted hover:text-red hover:border-red/20 hover:-translate-y-0.5 hover:shadow-md transition-all cursor-pointer text-[10px] font-bold uppercase tracking-widest"
-            >
-              <Trash2 size={12} />
-              Papelera ({borradas.length})
-            </button>
-          </div>
-
-          {/* Lado Derecho: Acciones */}
-          <div className="flex items-center gap-2">
-            {/* Export dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => setExportMenuOpen(!exportMenuOpen)}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-border/60 text-text-secondary text-[10px] font-bold uppercase tracking-widest hover:-translate-y-0.5 hover:shadow-md hover:border-[var(--color-cmd-blue)]/30 hover:text-[var(--color-cmd-blue)] transition-all cursor-pointer"
-              >
-                <Download size={12} className="text-text-muted" />
-                Exportar
-                <ChevronDown size={12} className={`transition-transform duration-200 ${exportMenuOpen ? 'rotate-180' : ''}`} />
-              </button>
-              {exportMenuOpen && (
-                <>
-                  <div className="fixed inset-0 z-40" onClick={() => setExportMenuOpen(false)} />
-                  <div className="absolute right-0 mt-2 bg-[#F9F7F2] border border-white/50 rounded-xl shadow-xl shadow-black/10 z-50 min-w-[140px] overflow-hidden animate-slide-down">
-                    <button
-                      onClick={() => handleExportAll('csv')}
-                      className="w-full text-left px-4 py-2.5 text-[10px] font-bold uppercase tracking-widest text-text-primary hover:bg-accent/5 hover:text-accent transition-colors cursor-pointer"
-                    >
-                      Archivo CSV
-                    </button>
-                    <div className="h-px bg-border/40 mx-2" />
-                    <button
-                      onClick={() => handleExportAll('xlsx')}
-                      className="w-full text-left px-4 py-2.5 text-[10px] font-bold uppercase tracking-widest text-text-primary hover:bg-accent/5 hover:text-accent transition-colors cursor-pointer"
-                    >
-                      Excel (.xlsx)
-                    </button>
-                  </div>
-                </>
-              )}
+              <div className="grid grid-cols-2 md:flex items-center gap-2 w-full md:w-auto">
+                <div className="relative w-full md:w-auto">
+                  <button onClick={() => setExportMenuOpen(!exportMenuOpen)} className="flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-white border border-border/60 text-text-secondary text-[9px] font-bold uppercase tracking-widest hover:border-blue/30 transition-all cursor-pointer w-full h-[38px]">
+                    <Download size={13} className="text-text-muted" /><span className="truncate">Exportar</span><ChevronDown size={12} className={exportMenuOpen ? 'rotate-180' : ''} />
+                  </button>
+                  {exportMenuOpen && (
+                    <div className="absolute right-0 mt-2 bg-white border border-border/40 rounded-xl shadow-xl z-50 min-w-[140px] overflow-hidden animate-slide-down">
+                      <button onClick={() => handleExportAll('csv')} className="w-full text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest hover:bg-blue/5 transition-colors cursor-pointer">CSV</button>
+                      <button onClick={() => handleExportAll('xlsx')} className="w-full text-left px-4 py-3 text-[10px] font-bold uppercase tracking-widest hover:bg-blue/5 transition-colors cursor-pointer">Excel</button>
+                    </div>
+                  )}
+                </div>
+                <button onClick={() => setBulkImportModalOpen(true)} className="flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-white border border-border/60 text-text-secondary text-[9px] font-bold uppercase tracking-widest hover:border-blue/30 transition-all cursor-pointer h-[38px]">
+                  <Download size={13} />Carga Masiva
+                </button>
+                <button onClick={() => setAddModalOpen(true)} className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-text-primary text-white text-[9px] font-bold uppercase tracking-widest hover:shadow-lg transition-all cursor-pointer h-[38px] col-span-2 md:col-span-1">
+                  <Plus size={13} className="text-yellow" />Nueva Venta
+                </button>
+              </div>
             </div>
-
-            <button
-              onClick={() => setBulkImportModalOpen(true)}
-              className="
-                flex items-center gap-2 px-3 py-1.5 rounded-lg
-                bg-accent/5 text-accent text-[10px] font-bold uppercase tracking-widest
-                border border-accent/10
-                hover:-translate-y-0.5 hover:bg-accent/10 hover:shadow-md
-                transition-all duration-300 cursor-pointer
-              "
-            >
-              <Download size={14} />
-              Importar
-            </button>
-
-            <button
-              onClick={() => setAddModalOpen(true)}
-              className="
-                flex items-center gap-2 px-3 py-1.5 rounded-lg
-                bg-text-primary text-white text-[10px] font-bold uppercase tracking-widest
-                hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/10
-                transition-all duration-300 cursor-pointer
-              "
-            >
-              <Plus size={14} className="text-yellow" />
-              Nueva Venta
-            </button>
           </div>
+
+          <div className="mb-4">
+            <FilterBar filters={filters} onFilterChange={handleFilterChange} totalCount={ventas.length} filteredCount={filteredVentas.length} />
+          </div>
+
+          <SalesTable
+            ventas={filteredVentas}
+            selectedIds={selectedIds}
+            onToggleSelect={handleToggleSelect}
+            onToggleAll={handleToggleAll}
+            loading={loading}
+            onShowError={(msg) => showToast(msg, 'error')}
+            onRowClick={(v) => { setDetailVenta(v); setDetailVentaEditMode(false) }}
+            onEdit={(v) => { setDetailVenta(v); setDetailVentaEditMode(v.status !== 'facturado') }}
+            onSaveEdit={handleEditVenta}
+            onRetry={handleRetry}
+            onEmit={handleEmitSingleInvoice}
+          />
         </div>
-        <SalesTable
-          ventas={filteredVentas}
-          selectedIds={selectedIds}
-          onToggleSelect={handleToggleSelect}
-          onToggleAll={handleToggleAll}
-          loading={loading}
-          onShowError={(msg) => showToast(msg, 'error')}
-          onRowClick={(venta) => {
-            setDetailVenta(venta)
-            setDetailVentaEditMode(false)
-          }}
-          onEdit={(venta) => {
-            setDetailVenta(venta)
-            // Solo entrar en modo edición si NO está facturada
-            setDetailVentaEditMode(venta.status !== 'facturado')
-          }}
-          onSaveEdit={handleEditVenta}
-          onRetry={handleRetry}
-        />
-      </div>
 
-      {/* ─── Floating action bar ─── */}
-      <EmitirFacturaBar
-        selectedCount={selectedIds.size}
-        selectedVentas={selectedVentas}
-        onEmitir={handleInvoice}
-        onClear={handleClearSelection}
-        onExport={handleExportSelection}
-        onBulkDelete={handleBulkDelete}
-        onBulkRetry={handleBulkRetry}
-      />
+        <EmitirFacturaBar selectedCount={selectedIds.size} selectedVentas={selectedVentas} onEmitir={() => handleInvoice()} onClear={handleClearSelection} onExport={handleExportSelection} onBulkDelete={handleBulkDelete} onBulkRetry={handleBulkRetry} onBulkArchive={handleBulkArchive} />
 
-      {/* ─── Detail Drawer ─── */}
-      <SaleDetailDrawer
-        venta={detailVenta}
-        isOpen={!!detailVenta}
-        onClose={() => {
-          setDetailVenta(null)
-          setDetailVentaEditMode(false)
-        }}
-        onRetry={handleRetry}
-        onSave={handleEditVenta}
-        initialEditMode={detailVentaEditMode}
-      />
-
-      {/* ─── Add Sale Modal ─── */}
-      <AddSaleModal
-        isOpen={addModalOpen}
-        onClose={() => setAddModalOpen(false)}
-        onSave={handleCreateVenta}
-        searchClientes={searchClientes}
-      />
-
-      <BulkImportModal
-        isOpen={bulkImportModalOpen}
-        onClose={() => setBulkImportModalOpen(false)}
-        onSave={async (ventasMasivas) => {
-          await bulkCreateVentas(ventasMasivas)
-          await refetch()
-          showToast(`¡${ventasMasivas.length} ventas importadas exitosamente!`, 'success')
-        }}
-      />
-
-      {/* ─── Summary Modal ─── */}
-      <SummaryModal 
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title={modalData.title}
-        ventas={modalData.ventas}
-        onDelete={handleDeleteVenta}
-        onRestore={handleRestoreVenta}
-        onHardDelete={handleHardDeleteVenta}
-        onReset={handleResetVenta}
-        onResetAll={handleResetAllVentas}
-        onShowError={(msg) => showToast(msg, 'error')}
-      />
-
-      {/* ─── Toasts ─── */}
-      <ToastContainer toasts={toasts} onRemove={removeToast} />
+        <SaleDetailDrawer venta={detailVenta} isOpen={!!detailVenta} onClose={() => { setDetailVenta(null); setDetailVentaEditMode(false) }} onRetry={handleRetry} onSave={handleEditVenta} initialEditMode={detailVentaEditMode} />
+        <AddSaleModal isOpen={addModalOpen} onClose={() => setAddModalOpen(false)} onSave={handleCreateVenta} searchClientes={searchClientes} />
+        <BulkImportModal isOpen={bulkImportModalOpen} onClose={() => setBulkImportModalOpen(false)} onSave={async (vm) => { await bulkCreateVentas(vm); await refetch(); showToast(`¡${vm.length} ventas importadas!`, 'success') }} />
+        <SummaryModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={modalData.title} ventas={modalData.ventas} onDelete={handleDeleteVenta} onRestore={handleRestoreVenta} onHardDelete={handleHardDeleteVenta} onReset={handleResetVenta} onResetAll={handleResetAllVentas} onShowError={(msg) => showToast(msg, 'error')} />
+        <ToastContainer toasts={toasts} onRemove={removeToast} />
       </div>
     </Layout>
   )
