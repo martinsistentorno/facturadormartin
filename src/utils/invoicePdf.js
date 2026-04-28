@@ -188,8 +188,8 @@ export async function generateInvoicePdf(venta, emisor) {
       importe: parseFloat(Number(venta.monto).toFixed(2)),
       moneda: "PES",
       ctz: 1,
-      tipoDocRec: cuitCliente === 'Consumidor Final' ? 99 : 80,
-      nroDocRec: cuitCliente === 'Consumidor Final' ? 0 : Number(cleanCuit(cuitCliente)),
+      tipoDocRec: numDocumento === '' ? 99 : 80,
+      nroDocRec: numDocumento === '' ? 0 : Number(cleanCuit(numDocumento)),
       tipoCodAut: "E",
       codAut: Number(venta.cae)
     };
