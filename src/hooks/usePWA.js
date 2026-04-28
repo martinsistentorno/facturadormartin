@@ -1,3 +1,5 @@
+import { useState, useEffect } from 'react';
+
 let savedPrompt = null;
 
 if (typeof window !== 'undefined') {
