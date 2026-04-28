@@ -6,7 +6,7 @@ import { useConfig } from '../context/ConfigContext';
 import { translatePaymentMethod, simplifyPaymentMethod } from '../utils/paymentMethods';
 import SaleFormFields, { CONCEPTOS, UNIDADES_MEDIDA, TIPOS_COMPROBANTE } from './SaleFormFields';
 
-export default function SaleDetailDrawer({ venta, isOpen, onClose, onSave, onRetry, initialEditMode = false }) {
+export default function SaleDetailDrawer({ venta, isOpen, onClose, onSave, onRetry, onAnular, initialEditMode = false }) {
   const { emisor } = useConfig();
   const conceptoDefault = emisor?.concepto_default || 1;
 
@@ -325,13 +325,24 @@ export default function SaleDetailDrawer({ venta, isOpen, onClose, onSave, onRet
               {/* ─── Actions ─── */}
               <div className="flex flex-col gap-3 pt-2">
                 {venta.status === 'facturado' && (
-                  <button
-                    onClick={handleDownload}
-                    className="w-full flex items-center justify-center gap-2 bg-[#3460A8] text-white py-3.5 rounded-xl font-bold uppercase tracking-widest text-xs hover:-translate-y-0.5 hover:shadow-lg transition-all cursor-pointer"
-                  >
-                    <FileDown size={18} />
-                    Ver Factura (PDF)
-                  </button>
+                  <div className="flex flex-col gap-2">
+                    <button
+                      onClick={handleDownload}
+                      className="w-full flex items-center justify-center gap-2 bg-[#3460A8] text-white py-3.5 rounded-xl font-bold uppercase tracking-widest text-xs hover:-translate-y-0.5 hover:shadow-lg transition-all cursor-pointer"
+                    >
+                      <FileDown size={18} />
+                      Ver Factura (PDF)
+                    </button>
+                    {[11, 1, 6].includes(venta.datos_fiscales?.tipo_cbte || 11) && onAnular && (
+                      <button
+                        onClick={() => onAnular(venta)}
+                        className="w-full flex items-center justify-center gap-2 bg-coral/10 text-coral border border-coral/20 py-2.5 rounded-xl font-bold uppercase tracking-widest text-[10px] hover:bg-coral hover:text-white transition-all cursor-pointer"
+                      >
+                        <RotateCcw size={14} />
+                        Anular (Emitir Nota de Crédito)
+                      </button>
+                    )}
+                  </div>
                 )}
                 {venta.status === 'error' && onRetry && (
                   <button

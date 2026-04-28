@@ -418,6 +418,40 @@ export default function Home() {
     try { await createVenta(payload); showToast('Venta agregada', 'success'); } catch (err) { showToast('Error: ' + err.message, 'error'); throw err; }
   }
 
+  const handleAnularVenta = async (v) => {
+    if (!confirm('¿Estás seguro de que querés anular esta factura? Se creará una Nota de Crédito pendiente para emitir.')) return
+    
+    try {
+      const nroCompArr = (v.nro_comprobante || '0-0').split('-')
+      const payload = {
+        cliente: v.cliente,
+        monto: v.monto,
+        fecha: new Date().toISOString(),
+        status: 'pendiente',
+        datos_fiscales: {
+          ...v.datos_fiscales,
+          tipo_cbte: 13, // Nota de Crédito C
+          cbte_asoc: {
+            tipo: v.datos_fiscales?.tipo_cbte || 11,
+            pto_vta: parseInt(nroCompArr[0]),
+            nro: parseInt(nroCompArr[1]),
+            fecha: v.datos_fiscales?.fecha_emision || v.fecha.split('T')[0]
+          },
+          comprobante_numero: null,
+          cae: null,
+          cae_vto: null,
+          afip_envio_fecha: null,
+          error_detalle: null
+        }
+      }
+      await createVenta(payload)
+      showToast('Nota de Crédito creada como pendiente', 'success')
+      setDetailVenta(null)
+    } catch (err) {
+      showToast('Error al crear NC: ' + err.message, 'error')
+    }
+  }
+
   const headerActions = (
     <div className="flex items-center gap-2">
       <div className="flex flex-col gap-1 w-[160px]">
@@ -496,7 +530,7 @@ export default function Home() {
 
         <EmitirFacturaBar selectedCount={selectedIds.size} selectedVentas={selectedVentas} onEmitir={() => handleInvoice()} onClear={handleClearSelection} onExport={handleExportSelection} onBulkDelete={handleBulkDelete} onBulkRetry={handleBulkRetry} onBulkArchive={handleBulkArchive} />
 
-        <SaleDetailDrawer venta={detailVenta} isOpen={!!detailVenta} onClose={() => { setDetailVenta(null); setDetailVentaEditMode(false) }} onRetry={handleRetry} onSave={handleEditVenta} initialEditMode={detailVentaEditMode} />
+        <SaleDetailDrawer venta={detailVenta} isOpen={!!detailVenta} onClose={() => { setDetailVenta(null); setDetailVentaEditMode(false) }} onRetry={handleRetry} onSave={handleEditVenta} onAnular={handleAnularVenta} initialEditMode={detailVentaEditMode} />
         <AddSaleModal isOpen={addModalOpen} onClose={() => setAddModalOpen(false)} onSave={handleCreateVenta} searchClientes={searchClientes} />
         <BulkImportModal isOpen={bulkImportModalOpen} onClose={() => setBulkImportModalOpen(false)} onSave={async (vm) => { await bulkCreateVentas(vm); await refetch(); showToast(`¡${vm.length} ventas importadas!`, 'success') }} />
         <SummaryModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={modalData.title} ventas={modalData.ventas} onDelete={handleDeleteVenta} onRestore={handleRestoreVenta} onHardDelete={handleHardDeleteVenta} onReset={handleResetVenta} onResetAll={handleResetAllVentas} onShowError={(msg) => showToast(msg, 'error')} />
