@@ -418,37 +418,41 @@ export default function Home() {
     try { await createVenta(payload); showToast('Venta agregada', 'success'); } catch (err) { showToast('Error: ' + err.message, 'error'); throw err; }
   }
 
-  const handleAnularVenta = async (v) => {
-    if (!confirm('¿Estás seguro de que querés anular esta factura? Se creará una Nota de Crédito pendiente para emitir.')) return
+  const handleBulkAnular = async () => {
+    const toAnular = selectedVentas.filter(v => v.status === 'facturado')
+    if (toAnular.length === 0) return
+    if (!confirm(`¿Estás seguro de que querés anular las ${toAnular.length} facturas seleccionadas?`)) return
     
     try {
-      const nroCompArr = (v.nro_comprobante || '0-0').split('-')
-      const payload = {
-        cliente: v.cliente,
-        monto: v.monto,
-        fecha: new Date().toISOString(),
-        status: 'pendiente',
-        datos_fiscales: {
-          ...v.datos_fiscales,
-          tipo_cbte: 13, // Nota de Crédito C
-          cbte_asoc: {
-            tipo: v.datos_fiscales?.tipo_cbte || 11,
-            pto_vta: parseInt(nroCompArr[0]),
-            nro: parseInt(nroCompArr[1]),
-            fecha: v.datos_fiscales?.fecha_emision || v.fecha.split('T')[0]
-          },
-          comprobante_numero: null,
-          cae: null,
-          cae_vto: null,
-          afip_envio_fecha: null,
-          error_detalle: null
+      const payloads = toAnular.map(v => {
+        const nroCompArr = (v.nro_comprobante || '0-0').split('-')
+        return {
+          cliente: v.cliente,
+          monto: v.monto,
+          fecha: new Date().toISOString(),
+          status: 'pendiente',
+          datos_fiscales: {
+            ...v.datos_fiscales,
+            tipo_cbte: 13,
+            cbte_asoc: {
+              tipo: v.datos_fiscales?.tipo_cbte || 11,
+              pto_vta: parseInt(nroCompArr[0]),
+              nro: parseInt(nroCompArr[1]),
+              fecha: v.datos_fiscales?.fecha_emision || v.fecha.split('T')[0]
+            },
+            comprobante_numero: null,
+            cae: null,
+            cae_vto: null,
+            afip_envio_fecha: null,
+            error_detalle: null
+          }
         }
-      }
-      await createVenta(payload)
-      showToast('Nota de Crédito creada como pendiente', 'success')
-      setDetailVenta(null)
+      })
+      await bulkCreateVentas(payloads)
+      showToast(`${toAnular.length} Notas de Crédito creadas`, 'success')
+      setSelectedIds(new Set())
     } catch (err) {
-      showToast('Error al crear NC: ' + err.message, 'error')
+      showToast('Error en anulación masiva: ' + err.message, 'error')
     }
   }
 
@@ -525,11 +529,10 @@ export default function Home() {
             onSaveEdit={handleEditVenta}
             onRetry={handleRetry}
             onEmit={handleEmitSingleInvoice}
-            onAnular={handleAnularVenta}
           />
         </div>
 
-        <EmitirFacturaBar selectedCount={selectedIds.size} selectedVentas={selectedVentas} onEmitir={() => handleInvoice()} onClear={handleClearSelection} onExport={handleExportSelection} onBulkDelete={handleBulkDelete} onBulkRetry={handleBulkRetry} onBulkArchive={handleBulkArchive} />
+        <EmitirFacturaBar selectedCount={selectedIds.size} selectedVentas={selectedVentas} onEmitir={() => handleInvoice()} onClear={handleClearSelection} onExport={handleExportSelection} onBulkDelete={handleBulkDelete} onBulkRetry={handleBulkRetry} onBulkArchive={handleBulkArchive} onBulkAnular={handleBulkAnular} />
 
         <SaleDetailDrawer venta={detailVenta} isOpen={!!detailVenta} onClose={() => { setDetailVenta(null); setDetailVentaEditMode(false) }} onRetry={handleRetry} onSave={handleEditVenta} onAnular={handleAnularVenta} initialEditMode={detailVentaEditMode} />
         <AddSaleModal isOpen={addModalOpen} onClose={() => setAddModalOpen(false)} onSave={handleCreateVenta} searchClientes={searchClientes} />

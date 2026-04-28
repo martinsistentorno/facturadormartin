@@ -57,8 +57,7 @@ export default function SalesTable({
   onEdit, 
   onSaveEdit, 
   onRetry,
-  onEmit,
-  onAnular
+  onEmit
 }) {
   const { emisor } = useConfig()
   const [sortKey, setSortKey] = useState('fecha')
@@ -621,15 +620,6 @@ export default function SalesTable({
                             title="Descargar PDF"
                           >
                             <FileDown size={16} />
-                          </button>
-                        )}
-                        {venta.status === 'facturado' && [11, 1, 6].includes(venta.datos_fiscales?.tipo_cbte || 11) && onAnular && (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); onAnular(venta) }}
-                            className="p-2 text-text-muted hover:text-coral hover:bg-coral/10 rounded-lg transition-all cursor-pointer"
-                            title="Emitir Nota de Crédito"
-                          >
-                            <RotateCcw size={16} className="rotate-[-45deg]" />
                           </button>
                         )}
                       </div>
