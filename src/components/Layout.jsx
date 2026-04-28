@@ -30,7 +30,7 @@ export default function Layout({ children, headerActions }) {
           <div className="flex items-center gap-2">
             <img src="/logo.png" alt="Command Logo" className="h-6 md:h-8 w-auto object-contain" />
             <span className="text-[10px] md:text-xs font-black text-text-primary uppercase tracking-widest ml-1 border-l-2 border-border pl-2 md:pl-3 hidden md:inline-block">
-              Facturador
+              Marteeeen
             </span>
           </div>
           
