@@ -1,10 +1,10 @@
-import { X, FileDown, Edit2, RotateCcw, Calendar, CreditCard, User, ShieldCheck, Clock, Save, Loader2, Mail, MapPin, Package, FileText } from 'lucide-react';
+import { X, FileDown, Edit2, RotateCcw, Calendar, CreditCard, User, ShieldCheck, Clock, Save, Loader2, Mail, MapPin, Package, FileText, Link2 } from 'lucide-react';
 import StatusBadge from './StatusBadge';
 import { generateInvoicePdf } from '../utils/invoicePdf';
 import { useEffect, useState } from 'react';
 import { useConfig } from '../context/ConfigContext';
 import { translatePaymentMethod, simplifyPaymentMethod } from '../utils/paymentMethods';
-import SaleFormFields, { CONCEPTOS, UNIDADES_MEDIDA } from './SaleFormFields';
+import SaleFormFields, { CONCEPTOS, UNIDADES_MEDIDA, TIPOS_COMPROBANTE } from './SaleFormFields';
 
 export default function SaleDetailDrawer({ venta, isOpen, onClose, onSave, onRetry, initialEditMode = false }) {
   const { emisor } = useConfig();
@@ -20,6 +20,7 @@ export default function SaleDetailDrawer({ venta, isOpen, onClose, onSave, onRet
   useEffect(() => {
     if (venta) {
       const df = venta.datos_fiscales || {};
+      const asoc = df.cbte_asoc || {};
       setEditForm({
         cliente: venta.cliente || '',
         cuit: df.cuit || '',
@@ -38,6 +39,14 @@ export default function SaleDetailDrawer({ venta, isOpen, onClose, onSave, onRet
         formaPago: simplifyPaymentMethod(df.forma_pago || 'Contado'),
         fechaEmision: df.fecha_emision || new Date().toISOString().split('T')[0],
         tipoCbte: df.tipo_cbte || emisor?.tipo_cbte || 11,
+        // Comprobante asociado
+        cbteAsocTipo: asoc.tipo || 11,
+        cbteAsocNroFmt: asoc.pto_vta && asoc.nro
+          ? `${String(asoc.pto_vta).padStart(4, '0')}-${String(asoc.nro).padStart(8, '0')}`
+          : '',
+        cbteAsocPtoVta: asoc.pto_vta || 0,
+        cbteAsocNro: asoc.nro || 0,
+        cbteAsocFecha: asoc.fecha || '',
       });
       
       // Auto-open in editing if it's pending
@@ -123,6 +132,7 @@ export default function SaleDetailDrawer({ venta, isOpen, onClose, onSave, onRet
     setSaving(true);
     try {
       const needsService = editForm.concepto === 2 || editForm.concepto === 3;
+      const needsCbteAsoc = editForm.tipoCbte === 13 || editForm.tipoCbte === 12;
 
       if (onSave) {
         await onSave(venta.id, {
@@ -143,6 +153,14 @@ export default function SaleDetailDrawer({ venta, isOpen, onClose, onSave, onRet
               periodo_desde: editForm.periodoDesde,
               periodo_hasta: editForm.periodoHasta,
               vto_pago: editForm.vtoPago,
+            } : {}),
+            ...(needsCbteAsoc ? {
+              cbte_asoc: {
+                tipo: editForm.cbteAsocTipo || 11,
+                pto_vta: editForm.cbteAsocPtoVta || 0,
+                nro: editForm.cbteAsocNro || 0,
+                fecha: editForm.cbteAsocFecha || '',
+              }
             } : {}),
             forma_pago: editForm.formaPago,
             fecha_emision: editForm.fechaEmision,
@@ -249,6 +267,23 @@ export default function SaleDetailDrawer({ venta, isOpen, onClose, onSave, onRet
                   <InfoRow label="Descripción" value={df.descripcion || 'Productos varios'} />
                   <InfoRow label="Cantidad" value={`${df.cantidad || 1} ${unidadLabel}`} />
                 </Section>
+
+                {df.cbte_asoc && df.cbte_asoc.nro > 0 && (
+                  <Section title="Comprobante Asociado" icon={Link2}>
+                    <InfoRow
+                      label="Tipo"
+                      value={TIPOS_COMPROBANTE.find(t => t.value === df.cbte_asoc.tipo)?.label || `Tipo ${df.cbte_asoc.tipo}`}
+                    />
+                    <InfoRow
+                      label="Número"
+                      value={`${String(df.cbte_asoc.pto_vta || 0).padStart(4, '0')}-${String(df.cbte_asoc.nro || 0).padStart(8, '0')}`}
+                      mono
+                    />
+                    {df.cbte_asoc.fecha && (
+                      <InfoRow label="Fecha" value={formatDate(df.cbte_asoc.fecha)} />
+                    )}
+                  </Section>
+                )}
 
                 {(venta.cae || venta.nro_comprobante) && (
                   <Section title="Datos Fiscales" icon={ShieldCheck}>

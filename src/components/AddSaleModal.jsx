@@ -24,6 +24,12 @@ function getEmptyForm(conceptoDefault = 1) {
     formaPago: 'Contado - Efectivo',
     fechaEmision: TODAY,
     tipoCbte: 11,
+    // Comprobante asociado (NC/ND)
+    cbteAsocTipo: 11,
+    cbteAsocNroFmt: '',
+    cbteAsocPtoVta: 0,
+    cbteAsocNro: 0,
+    cbteAsocFecha: '',
   };
 }
 
@@ -91,6 +97,7 @@ export default function AddSaleModal({ isOpen, onClose, onSave, searchClientes }
     setLoading(true);
     try {
       const needsService = formData.concepto === 2 || formData.concepto === 3;
+      const needsCbteAsoc = formData.tipoCbte === 13 || formData.tipoCbte === 12;
 
       await onSave({
         cliente: formData.cliente,
@@ -111,6 +118,14 @@ export default function AddSaleModal({ isOpen, onClose, onSave, searchClientes }
             periodo_desde: formData.periodoDesde,
             periodo_hasta: formData.periodoHasta,
             vto_pago: formData.vtoPago,
+          } : {}),
+          ...(needsCbteAsoc ? {
+            cbte_asoc: {
+              tipo: formData.cbteAsocTipo || 11,
+              pto_vta: formData.cbteAsocPtoVta || 0,
+              nro: formData.cbteAsocNro || 0,
+              fecha: formData.cbteAsocFecha || '',
+            }
           } : {}),
           forma_pago: formData.formaPago,
           fecha_emision: formData.fechaEmision,

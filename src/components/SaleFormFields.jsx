@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { User, Hash, Mail, MapPin, FileText, Package, CreditCard, DollarSign, Calendar, Loader2, ChevronDown } from 'lucide-react';
+import { User, Hash, Mail, MapPin, FileText, Package, CreditCard, DollarSign, Calendar, Loader2, ChevronDown, Link2 } from 'lucide-react';
 
 // ─── Constantes ───
 const FORMAS_PAGO = [
@@ -127,6 +127,7 @@ export default function SaleFormFields({
   const suggestionsRef = useRef(null);
 
   const needsServiceDates = form.concepto === 2 || form.concepto === 3;
+  const needsCbteAsoc = form.tipoCbte === 13 || form.tipoCbte === 12;
 
   useEffect(() => {
     setServiceOpen(needsServiceDates);
@@ -183,6 +184,73 @@ export default function SaleFormFields({
               onChange={(e) => setForm({ ...form, tipoCbte: parseInt(e.target.value) })}
               options={TIPOS_COMPROBANTE}
             />
+          </div>
+        </>
+      )}
+
+      {/* ── Comprobante Asociado (solo NC/ND) ── */}
+      {needsCbteAsoc && (
+        <>
+          <SectionDivider label="Comprobante Asociado" icon={Link2} />
+          <div className="bg-[#7C4DFF]/5 border border-[#7C4DFF]/15 rounded-xl p-3 space-y-3 animate-fade-in">
+            <p className="text-[9px] font-bold uppercase tracking-widest text-[#7C4DFF]/70 mb-1">
+              Ingresá los datos de la factura original que se anula/modifica
+            </p>
+            <div className="grid grid-cols-12 gap-3">
+              <div className="col-span-5">
+                <MiniSelect
+                  label="Tipo Cbte Asociado"
+                  icon={FileText}
+                  value={form.cbteAsocTipo || 11}
+                  onChange={(e) => setForm({ ...form, cbteAsocTipo: parseInt(e.target.value) })}
+                  options={[
+                    { value: 11, label: 'Factura C' },
+                    { value: 12, label: 'Nota de Débito C' },
+                    { value: 13, label: 'Nota de Crédito C' },
+                    { value: 15, label: 'Recibo C' },
+                  ]}
+                />
+              </div>
+              <div className="col-span-7">
+                <MiniInput
+                  label="Nro Comprobante (XXXX-XXXXXXXX)"
+                  icon={Hash}
+                  value={form.cbteAsocNroFmt || ''}
+                  onChange={(e) => {
+                    let raw = e.target.value.replace(/[^0-9-]/g, '');
+                    // Auto-format: insert dash after 4 digits
+                    const digits = raw.replace(/-/g, '');
+                    if (digits.length > 4) {
+                      raw = digits.slice(0, 4) + '-' + digits.slice(4, 12);
+                    } else {
+                      raw = digits;
+                    }
+                    // Parse into PtoVta + Nro
+                    const parts = raw.split('-');
+                    const pv = parseInt(parts[0] || '0');
+                    const nro = parseInt(parts[1] || '0');
+                    setForm({
+                      ...form,
+                      cbteAsocNroFmt: raw,
+                      cbteAsocPtoVta: pv || 0,
+                      cbteAsocNro: nro || 0,
+                    });
+                  }}
+                  placeholder="0003-00000045"
+                  required
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1">
+              <MiniInput
+                label="Fecha del Comprobante Original"
+                icon={Calendar}
+                type="date"
+                value={form.cbteAsocFecha || ''}
+                onChange={(e) => setForm({ ...form, cbteAsocFecha: e.target.value })}
+                required
+              />
+            </div>
           </div>
         </>
       )}

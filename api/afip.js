@@ -215,7 +215,7 @@ export default async function handler(req, res) {
         // Obtener último comprobante y calcular el siguiente
         let lastVoucher
         try {
-          lastVoucher = await afip.ElectronicBilling.getLastVoucher(ptoVta, tipoCbte)
+          lastVoucher = await afip.ElectronicBilling.getLastVoucher(ptoVta, cbteTipoVenta)
         } catch (afipErr) {
           console.error('❌ Error detallado de AFIP SDK:', JSON.stringify(afipErr, null, 2))
           console.error('❌ afipErr.message:', afipErr.message)
@@ -287,6 +287,23 @@ export default async function handler(req, res) {
           if (periodoDesde) data['FchServDesde'] = parseInt(periodoDesde.replace(/-/g, ''))
           if (periodoHasta) data['FchServHasta'] = parseInt(periodoHasta.replace(/-/g, ''))
           if (vtoPago) data['FchVtoPago'] = parseInt(vtoPago.replace(/-/g, ''))
+        }
+
+        // Comprobante asociado obligatorio para NC (13) y ND (12)
+        if (cbteTipoVenta === 13 || cbteTipoVenta === 12) {
+          const asoc = v.datos_fiscales?.cbte_asoc
+          if (asoc && asoc.nro) {
+            data['CbtesAsoc'] = [{
+              'Tipo': asoc.tipo || 11,
+              'PtoVta': asoc.pto_vta || ptoVta,
+              'Nro': parseInt(asoc.nro),
+              'Cuit': parseInt(cuit),
+              'CbteFch': asoc.fecha ? parseInt(asoc.fecha.replace(/-/g, '')) : cbteFch
+            }]
+            console.log(`CbtesAsoc: Tipo=${asoc.tipo}, PtoVta=${asoc.pto_vta}, Nro=${asoc.nro}`)
+          } else {
+            console.warn('⚠️ NC/ND sin comprobante asociado — AFIP podría rechazarlo')
+          }
         }
 
         console.log(`Enviando comprobante a AFIP...`)
