@@ -76,6 +76,9 @@ export default function Home() {
           String(v.monto || ''),
           v.status,
           v.datos_fiscales?.forma_pago,
+          v.datos_fiscales?.cbte_asoc?.nro 
+            ? `${String(v.datos_fiscales.cbte_asoc.pto_vta || 0).padStart(4, '0')}-${String(v.datos_fiscales.cbte_asoc.nro).padStart(8, '0')}` 
+            : '',
           v.mp_payment_id ? `MeLi #${v.mp_payment_id.replace(/^order-/, '')}` : '',
           v.mp_payment_id ? `MP #${v.mp_payment_id.replace(/^order-/, '')}` : '',
         ].filter(Boolean).join(' ').toLowerCase()

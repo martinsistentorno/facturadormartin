@@ -1,15 +1,17 @@
-import { LogOut, Settings } from 'lucide-react'
+import { LogOut, Settings, Smartphone } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useConfig } from '../context/ConfigContext'
 import { useState, useEffect } from 'react'
 import EmisorSetupModal from './EmisorSetupModal'
 import { EMISOR } from '../config/emisor'
+import { usePWA } from '../hooks/usePWA'
 
 export default function Layout({ children, headerActions }) {
   const { user, signOut } = useAuth()
   const { emisor, saveConfig } = useConfig()
   const [afipStatus, setAfipStatus] = useState(null)
   const [configOpen, setConfigOpen] = useState(false)
+  const { isInstallable, installPWA } = usePWA()
 
   useEffect(() => {
     fetch('/api/afip-status')
@@ -61,6 +63,17 @@ export default function Layout({ children, headerActions }) {
                 <span className="text-[9px] font-bold uppercase tracking-widest text-text-secondary leading-none">M. PAGO</span>
               </div>
             </div>
+
+            {isInstallable && (
+              <button
+                onClick={installPWA}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#7C4DFF]/10 text-[#7C4DFF] hover:bg-[#7C4DFF] hover:text-white transition-all cursor-pointer border border-[#7C4DFF]/20 group"
+                title="Instalar como App"
+              >
+                <Smartphone size={14} className="group-hover:scale-110 transition-transform" />
+                <span className="text-[10px] font-bold uppercase tracking-widest hidden md:inline">Instalar App</span>
+              </button>
+            )}
 
             {headerActions}
 

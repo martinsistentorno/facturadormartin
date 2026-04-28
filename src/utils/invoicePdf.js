@@ -125,10 +125,18 @@ export async function generateInvoicePdf(venta, emisor) {
 
   // Período de servicio (si aplica)
   if ((df.concepto === 2 || df.concepto === 3) && df.periodo_desde) {
-    doc.text(`Período: ${df.periodo_desde} a ${df.periodo_hasta || '—'}`, margin + 5, receptorY);
-    if (df.vto_pago) {
-      doc.text(`Vto. Pago: ${df.vto_pago}`, margin + 110, receptorY);
-    }
+    receptorY += 5;
+  }
+  
+  // Comprobante Asociado (NC/ND)
+  if (df.cbte_asoc && df.cbte_asoc.nro) {
+    const asoc = df.cbte_asoc;
+    const asocLabel = CBTE_LABELS[asoc.tipo]?.name || `Tipo ${asoc.tipo}`;
+    const asocNro = `${String(asoc.pto_vta || 0).padStart(4, '0')}-${String(asoc.nro).padStart(8, '0')}`;
+    const asocFecha = asoc.fecha ? new Date(asoc.fecha + 'T12:00:00').toLocaleDateString('es-AR') : '';
+    
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Comprobante Asociado: ${asocLabel} ${asocNro}${asocFecha ? ` del ${asocFecha}` : ''}`, margin + 5, receptorY);
     receptorY += 5;
   }
 
