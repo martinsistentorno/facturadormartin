@@ -1,5 +1,5 @@
 // Simple service worker for PWA installability
-const CACHE_NAME = 'martin-facturador-cache-v1';
+const CACHE_NAME = 'martin-facturador-cache-v2';
 const urlsToCache = [
   '/',
   '/index.html',
