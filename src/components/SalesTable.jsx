@@ -57,7 +57,8 @@ export default function SalesTable({
   onEdit, 
   onSaveEdit, 
   onRetry,
-  onEmit 
+  onEmit,
+  onAnular
 }) {
   const { emisor } = useConfig()
   const [sortKey, setSortKey] = useState('fecha')
@@ -442,7 +443,7 @@ export default function SalesTable({
                     onClick={() => handleRowClick(venta)}
                     className={`
                       transition-all duration-150 cursor-pointer border-b border-border
-                      ${!isSelected && !isError ? 'hover:bg-white/50' : ''}
+                      ${!isSelected && !isError ? 'hover:bg-surface-alt/80' : ''}
                       ${isError ? 'bg-red-subtle/50 hover:bg-red-subtle' : ''}
                       ${isSelected ? 'bg-blue-subtle border-l-[3px] border-l-blue hover:bg-blue/10 relative' : 'border-l-[3px] border-l-transparent'}
                     `}
@@ -620,6 +621,15 @@ export default function SalesTable({
                             title="Descargar PDF"
                           >
                             <FileDown size={16} />
+                          </button>
+                        )}
+                        {venta.status === 'facturado' && [11, 1, 6].includes(venta.datos_fiscales?.tipo_cbte || 11) && onAnular && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); onAnular(venta) }}
+                            className="p-2 text-text-muted hover:text-coral hover:bg-coral/10 rounded-lg transition-all cursor-pointer"
+                            title="Emitir Nota de Crédito"
+                          >
+                            <RotateCcw size={16} className="rotate-[-45deg]" />
                           </button>
                         )}
                       </div>

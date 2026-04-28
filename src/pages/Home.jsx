@@ -525,6 +525,7 @@ export default function Home() {
             onSaveEdit={handleEditVenta}
             onRetry={handleRetry}
             onEmit={handleEmitSingleInvoice}
+            onAnular={handleAnularVenta}
           />
         </div>
 
