@@ -1,14 +1,19 @@
-import { useState, useEffect } from 'react';
+let savedPrompt = null;
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    savedPrompt = e;
+  });
+}
 
 export function usePWA() {
-  const [deferredPrompt, setDeferredPrompt] = useState(null);
-  const [isInstallable, setIsInstallable] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState(savedPrompt);
+  const [isInstallable, setIsInstallable] = useState(!!savedPrompt);
 
   useEffect(() => {
     const handler = (e) => {
-      // Prevent Chrome 67 and earlier from automatically showing the prompt
       e.preventDefault();
-      // Stash the event so it can be triggered later.
       setDeferredPrompt(e);
       setIsInstallable(true);
     };
