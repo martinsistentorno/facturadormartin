@@ -28,7 +28,7 @@ export default function Layout({ children, headerActions }) {
         {/* ─── Top Header ─── */}
         <header className="flex items-center justify-between mb-8 relative">
           <div className="flex items-center gap-2">
-            <img src="/logo.jpg" alt="Command Logo" className="h-6 md:h-8 w-auto object-contain" />
+            <img src="/favicon.png" alt="Command Logo" className="h-6 md:h-8 w-auto object-contain" />
             <span className="text-[10px] md:text-xs font-black text-text-primary uppercase tracking-widest ml-1 border-l-2 border-border pl-2 md:pl-3 hidden md:inline-block">
               Marteeeen
             </span>
@@ -130,7 +130,7 @@ export default function Layout({ children, headerActions }) {
             <div className="flex flex-col items-center md:items-start gap-0.5">
               <span className="text-[8px] font-medium italic text-text-muted">Hecho por</span>
               <a href="https://www.commandsoluciones.com.ar" target="_blank" rel="noopener noreferrer" className="hover:scale-105 transition-transform">
-                <img src="/logo.jpg" alt="Marteeeen" className="h-5 w-auto" />
+                <img src="/favicon.png" alt="Marteeeen" className="h-5 w-auto" />
               </a>
             </div>
 
