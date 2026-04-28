@@ -426,6 +426,11 @@ export default function Home() {
     try {
       const payloads = toAnular.map(v => {
         const nroCompArr = (v.nro_comprobante || '0-0').split('-')
+        const tipoOriginal = v.datos_fiscales?.tipo_cbte || 11
+        let tipoNC = 13 // Default NC C
+        if (tipoOriginal === 1) tipoNC = 3  // NC A
+        if (tipoOriginal === 6) tipoNC = 8  // NC B
+        
         return {
           cliente: v.cliente,
           monto: v.monto,
@@ -433,9 +438,9 @@ export default function Home() {
           status: 'pendiente',
           datos_fiscales: {
             ...v.datos_fiscales,
-            tipo_cbte: 13,
+            tipo_cbte: tipoNC,
             cbte_asoc: {
-              tipo: v.datos_fiscales?.tipo_cbte || 11,
+              tipo: tipoOriginal,
               pto_vta: parseInt(nroCompArr[0]),
               nro: parseInt(nroCompArr[1]),
               fecha: v.datos_fiscales?.fecha_emision || v.fecha.split('T')[0]
@@ -460,6 +465,11 @@ export default function Home() {
     if (!confirm('¿Estás seguro de que querés anular esta factura?')) return
     try {
       const nroCompArr = (v.nro_comprobante || '0-0').split('-')
+      const tipoOriginal = v.datos_fiscales?.tipo_cbte || 11
+      let tipoNC = 13
+      if (tipoOriginal === 1) tipoNC = 3
+      if (tipoOriginal === 6) tipoNC = 8
+
       await createVenta({
         cliente: v.cliente,
         monto: v.monto,
@@ -467,9 +477,9 @@ export default function Home() {
         status: 'pendiente',
         datos_fiscales: {
           ...v.datos_fiscales,
-          tipo_cbte: 13,
+          tipo_cbte: tipoNC,
           cbte_asoc: {
-            tipo: v.datos_fiscales?.tipo_cbte || 11,
+            tipo: tipoOriginal,
             pto_vta: parseInt(nroCompArr[0]),
             nro: parseInt(nroCompArr[1]),
             fecha: v.datos_fiscales?.fecha_emision || v.fecha.split('T')[0]
