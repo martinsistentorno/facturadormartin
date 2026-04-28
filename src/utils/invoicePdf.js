@@ -176,6 +176,15 @@ export async function generateInvoicePdf(venta, emisor) {
   // ─── QR de AFIP ───
   try {
     const cleanCuit = (val) => String(val || '').replace(/\D/g, '');
+    const numDoc = cleanCuit(df.cuit);
+    
+    let tipoDocRec = 99; // Consumidor Final
+    if (numDoc.length >= 10) {
+      tipoDocRec = 80; // CUIT (asumimos CUIT si es largo)
+    } else if (numDoc.length >= 7) {
+      tipoDocRec = 96; // DNI
+    }
+
     const nroCompPto = (venta.nro_comprobante || '0-0').split('-');
     
     const qrData = {
@@ -188,8 +197,8 @@ export async function generateInvoicePdf(venta, emisor) {
       importe: parseFloat(Number(venta.monto).toFixed(2)),
       moneda: "PES",
       ctz: 1,
-      tipoDocRec: numDocumento === '' ? 99 : 80,
-      nroDocRec: numDocumento === '' ? 0 : Number(cleanCuit(numDocumento)),
+      tipoDocRec: tipoDocRec,
+      nroDocRec: tipoDocRec === 99 ? 0 : Number(numDoc),
       tipoCodAut: "E",
       codAut: Number(venta.cae)
     };
