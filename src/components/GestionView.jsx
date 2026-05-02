@@ -1,11 +1,12 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { 
   FolderKanban, FolderPlus, Tag, X, Plus, ChevronRight, ChevronDown,
-  Search, Users, TrendingUp, Calendar, FileText, ArrowUpDown
+  Search, Users, TrendingUp, Calendar, FileText, ArrowUpDown, FileDown
 } from 'lucide-react'
 import { LABEL_COLORS } from '../config/colors'
 import { hasEtiqueta } from '../utils/labelHelpers'
 import AnalyticsDashboard from './AnalyticsDashboard'
+import { exportClientsToExcel, exportClientsToCSV } from '../utils/exportUtils'
 
 export default function GestionView({ 
   ventas = [],
@@ -26,6 +27,26 @@ export default function GestionView({
   const [clientSearch, setClientSearch] = useState('')
   const [sortBy, setSortBy] = useState('total')
   const [selectedClient, setSelectedClient] = useState(null)
+
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 20
+
+  const [showExportOptions, setShowExportOptions] = useState(false)
+  const exportRef = useRef(null)
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [clientSearch, sortBy])
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (exportRef.current && !exportRef.current.contains(event.target)) {
+        setShowExportOptions(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   // ─── Build client directory from ventas ───
   const clients = useMemo(() => {
@@ -153,18 +174,45 @@ export default function GestionView({
               <option value="recent">Más reciente</option>
               <option value="name">Alfabético</option>
             </select>
+            
+            {/* Export Dropdown */}
+            <div className="relative" ref={exportRef}>
+              <button 
+                onClick={() => setShowExportOptions(!showExportOptions)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/60 bg-white text-[10px] font-bold uppercase tracking-widest text-text-muted hover:text-text-primary hover:border-border transition-all cursor-pointer"
+              >
+                <FileDown size={13} /> Exportar <ChevronDown size={12} className="ml-0.5" />
+              </button>
+              
+              {showExportOptions && (
+                <div className="absolute right-0 top-full mt-2 w-40 bg-white rounded-xl shadow-lg border border-border/40 py-1 z-50 animate-slide-down">
+                  <button 
+                    onClick={() => { exportClientsToExcel(sortedClients); setShowExportOptions(false); }}
+                    className="w-full text-left px-4 py-2 text-xs font-semibold text-text-secondary hover:bg-surface-alt hover:text-blue transition-colors cursor-pointer"
+                  >
+                    Exportar Excel (.xlsx)
+                  </button>
+                  <button 
+                    onClick={() => { exportClientsToCSV(sortedClients); setShowExportOptions(false); }}
+                    className="w-full text-left px-4 py-2 text-xs font-semibold text-text-secondary hover:bg-surface-alt hover:text-blue transition-colors cursor-pointer"
+                  >
+                    Exportar CSV
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
         {/* Client table */}
         <div className="bg-white border border-border/40 rounded-2xl overflow-hidden shadow-sm">
           {/* Table header */}
-          <div className="grid grid-cols-[1fr_120px_100px_80px_100px] gap-2 px-4 py-2.5 bg-surface-alt/50 border-b border-border/30 text-[9px] font-black uppercase tracking-[0.15em] text-text-muted">
+          <div className="grid grid-cols-[1fr_80px] md:grid-cols-[1fr_120px_100px_80px_100px] gap-2 px-4 py-2.5 bg-surface-alt/50 border-b border-border/30 text-[9px] font-black uppercase tracking-[0.15em] text-text-muted">
             <span>Cliente</span>
-            <span className="text-right">Total Facturado</span>
-            <span className="text-right">Total Ventas</span>
-            <span className="text-center">Facturas</span>
-            <span className="text-right">Última Act.</span>
+            <span className="text-right">Facturado</span>
+            <span className="text-right hidden md:block">Total Ventas</span>
+            <span className="text-center hidden md:block">Facturas</span>
+            <span className="text-right hidden md:block">Última Act.</span>
           </div>
 
           {/* Rows */}
@@ -173,30 +221,64 @@ export default function GestionView({
               <div className="px-4 py-8 text-center text-xs text-text-muted">
                 {clientSearch ? 'Sin resultados para esa búsqueda' : 'No hay clientes registrados'}
               </div>
-            ) : sortedClients.map(c => (
-              <div key={c.nombre}>
-                <button
-                  onClick={() => setSelectedClient(selectedClient?.nombre === c.nombre ? null : c)}
-                  className={`w-full grid grid-cols-[1fr_120px_100px_80px_100px] gap-2 px-4 py-3 text-left transition-all cursor-pointer border-b border-border/10 last:border-0
-                    ${selectedClient?.nombre === c.nombre ? 'bg-blue/5' : 'hover:bg-surface-alt/50'}
-                  `}
-                >
-                  <div className="flex flex-col min-w-0">
-                    <span className="text-xs font-bold text-text-primary truncate">{c.nombre}</span>
-                    {c.cuit && <span className="text-[10px] text-text-muted">{c.cuit}</span>}
-                  </div>
-                  <span className="text-xs font-black text-green text-right tabular-nums self-center">{formatMoney(c.totalFacturado)}</span>
-                  <span className="text-xs font-semibold text-text-secondary text-right tabular-nums self-center">{formatMoney(c.totalVentas)}</span>
-                  <span className="text-xs font-bold text-text-muted text-center tabular-nums self-center">{c.cantFacturas}</span>
-                  <span className="text-[10px] text-text-muted text-right self-center">{formatDate(c.ultimaFecha)}</span>
-                </button>
+            ) : (() => {
+              const totalPages = Math.ceil(sortedClients.length / itemsPerPage)
+              const paginatedClients = sortedClients.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+              
+              return (
+                <>
+                  {paginatedClients.map(c => (
+                    <div key={c.nombre}>
+                      <button
+                        onClick={() => setSelectedClient(selectedClient?.nombre === c.nombre ? null : c)}
+                        className={`w-full grid grid-cols-[1fr_80px] md:grid-cols-[1fr_120px_100px_80px_100px] gap-2 px-4 py-3 text-left transition-all cursor-pointer border-b border-border/10 last:border-0
+                          ${selectedClient?.nombre === c.nombre ? 'bg-blue/5' : 'hover:bg-surface-alt/50'}
+                        `}
+                      >
+                        <div className="flex flex-col min-w-0 pr-2">
+                          <span className="text-xs font-bold text-text-primary truncate">{c.nombre}</span>
+                          {c.cuit && <span className="text-[10px] text-text-muted">{c.cuit}</span>}
+                        </div>
+                        <span className="text-xs font-black text-green text-right tabular-nums self-center">{formatMoney(c.totalFacturado)}</span>
+                        <span className="text-xs font-semibold text-text-secondary text-right tabular-nums self-center hidden md:block">{formatMoney(c.totalVentas)}</span>
+                        <span className="text-xs font-bold text-text-muted text-center tabular-nums self-center hidden md:block">{c.cantFacturas}</span>
+                        <span className="text-[10px] text-text-muted text-right self-center hidden md:block">{formatDate(c.ultimaFecha)}</span>
+                      </button>
 
-                {/* Inline history drawer */}
-                {selectedClient?.nombre === c.nombre && (
-                  <ClientHistory client={c} formatMoney={formatMoney} formatDate={formatDate} />
-                )}
-              </div>
-            ))}
+                      {/* Inline history drawer */}
+                      {selectedClient?.nombre === c.nombre && (
+                        <ClientHistory client={c} formatMoney={formatMoney} formatDate={formatDate} />
+                      )}
+                    </div>
+                  ))}
+                  
+                  {/* Pagination Controls */}
+                  {totalPages > 1 && (
+                    <div className="sticky bottom-0 bg-white border-t border-border/20 p-3 flex justify-between items-center z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted ml-2">
+                        Página {currentPage} de {totalPages}
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                          disabled={currentPage === 1}
+                          className="px-3 py-1.5 rounded text-xs font-bold bg-surface-alt hover:bg-border/60 text-text-primary disabled:opacity-30 transition-colors cursor-pointer"
+                        >
+                          Anterior
+                        </button>
+                        <button
+                          onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                          disabled={currentPage === totalPages}
+                          className="px-3 py-1.5 rounded text-xs font-bold bg-surface-alt hover:bg-border/60 text-text-primary disabled:opacity-30 transition-colors cursor-pointer"
+                        >
+                          Siguiente
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )
+            })()}
           </div>
         </div>
       </div>

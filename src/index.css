@@ -7,22 +7,22 @@
    ─────────────────────────────────────────── */
 
 @theme {
-  --color-base: #F9F7F2;  /* El marfil original de CMD Soluciones */
+  --color-base: #F4F0E6;  /* Ligeramente más oscuro para que el blanco resalte más */
   --color-surface: #FFFFFF;
-  --color-surface-alt: #F1EFE9;
-  --color-border: #E2DDD1;
-  --color-border-subtle: #F1EFE9;
+  --color-surface-alt: #EBE5D8; /* Mayor contraste contra el blanco */
+  --color-border: #D6D0C4; /* Bordes más definidos */
+  --color-border-subtle: #E3DED2;
 
   --color-text-primary: #121212;
   --color-text-secondary: #3D3D3D;
-  --color-text-muted: #8E8A81;
+  --color-text-muted: #757168; /* Texto atenuado un poco más oscuro para legibilidad */
 
-  /* Colores de Marca Command (Nuevos/Refinados) */
-  --color-cmd-red: #C0443C;
-  --color-cmd-blue: #3460A8;
-  --color-cmd-yellow: #FFE100;
-  --color-cmd-green: #2D8F5E;
-  --color-cmd-purple: #7C4DFF;
+  /* Colores de Marca Command (Extraídos de captura) */
+  --color-cmd-red: #C0443C; /* Coral/Rojo */
+  --color-cmd-blue: #2C6473; /* Teal/Azul oscuro */
+  --color-cmd-yellow: #D4B230; /* Mostaza */
+  --color-cmd-green: #305D4A; /* Verde oscuro */
+  --color-cmd-purple: #814FFE; /* Púrpura vibrante */
   
   /* Colores utilitarios para Tailwind */
   --color-red: #C0443C;
@@ -152,6 +152,7 @@ h3 { font-size: clamp(1.1rem, 2vw, 1.3rem); line-height: 1.3; font-weight: 600; 
 .card-blue { background-color: var(--color-cmd-blue); }
 .card-red { background-color: var(--color-cmd-red); }
 .card-yellow { background-color: var(--color-cmd-yellow); }
+.card-purple { background-color: var(--color-cmd-purple); }
 
 .input-soft {
   background-color: #ffffff;

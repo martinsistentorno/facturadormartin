@@ -103,10 +103,10 @@ export default function StatsCards({ ventas, onCardClick, activeCard }) {
 
 
   const cards = [
-    { key: 'Facturadas', label: 'Total Facturado', amount: facturadasAmount, count: facturadas.length, color: 'bg-green', textColor: 'text-green', icon: FileCheck },
-    { key: 'Pendientes', label: 'Pendientes', amount: pendientesAmount, count: pendientes.length, color: 'bg-[#F59E0B]', textColor: 'text-[#F59E0B]', icon: Clock },
-    { key: 'Con Error', label: 'Errores AFIP', amount: conErrorAmount, count: conError.length, color: 'bg-red', textColor: 'text-red', icon: AlertCircle },
-    { key: 'Total Ventas', label: 'Total Movimientos', amount: totalActivasAmount, count: activas.length, color: 'bg-blue', textColor: 'text-blue', icon: Activity },
+    { key: 'Facturadas', label: 'Total Facturado', amount: facturadasAmount, count: facturadas.length, bgClass: 'card-green', textColor: 'text-green', icon: FileCheck },
+    { key: 'Pendientes', label: 'Pendientes', amount: pendientesAmount, count: pendientes.length, bgClass: 'card-yellow', textColor: 'text-[#b8960c]', icon: Clock },
+    { key: 'Con Error', label: 'Errores AFIP', amount: conErrorAmount, count: conError.length, bgClass: 'card-red', textColor: 'text-red', icon: AlertCircle },
+    { key: 'Total Ventas', label: 'Total Movimientos', amount: totalActivasAmount, count: activas.length, bgClass: 'card-blue', textColor: 'text-blue', icon: Activity },
   ]
 
   return (
@@ -237,7 +237,7 @@ export default function StatsCards({ ventas, onCardClick, activeCard }) {
                 key={card.key}
                 onClick={() => onCardClick(card.key, dataMap[card.key], timeframe)}
                 className={`relative px-6 py-4 md:px-8 md:py-5 flex flex-col justify-between text-left transition-all duration-300 outline-none cursor-pointer rounded-xl border border-border shadow-sm group
-                  ${isActive ? `${card.color} text-white border-transparent` : 'bg-white text-text-primary hover:bg-surface-alt'}
+                  ${isActive ? `${card.bgClass} text-white border-transparent` : 'bg-white text-text-primary hover:bg-surface-alt'}
                 `}
               >
                 <div className="flex items-center gap-2 mb-4">

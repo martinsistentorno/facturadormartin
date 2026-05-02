@@ -81,3 +81,111 @@ function downloadBlob(blob, filename) {
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
+
+/**
+ * Prepara datos de clientes para exportar.
+ */
+function prepareClientRows(clients) {
+  return clients.map(c => ({
+    'Cliente / Razón Social': c.nombre,
+    'CUIT': c.cuit || '—',
+    'Total Facturado': Number(c.totalFacturado) || 0,
+    'Total Movimientos': Number(c.totalVentas) || 0,
+    'Cantidad Facturas': c.cantFacturas,
+    'Cantidad Operaciones': c.cantTotal,
+    'Última Actividad': c.ultimaFecha ? new Date(c.ultimaFecha).toLocaleDateString('es-AR') : '—',
+  }));
+}
+
+export function exportClientsToCSV(clients, filename = 'directorio_clientes') {
+  const rows = prepareClientRows(clients);
+  if (rows.length === 0) return;
+
+  const headers = Object.keys(rows[0]);
+  const csvLines = [
+    headers.join(','),
+    ...rows.map(row =>
+      headers.map(h => {
+        const val = String(row[h] ?? '');
+        return val.includes(',') || val.includes('"') || val.includes('\n')
+          ? `"${val.replace(/"/g, '""')}"`
+          : val;
+      }).join(',')
+    )
+  ];
+
+  const csvString = '\uFEFF' + csvLines.join('\n');
+  const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+  downloadBlob(blob, `${filename}.csv`);
+}
+
+export function exportClientsToExcel(clients, filename = 'directorio_clientes') {
+  const rows = prepareClientRows(clients);
+  if (rows.length === 0) return;
+
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const colWidths = Object.keys(rows[0]).map(key => ({
+    wch: Math.max(key.length, ...rows.map(r => String(r[key] ?? '').length)) + 2
+  }));
+  ws['!cols'] = colWidths;
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Directorio');
+
+  const xlsxBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+  const blob = new Blob([xlsxBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  downloadBlob(blob, `${filename}.xlsx`);
+}
+
+/**
+ * Prepara datos del gráfico para exportar.
+ */
+function prepareChartRows(chartData) {
+  return chartData.map(d => ({
+    'Período': d.date,
+    'Operaciones Totales': d.total,
+    'Facturadas': d.facturadas,
+    'Pendientes': d.pendientes,
+    'Monto Facturado': Number(d.monto) || 0
+  }));
+}
+
+export function exportChartDataToCSV(chartData, filename = 'metricas_grafico') {
+  const rows = prepareChartRows(chartData);
+  if (rows.length === 0) return;
+
+  const headers = Object.keys(rows[0]);
+  const csvLines = [
+    headers.join(','),
+    ...rows.map(row =>
+      headers.map(h => {
+        const val = String(row[h] ?? '');
+        return val.includes(',') || val.includes('"') || val.includes('\n')
+          ? `"${val.replace(/"/g, '""')}"`
+          : val;
+      }).join(',')
+    )
+  ];
+
+  const csvString = '\uFEFF' + csvLines.join('\n');
+  const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+  downloadBlob(blob, `${filename}.csv`);
+}
+
+export function exportChartDataToExcel(chartData, filename = 'metricas_grafico') {
+  const rows = prepareChartRows(chartData);
+  if (rows.length === 0) return;
+
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const colWidths = Object.keys(rows[0]).map(key => ({
+    wch: Math.max(key.length, ...rows.map(r => String(r[key] ?? '').length)) + 2
+  }));
+  ws['!cols'] = colWidths;
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Métricas');
+
+  const xlsxBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+  const blob = new Blob([xlsxBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  downloadBlob(blob, `${filename}.xlsx`);
+}
