@@ -1,4 +1,6 @@
 export default function StatusBadge({ status }) {
+  const visualStatus = (status === 'archivada' || status === 'archivado') ? 'pendiente' : status;
+
   const config = {
     pendiente: {
       label: 'Pendiente',
@@ -30,9 +32,15 @@ export default function StatusBadge({ status }) {
       text: 'text-text-secondary',
       dot: 'bg-text-secondary',
     },
+    archivada: {
+      label: 'Archivada',
+      bg: 'bg-blue-subtle',
+      text: 'text-blue',
+      dot: 'bg-blue',
+    },
   }
 
-  const c = config[status] || config.pendiente
+  const c = config[visualStatus] || config.pendiente
 
   return (
     <span

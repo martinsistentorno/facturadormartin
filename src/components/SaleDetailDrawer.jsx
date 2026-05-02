@@ -1,13 +1,15 @@
-import { X, FileDown, Edit2, RotateCcw, Calendar, CreditCard, User, ShieldCheck, Clock, Save, Loader2, Mail, MapPin, Package, FileText, Link2 } from 'lucide-react';
+import { X, FileDown, Edit2, RotateCcw, Calendar, CreditCard, User, ShieldCheck, Clock, Save, Loader2, Mail, MapPin, Package, FileText, Link2, Percent, FolderKanban } from 'lucide-react';
 import StatusBadge from './StatusBadge';
 import { generateInvoicePdf } from '../utils/invoicePdf';
 import { useEffect, useState } from 'react';
 import { useConfig } from '../context/ConfigContext';
 import { translatePaymentMethod, simplifyPaymentMethod } from '../utils/paymentMethods';
-import SaleFormFields, { CONCEPTOS, UNIDADES_MEDIDA, TIPOS_COMPROBANTE } from './SaleFormFields';
+import SaleFormFields, { CONCEPTOS, UNIDADES_MEDIDA } from './SaleFormFields';
+import { getTiposComprobante, calcularIVA, getAlicuotaById, needsCbteAsociado } from '../utils/ivaHelpers';
+import { getEtiquetas } from '../utils/labelHelpers';
 
-export default function SaleDetailDrawer({ venta, isOpen, onClose, onSave, onRetry, onAnular, initialEditMode = false }) {
-  const { emisor } = useConfig();
+export default function SaleDetailDrawer({ venta, isOpen, onClose, onSave, onRetry, onAnular, initialEditMode = false, customFolders = [], labels = [] }) {
+  const { emisor, isRI } = useConfig();
   const conceptoDefault = emisor?.concepto_default || 1;
 
   const [isEditing, setIsEditing] = useState(false);
@@ -47,6 +49,11 @@ export default function SaleDetailDrawer({ venta, isOpen, onClose, onSave, onRet
         cbteAsocPtoVta: asoc.pto_vta || 0,
         cbteAsocNro: asoc.nro || 0,
         cbteAsocFecha: asoc.fecha || '',
+        // IVA
+        ivaAlicuota: df.iva_alicuota_id || 5,
+        // Organization
+        folder: venta.folder || '',
+        etiquetas: getEtiquetas(venta),
       });
       
       // Auto-open in editing if it's pending
@@ -132,7 +139,11 @@ export default function SaleDetailDrawer({ venta, isOpen, onClose, onSave, onRet
     setSaving(true);
     try {
       const needsService = editForm.concepto === 2 || editForm.concepto === 3;
-      const needsCbteAsoc = editForm.tipoCbte === 13 || editForm.tipoCbte === 12;
+      const needsCbteAsoc = needsCbteAsociado(editForm.tipoCbte);
+
+      // IVA data for RI
+      const ivaInfo = isRI ? calcularIVA(parseFloat(editForm.monto), editForm.ivaAlicuota || 5) : null;
+      const alicuota = isRI ? getAlicuotaById(editForm.ivaAlicuota || 5) : null;
 
       if (onSave) {
         await onSave(venta.id, {
@@ -162,9 +173,18 @@ export default function SaleDetailDrawer({ venta, isOpen, onClose, onSave, onRet
                 fecha: editForm.cbteAsocFecha || '',
               }
             } : {}),
+            ...(isRI && ivaInfo ? {
+              iva_alicuota_id: editForm.ivaAlicuota || 5,
+              iva_porcentaje: alicuota?.rate || 0.21,
+              neto_gravado: ivaInfo.netoGravado,
+              iva_monto: ivaInfo.ivaMonto,
+            } : {}),
             forma_pago: editForm.formaPago,
             fecha_emision: editForm.fechaEmision,
-          }
+          },
+          folder: editForm.folder,
+          etiquetas: editForm.etiquetas,
+          etiqueta: editForm.etiquetas[0] || '',
         });
       }
       // After save, just close the drawer
@@ -221,6 +241,8 @@ export default function SaleDetailDrawer({ venta, isOpen, onClose, onSave, onRet
                 lookingUp={lookingUp}
                 afipLocked={afipLocked}
                 conceptoDefault={conceptoDefault}
+                isRI={isRI}
+                emisor={emisor}
               />
 
               <div className="pt-3 flex items-center gap-3">
@@ -272,7 +294,7 @@ export default function SaleDetailDrawer({ venta, isOpen, onClose, onSave, onRet
                   <Section title="Comprobante Asociado" icon={Link2}>
                     <InfoRow
                       label="Tipo"
-                      value={TIPOS_COMPROBANTE.find(t => t.value === df.cbte_asoc.tipo)?.label || `Tipo ${df.cbte_asoc.tipo}`}
+                      value={getTiposComprobante(emisor).find(t => t.value === df.cbte_asoc.tipo)?.label || `Tipo ${df.cbte_asoc.tipo}`}
                     />
                     <InfoRow
                       label="Número"
@@ -292,6 +314,72 @@ export default function SaleDetailDrawer({ venta, isOpen, onClose, onSave, onRet
                     <InfoRow label="Vencimiento" value={formatDate(venta.vto_cae)} />
                   </Section>
                 )}
+
+                {isRI && df.neto_gravado != null && (
+                  <Section title="IVA" icon={Percent}>
+                    <InfoRow label="Neto Gravado" value={formatCurrency(df.neto_gravado)} />
+                    <InfoRow label="Alícuota" value={getAlicuotaById(df.iva_alicuota_id || 5)?.label || '21%'} />
+                    <InfoRow label="IVA" value={formatCurrency(df.iva_monto)} highlight="accent" />
+                  </Section>
+                )}
+
+                <Section title="Organización" icon={FolderKanban}>
+                  <div className="px-4 py-3 space-y-4">
+                    <div>
+                      <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5">Carpeta</label>
+                      <select 
+                        value={isEditing ? editForm.folder : (venta.folder || '')}
+                        onChange={(e) => isEditing && setEditForm(prev => ({ ...prev, folder: e.target.value }))}
+                        disabled={!isEditing}
+                        className="w-full bg-surface-alt border border-border rounded-lg px-3 py-2 text-xs text-text-primary focus:outline-none focus:border-accent disabled:opacity-100 disabled:bg-transparent disabled:border-none disabled:px-0 cursor-pointer"
+                      >
+                        <option value="">Ninguna</option>
+                        {customFolders.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5">Etiquetas</label>
+                      {isEditing ? (
+                        <div className="flex flex-wrap gap-1.5">
+                          {labels.map(l => {
+                            const colorObj = LABEL_COLORS.find(c => c.id === l.colorId) || LABEL_COLORS[0];
+                            const active = editForm.etiquetas?.includes(l.name);
+                            return (
+                              <button key={l.id} type="button"
+                                onClick={() => {
+                                  const curr = editForm.etiquetas || [];
+                                  const next = active ? curr.filter(e => e !== l.name) : [...curr, l.name];
+                                  setEditForm(prev => ({ ...prev, etiquetas: next }));
+                                }}
+                                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-tight border transition-all cursor-pointer ${
+                                  active ? 'border-accent/40 bg-accent/5 text-accent' : 'border-border/40 bg-surface-alt text-text-muted hover:border-border'
+                                }`}
+                              >
+                                <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: colorObj.color }} />
+                                {l.name}
+                              </button>
+                            );
+                          })}
+                          {labels.length === 0 && <span className="text-[10px] text-text-muted italic">Sin etiquetas creadas</span>}
+                        </div>
+                      ) : (
+                        <div className="flex flex-wrap gap-1.5">
+                          {getEtiquetas(venta).length > 0 ? getEtiquetas(venta).map(name => {
+                            const label = labels.find(l => l.name === name);
+                            const colorObj = LABEL_COLORS.find(c => c.id === label?.colorId) || LABEL_COLORS[0];
+                            return (
+                              <div key={name} className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-surface-alt border border-border/40">
+                                <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: colorObj.color }} />
+                                <span className="text-[10px] font-bold text-text-primary uppercase tracking-tighter">{name}</span>
+                              </div>
+                            );
+                          }) : <span className="text-xs text-text-muted">—</span>}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </Section>
+
               </div>
 
               {/* ─── Timeline ─── */}
@@ -325,24 +413,22 @@ export default function SaleDetailDrawer({ venta, isOpen, onClose, onSave, onRet
               {/* ─── Actions ─── */}
               <div className="flex flex-col gap-3 pt-2">
                 {venta.status === 'facturado' && (
-                  <div className="flex flex-col gap-2">
-                    <button
-                      onClick={handleDownload}
-                      className="w-full flex items-center justify-center gap-2 bg-[#3460A8] text-white py-3.5 rounded-xl font-bold uppercase tracking-widest text-xs hover:-translate-y-0.5 hover:shadow-lg transition-all cursor-pointer"
-                    >
-                      <FileDown size={18} />
-                      Ver Factura (PDF)
-                    </button>
-                    {[11, 1, 6].includes(venta.datos_fiscales?.tipo_cbte || 11) && onAnular && (
-                      <button
-                        onClick={() => onAnular(venta)}
-                        className="w-full flex items-center justify-center gap-2 bg-coral/10 text-coral border border-coral/20 py-2.5 rounded-xl font-bold uppercase tracking-widest text-[10px] hover:bg-coral hover:text-white transition-all cursor-pointer"
-                      >
-                        <RotateCcw size={14} />
-                        Anular (Emitir Nota de Crédito)
-                      </button>
-                    )}
-                  </div>
+                  <button
+                    onClick={handleDownload}
+                    className="w-full flex items-center justify-center gap-2 bg-[#3460A8] text-white py-3.5 rounded-xl font-bold uppercase tracking-widest text-xs hover:-translate-y-0.5 hover:shadow-lg transition-all cursor-pointer"
+                  >
+                    <FileDown size={18} />
+                    Ver Factura (PDF)
+                  </button>
+                )}
+                {venta.status === 'facturado' && onAnular && (
+                  <button
+                    onClick={() => onAnular(venta)}
+                    className="w-full flex items-center justify-center gap-2 bg-red-subtle border border-red/20 text-red py-3.5 rounded-xl font-bold uppercase tracking-widest text-xs hover:-translate-y-0.5 hover:shadow-lg transition-all cursor-pointer"
+                  >
+                    <RotateCcw size={18} className="rotate-180" />
+                    Anular Factura (NC)
+                  </button>
                 )}
                 {venta.status === 'error' && onRetry && (
                   <button

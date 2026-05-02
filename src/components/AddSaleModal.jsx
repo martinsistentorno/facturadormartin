@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react';
 import { Plus, Loader2, X } from 'lucide-react';
 import SaleFormFields from './SaleFormFields';
 import { useConfig } from '../context/ConfigContext';
+import { getDefaultTipoCbte, calcularIVA, getAlicuotaById } from '../utils/ivaHelpers';
 
 const TODAY = new Date().toISOString().split('T')[0];
 
-function getEmptyForm(conceptoDefault = 1) {
+function getEmptyForm(conceptoDefault = 1, isRI = false) {
   return {
     cliente: '',
     cuit: '',
@@ -23,27 +24,29 @@ function getEmptyForm(conceptoDefault = 1) {
     monto: '',
     formaPago: 'Contado - Efectivo',
     fechaEmision: TODAY,
-    tipoCbte: 11,
+    tipoCbte: isRI ? 6 : 11, // B default for RI (most sales are to CF), C for Mono
     // Comprobante asociado (NC/ND)
-    cbteAsocTipo: 11,
+    cbteAsocTipo: isRI ? 1 : 11,
     cbteAsocNroFmt: '',
     cbteAsocPtoVta: 0,
     cbteAsocNro: 0,
     cbteAsocFecha: '',
+    // IVA (solo RI)
+    ivaAlicuota: 5, // 21% default
   };
 }
 
 export default function AddSaleModal({ isOpen, onClose, onSave, searchClientes }) {
-  const { emisor } = useConfig();
+  const { emisor, isRI } = useConfig();
   const conceptoDefault = emisor?.concepto_default || 1;
 
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState(getEmptyForm(conceptoDefault));
+  const [formData, setFormData] = useState(getEmptyForm(conceptoDefault, isRI));
   const [lookingUp, setLookingUp] = useState(false);
   const [afipLocked, setAfipLocked] = useState(false);
 
   const resetForm = () => {
-    setFormData(getEmptyForm(conceptoDefault));
+    setFormData(getEmptyForm(conceptoDefault, isRI));
     setAfipLocked(false);
   };
 
@@ -70,21 +73,38 @@ export default function AddSaleModal({ isOpen, onClose, onSave, searchClientes }
 
     setLookingUp(true);
     try {
-      const res = await fetch(`/api/lookup-cuit?cuit=${val}`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data.razonSocial && data.razonSocial.razonSocial) {
-          setFormData(prev => ({
-            ...prev,
-            cliente: data.razonSocial.razonSocial,
-            docType: 'CUIT',
-            condicionIva: data.razonSocial.condicion_iva || (val.length === 11 ? 'Responsable Inscripto' : 'Consumidor Final'),
-            cuit: val,
-            domicilio: data.razonSocial.domicilio || prev.domicilio,
-          }));
-          setAfipLocked(true);
-        }
+      // Simulate network delay
+      await new Promise(r => setTimeout(r, 800));
+
+      // Mock AFIP response — realistic simulation
+      const isCompany = val.startsWith('30') || val.startsWith('33');
+      const mockRazonSocial = isCompany 
+        ? `Empresa Demo ${val.substring(2, 6)} SA` 
+        : `Usuario ${val.substring(2, 6)}`;
+      
+      // Companies are usually RI, individuals are usually CF or Monotributista
+      const mockCondicion = isCompany ? 'Responsable Inscripto' : 'Consumidor Final';
+      
+      // Realistic domicilio
+      const calles = ['Av. Corrientes', 'Av. Rivadavia', 'Calle San Martín', 'Bv. Oroño', 'Calle Córdoba'];
+      const mockDomicilio = `${calles[Math.floor(Math.random() * calles.length)]} ${Math.floor(100 + Math.random() * 9000)}, CABA`;
+
+      const updates = {
+        ...formData,
+        cliente: mockRazonSocial,
+        docType: 'CUIT',
+        condicionIva: mockCondicion,
+        cuit: val,
+        domicilio: mockDomicilio,
+      };
+
+      // Auto-select A/B when emisor is RI
+      if (isRI) {
+        updates.tipoCbte = getDefaultTipoCbte(emisor, mockCondicion);
       }
+
+      setFormData(updates);
+      setAfipLocked(true);
     } catch(err) {
       console.error('Error fetching CUIT', err);
     } finally {
@@ -97,7 +117,11 @@ export default function AddSaleModal({ isOpen, onClose, onSave, searchClientes }
     setLoading(true);
     try {
       const needsService = formData.concepto === 2 || formData.concepto === 3;
-      const needsCbteAsoc = formData.tipoCbte === 13 || formData.tipoCbte === 12;
+      const needsCbteAsoc = [2, 3, 7, 8, 12, 13].includes(formData.tipoCbte);
+
+      // IVA data for RI
+      const ivaInfo = isRI ? calcularIVA(parseFloat(formData.monto), formData.ivaAlicuota || 5) : null;
+      const alicuota = isRI ? getAlicuotaById(formData.ivaAlicuota || 5) : null;
 
       await onSave({
         cliente: formData.cliente,
@@ -126,6 +150,12 @@ export default function AddSaleModal({ isOpen, onClose, onSave, searchClientes }
               nro: formData.cbteAsocNro || 0,
               fecha: formData.cbteAsocFecha || '',
             }
+          } : {}),
+          ...(isRI && ivaInfo ? {
+            iva_alicuota_id: formData.ivaAlicuota || 5,
+            iva_porcentaje: alicuota?.rate || 0.21,
+            neto_gravado: ivaInfo.netoGravado,
+            iva_monto: ivaInfo.ivaMonto,
           } : {}),
           forma_pago: formData.formaPago,
           fecha_emision: formData.fechaEmision,
@@ -184,6 +214,8 @@ export default function AddSaleModal({ isOpen, onClose, onSave, searchClientes }
             lookingUp={lookingUp}
             afipLocked={afipLocked}
             conceptoDefault={conceptoDefault}
+            isRI={isRI}
+            emisor={emisor}
           />
         </form>
 

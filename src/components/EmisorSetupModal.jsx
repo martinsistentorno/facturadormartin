@@ -4,8 +4,6 @@ import { Building2, MapPin, FileText, Hash, Calendar, Receipt, X, Save, AlertCir
 const CONDICION_IVA_OPTIONS = [
   'Responsable Monotributo',
   'IVA Responsable Inscripto',
-  'IVA Sujeto Exento',
-  'Consumidor Final',
 ]
 
 const TIPO_CBTE_OPTIONS = [
@@ -109,6 +107,7 @@ export default function EmisorSetupModal({ isOpen, onClose, onSave, currentData,
         ingresos_brutos: currentData.ingresos_brutos || '',
         pto_vta: currentData.pto_vta || 1,
         tipo_cbte: currentData.tipo_cbte || 11,
+        monotributo_categoria: currentData.monotributo_categoria || 'A',
         concepto_default: currentData.concepto_default || 1,
       })
       setAfipLoaded(true)
@@ -135,6 +134,7 @@ export default function EmisorSetupModal({ isOpen, onClose, onSave, currentData,
         ingresos_brutos: data.ingresos_brutos || '',
         pto_vta: data.pto_vta || 1,
         tipo_cbte: data.tipo_cbte || 11,
+        monotributo_categoria: data.monotributo_categoria || 'A',
         concepto_default: 1,
       })
       setAfipLoaded(true)
@@ -288,9 +288,16 @@ export default function EmisorSetupModal({ isOpen, onClose, onSave, currentData,
                       <MinimalField 
                         label="Condición IVA" icon={Receipt} isSelect full
                         value={form.condicion_iva}
-                        onChange={(e) => setForm(p => ({ ...p, condicion_iva: e.target.value }))}
+                        onChange={(e) => {
+                          const newCond = e.target.value;
+                          const isRI = newCond.toLowerCase().includes('responsable inscripto');
+                          setForm(p => ({
+                            ...p,
+                            condicion_iva: newCond,
+                            tipo_cbte: isRI ? 1 : 11, // Auto-ajustar tipo comprobante
+                          }));
+                        }}
                         options={CONDICION_IVA_OPTIONS}
-                        locked={hasAfipData}
                       />
                     </div>
                     <div className="col-span-4">
@@ -311,6 +318,32 @@ export default function EmisorSetupModal({ isOpen, onClose, onSave, currentData,
                       />
                     </div>
                   </div>
+
+                  {form.condicion_iva?.toLowerCase().includes('monotributo') && (
+                    <>
+                      <div className="grid grid-cols-2 gap-3">
+                        <MinimalField 
+                          label="Categoría Monotributo" icon={FileText} isSelect full
+                          value={form.monotributo_categoria || 'A'}
+                          onChange={(e) => setForm(p => ({ ...p, monotributo_categoria: e.target.value }))}
+                          options={[
+                            { value: 'A', label: 'Categoría A' },
+                            { value: 'B', label: 'Categoría B' },
+                            { value: 'C', label: 'Categoría C' },
+                            { value: 'D', label: 'Categoría D' },
+                            { value: 'E', label: 'Categoría E' },
+                            { value: 'F', label: 'Categoría F' },
+                            { value: 'G', label: 'Categoría G' },
+                            { value: 'H', label: 'Categoría H' },
+                            { value: 'I', label: 'Categoría I' },
+                            { value: 'J', label: 'Categoría J' },
+                            { value: 'K', label: 'Categoría K' }
+                          ]}
+                        />
+                      </div>
+                      <div className="h-px bg-border/40 w-full" />
+                    </>
+                  )}
 
                   <div className="h-px bg-border/40 w-full" />
 

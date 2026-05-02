@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { User, Hash, Mail, MapPin, FileText, Package, CreditCard, DollarSign, Calendar, Loader2, ChevronDown, Link2 } from 'lucide-react';
+import { User, Hash, Mail, MapPin, FileText, Package, CreditCard, DollarSign, Calendar, Loader2, ChevronDown, Link2, Percent } from 'lucide-react';
+import { getTiposComprobante, needsCbteAsociado, ALICUOTAS_IVA, calcularIVA, getDefaultTipoCbte } from '../utils/ivaHelpers';
 
 // ─── Constantes ───
 const FORMAS_PAGO = [
@@ -13,12 +14,7 @@ const FORMAS_PAGO = [
   'Otros medios de pago electrónico',
 ];
 
-const TIPOS_COMPROBANTE = [
-  { value: 11, label: 'Factura C' },
-  { value: 13, label: 'Nota de Crédito C' },
-  { value: 12, label: 'Nota de Débito C' },
-  { value: 15, label: 'Recibo C' },
-];
+// TIPOS_COMPROBANTE is now dynamic via getTiposComprobante(emisor) from ivaHelpers
 
 const CONCEPTOS = [
   { value: 1, label: 'Productos' },
@@ -45,12 +41,13 @@ const CONDICIONES_IVA = [
 ];
 
 // ─── Sub-componentes ───
-function MiniInput({ label, icon: Icon, type = 'text', value, onChange, placeholder, required, disabled, className = '', onBlur, onFocus, step, min }) {
+function MiniInput({ label, subLabel, icon: Icon, type = 'text', value, onChange, placeholder, required, disabled, className = '', onBlur, onFocus, step, min }) {
   return (
     <div className={`flex flex-col gap-1 ${className}`}>
       <span className="text-[9px] font-bold uppercase tracking-widest text-text-muted/70 flex items-center gap-1 ml-0.5">
         {Icon && <Icon size={10} />}
         {label} {required && <span className="text-[#C0443C]">*</span>}
+        {subLabel && <span className="text-[7px] lowercase italic font-normal text-accent/60 ml-auto">{subLabel}</span>}
       </span>
       <input
         type={type}
@@ -120,6 +117,8 @@ export default function SaleFormFields({
   lookingUp = false,
   afipLocked = false,
   conceptoDefault = 1,
+  isRI = false,
+  emisor = null,
 }) {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
@@ -127,7 +126,11 @@ export default function SaleFormFields({
   const suggestionsRef = useRef(null);
 
   const needsServiceDates = form.concepto === 2 || form.concepto === 3;
-  const needsCbteAsoc = form.tipoCbte === 13 || form.tipoCbte === 12;
+  const needsCbteAsoc = needsCbteAsociado(form.tipoCbte);
+  const tiposComprobante = getTiposComprobante(emisor);
+
+  // IVA calculation (only for RI)
+  const ivaData = isRI ? calcularIVA(form.monto, form.ivaAlicuota || 5) : null;
 
   useEffect(() => {
     setServiceOpen(needsServiceDates);
@@ -182,7 +185,7 @@ export default function SaleFormFields({
               icon={FileText}
               value={form.tipoCbte}
               onChange={(e) => setForm({ ...form, tipoCbte: parseInt(e.target.value) })}
-              options={TIPOS_COMPROBANTE}
+              options={tiposComprobante}
             />
           </div>
         </>
@@ -218,14 +221,12 @@ export default function SaleFormFields({
                   value={form.cbteAsocNroFmt || ''}
                   onChange={(e) => {
                     let raw = e.target.value.replace(/[^0-9-]/g, '');
-                    // Auto-format: insert dash after 4 digits
                     const digits = raw.replace(/-/g, '');
                     if (digits.length > 4) {
                       raw = digits.slice(0, 4) + '-' + digits.slice(4, 12);
                     } else {
                       raw = digits;
                     }
-                    // Parse into PtoVta + Nro
                     const parts = raw.split('-');
                     const pv = parseInt(parts[0] || '0');
                     const nro = parseInt(parts[1] || '0');
@@ -279,6 +280,7 @@ export default function SaleFormFields({
         <div className="relative col-span-8">
           <MiniInput
             label="Nro de Documento"
+            subLabel="(datos simulados para demo)"
             icon={Hash}
             value={form.cuit}
             onChange={(e) => setForm({ ...form, cuit: e.target.value })}
@@ -293,7 +295,15 @@ export default function SaleFormFields({
           <MiniSelect
             label="Condición IVA"
             value={form.condicionIva}
-            onChange={(e) => setForm({ ...form, condicionIva: e.target.value })}
+            onChange={(e) => {
+              const newCond = e.target.value;
+              const updates = { ...form, condicionIva: newCond };
+              // Auto-select A/B when emisor is RI
+              if (isRI && showTipoComprobante) {
+                updates.tipoCbte = getDefaultTipoCbte(emisor, newCond);
+              }
+              setForm(updates);
+            }}
             options={CONDICIONES_IVA}
           />
         </div>
@@ -447,6 +457,49 @@ export default function SaleFormFields({
         </>
       )}
 
+      {/* ── IVA (solo Responsable Inscripto) ── */}
+      {isRI && (
+        <>
+          <SectionDivider label="IVA" icon={Percent} />
+          <div className="bg-[#2D8F5E]/5 border border-[#2D8F5E]/15 rounded-xl p-3 space-y-3 animate-fade-in">
+            <span className="text-[9px] font-bold uppercase tracking-widest text-[#2D8F5E]/70 flex items-center gap-1 ml-0.5 mb-2">
+              <Percent size={10} />
+              Alícuota de IVA
+            </span>
+            <div className="flex flex-wrap gap-2">
+              {ALICUOTAS_IVA.map(al => (
+                <button
+                  key={al.value}
+                  type="button"
+                  onClick={() => setForm({ ...form, ivaAlicuota: al.value })}
+                  className={`
+                    px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer border
+                    ${(form.ivaAlicuota || 5) === al.value
+                      ? 'bg-[#2D8F5E] border-[#2D8F5E] text-white shadow-md shadow-[#2D8F5E]/20'
+                      : 'bg-white border-border text-text-secondary hover:border-[#2D8F5E]/30 hover:text-[#2D8F5E]'
+                    }
+                  `}
+                >
+                  {al.label}
+                </button>
+              ))}
+            </div>
+            {ivaData && form.monto > 0 && (
+              <div className="grid grid-cols-2 gap-3 mt-2">
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[8px] font-bold uppercase tracking-widest text-[#2D8F5E]/60">Neto Gravado</span>
+                  <span className="text-sm font-bold text-text-primary tabular-nums">$ {ivaData.netoGravado.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[8px] font-bold uppercase tracking-widest text-[#2D8F5E]/60">IVA</span>
+                  <span className="text-sm font-bold text-[#2D8F5E] tabular-nums">$ {ivaData.ivaMonto.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+                </div>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
       {/* ── Pago ── */}
       <SectionDivider label="Pago" icon={DollarSign} />
 
@@ -516,4 +569,4 @@ export default function SaleFormFields({
 }
 
 // Exportar constantes para uso externo
-export { TIPOS_COMPROBANTE, CONCEPTOS, UNIDADES_MEDIDA, CONDICIONES_IVA, FORMAS_PAGO };
+export { CONCEPTOS, UNIDADES_MEDIDA, CONDICIONES_IVA, FORMAS_PAGO };

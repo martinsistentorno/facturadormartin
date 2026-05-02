@@ -153,5 +153,17 @@ export function useVentas() {
     return data
   }, [])
 
-  return { ventas, setVentas, loading, error, refetch: fetchVentas, updateVentaStatus, updateVenta, createVenta, deleteVenta, hardDeleteVenta, archiveVenta, bulkCreateVentas }
+  const updateVentaEtiqueta = useCallback(async (id, etiqueta) => {
+    const venta = ventas.find(v => v.id === id)
+    if (!venta) return
+    
+    let next = venta.etiquetas || []
+    if (etiqueta === '' || etiqueta === null) next = []
+    else if (next.includes(etiqueta)) next = next.filter(e => e !== etiqueta)
+    else next = [...next, etiqueta]
+
+    await updateVenta(id, { etiquetas: next })
+  }, [ventas, updateVenta])
+
+  return { ventas, setVentas, loading, error, refetch: fetchVentas, updateVentaStatus, updateVenta, createVenta, deleteVenta, hardDeleteVenta, archiveVenta, bulkCreateVentas, updateVentaEtiqueta }
 }

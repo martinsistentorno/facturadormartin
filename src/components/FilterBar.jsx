@@ -72,9 +72,6 @@ export default function FilterBar({ filters, onFilterChange, totalCount, filtere
           </button>
         )}
 
-        <span className="text-xs text-text-muted whitespace-nowrap hidden sm:block">
-          {hasActiveFilters ? `${filteredCount} de ${totalCount}` : `${totalCount} registros`}
-        </span>
       </div>
 
       {/* Expanded filters */}
