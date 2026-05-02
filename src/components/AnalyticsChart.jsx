@@ -2,17 +2,20 @@ import { useState, useRef, useEffect, useMemo } from 'react'
 
 /**
  * Pure SVG Analytics Chart — Search Console style
- * Supports multiple metrics, comparison overlay, interactive tooltips
+ * Supports multiple metrics with DUAL Y-AXIS:
+ *   - Left axis: money metrics ($)
+ *   - Right axis: count metrics (units)
+ * Includes comparison overlay and interactive tooltips
  */
 export default function AnalyticsChart({ 
   data = [],           // [{ date, facturadas, pendientes, total, monto }]
   comparisonData = [], // same shape, for the comparison period
   activeMetrics = [],  // ['facturadas', 'monto', ...]
   compareEnabled = false,
-  metricConfigs = {},  // { facturadas: { color, label, format } }
+  metricConfigs = {},  // { facturadas: { color, label, format, isMoney } }
 }) {
   const containerRef = useRef(null)
-  const [dims, setDims] = useState({ w: 600, h: 260 })
+  const [dims, setDims] = useState({ w: 600, h: 280 })
   const [hoverIdx, setHoverIdx] = useState(null)
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 })
 
@@ -22,48 +25,66 @@ export default function AnalyticsChart({
     if (!el) return
     const ro = new ResizeObserver(entries => {
       const { width } = entries[0].contentRect
-      setDims({ w: Math.max(300, width), h: 260 })
+      setDims({ w: Math.max(300, width), h: 280 })
     })
     ro.observe(el)
     return () => ro.disconnect()
   }, [])
 
-  const pad = { top: 24, right: 20, bottom: 40, left: 55 }
+  // Split metrics into money vs count
+  const moneyMetrics = activeMetrics.filter(m => metricConfigs[m]?.isMoney)
+  const countMetrics = activeMetrics.filter(m => !metricConfigs[m]?.isMoney)
+  const hasMoney = moneyMetrics.length > 0
+  const hasCount = countMetrics.length > 0
+  const hasDual = hasMoney && hasCount
+
+  // Dynamic padding — right side gets space for labels only when dual axis
+  const pad = { top: 24, right: hasDual ? 55 : 20, bottom: 40, left: 55 }
   const chartW = dims.w - pad.left - pad.right
   const chartH = dims.h - pad.top - pad.bottom
 
-  // Compute Y domain across all active metrics + comparison
-  const { yMin, yMax, yTicks } = useMemo(() => {
+  // ─── Compute Y domains independently ───
+  const computeScale = (metrics) => {
     let allVals = []
-    activeMetrics.forEach(m => {
+    metrics.forEach(m => {
       data.forEach(d => { if (d[m] != null) allVals.push(d[m]) })
       if (compareEnabled) {
         comparisonData.forEach(d => { if (d[m] != null) allVals.push(d[m]) })
       }
     })
     if (allVals.length === 0) allVals = [0]
-    const min = 0
     const rawMax = Math.max(...allVals, 1)
-    // Nice max
-    const magnitude = Math.pow(10, Math.floor(Math.log10(rawMax)))
+    const magnitude = Math.pow(10, Math.floor(Math.log10(rawMax))) || 1
     const niceMax = Math.ceil(rawMax / magnitude) * magnitude || 1
-    // Generate ticks
     const tickCount = 5
     const step = niceMax / tickCount
     const ticks = Array.from({ length: tickCount + 1 }, (_, i) => Math.round(i * step))
-    return { yMin: min, yMax: niceMax, yTicks: ticks }
-  }, [data, comparisonData, activeMetrics, compareEnabled])
+    return { yMin: 0, yMax: niceMax, yTicks: ticks }
+  }
+
+  const moneyScale = useMemo(() => computeScale(moneyMetrics), [data, comparisonData, moneyMetrics.join(','), compareEnabled])
+  const countScale = useMemo(() => computeScale(countMetrics), [data, comparisonData, countMetrics.join(','), compareEnabled])
+
+  // If only one type is active, use that scale for everything
+  const getScaleFor = (metric) => {
+    return metricConfigs[metric]?.isMoney ? moneyScale : countScale
+  }
 
   // X positions
   const xStep = data.length > 1 ? chartW / (data.length - 1) : chartW
   const getX = (i) => pad.left + (data.length > 1 ? i * xStep : chartW / 2)
-  const getY = (val) => pad.top + chartH - ((val - yMin) / (yMax - yMin || 1)) * chartH
+  const getY = (val, scale) => {
+    const range = scale.yMax - scale.yMin || 1
+    return pad.top + chartH - ((val - scale.yMin) / range) * chartH
+  }
 
-  // Build path
+  // Build path for a given dataset and metric
   const buildPath = (dataset, metric) => {
+    const scale = getScaleFor(metric)
+    const step = dataset.length > 1 ? chartW / (dataset.length - 1) : 0
     const points = dataset.map((d, i) => ({
-      x: pad.left + (dataset.length > 1 ? i * (chartW / (dataset.length - 1)) : chartW / 2),
-      y: getY(d[metric] ?? 0),
+      x: pad.left + (dataset.length > 1 ? i * step : chartW / 2),
+      y: getY(d[metric] ?? 0, scale),
     }))
     if (points.length === 0) return ''
     return points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ')
@@ -71,9 +92,11 @@ export default function AnalyticsChart({
 
   // Build area (filled under line)
   const buildArea = (dataset, metric) => {
+    const scale = getScaleFor(metric)
+    const step = dataset.length > 1 ? chartW / (dataset.length - 1) : 0
     const points = dataset.map((d, i) => ({
-      x: pad.left + (dataset.length > 1 ? i * (chartW / (dataset.length - 1)) : chartW / 2),
-      y: getY(d[metric] ?? 0),
+      x: pad.left + (dataset.length > 1 ? i * step : chartW / 2),
+      y: getY(d[metric] ?? 0, scale),
     }))
     if (points.length === 0) return ''
     const baseline = pad.top + chartH
@@ -108,21 +131,57 @@ export default function AnalyticsChart({
     )
   }
 
+  // Decide which grid lines to show (prefer count grid if both, or whichever is active)
+  const primaryScale = hasCount ? countScale : moneyScale
+  const primaryIsMoney = !hasCount && hasMoney
+
   return (
     <div ref={containerRef} className="w-full bg-white border border-border/40 rounded-2xl overflow-hidden relative" 
          onMouseMove={handleMouseMove} onMouseLeave={() => setHoverIdx(null)}>
       <svg width={dims.w} height={dims.h} className="block">
-        {/* Grid lines */}
-        {yTicks.map(tick => (
+        {/* Grid lines — based on primary scale */}
+        {primaryScale.yTicks.map(tick => (
           <g key={tick}>
-            <line x1={pad.left} y1={getY(tick)} x2={dims.w - pad.right} y2={getY(tick)} 
+            <line x1={pad.left} y1={getY(tick, primaryScale)} x2={dims.w - pad.right} y2={getY(tick, primaryScale)} 
                   stroke="#e5e5e5" strokeWidth={1} />
-            <text x={pad.left - 8} y={getY(tick) + 3} textAnchor="end" 
-                  className="fill-[#999] text-[10px]" style={{ fontSize: '10px', fontFamily: 'Space Grotesk, sans-serif' }}>
-              {formatYLabel(tick, activeMetrics, metricConfigs)}
-            </text>
           </g>
         ))}
+
+        {/* Left Y-axis labels */}
+        {hasCount && countScale.yTicks.map(tick => (
+          <text key={`l-${tick}`} x={pad.left - 8} y={getY(tick, countScale) + 3} textAnchor="end" 
+                className="fill-[#999] text-[10px]" style={{ fontSize: '10px', fontFamily: 'Space Grotesk, sans-serif' }}>
+            {tick}
+          </text>
+        ))}
+        {!hasCount && hasMoney && moneyScale.yTicks.map(tick => (
+          <text key={`l-${tick}`} x={pad.left - 8} y={getY(tick, moneyScale) + 3} textAnchor="end" 
+                className="fill-[#999] text-[10px]" style={{ fontSize: '10px', fontFamily: 'Space Grotesk, sans-serif' }}>
+            {formatMoneyLabel(tick)}
+          </text>
+        ))}
+
+        {/* Right Y-axis labels (only when dual) */}
+        {hasDual && moneyScale.yTicks.map(tick => (
+          <text key={`r-${tick}`} x={dims.w - pad.right + 8} y={getY(tick, moneyScale) + 3} textAnchor="start" 
+                style={{ fontSize: '10px', fontFamily: 'Space Grotesk, sans-serif', fill: '#7C4DFF' }}>
+            {formatMoneyLabel(tick)}
+          </text>
+        ))}
+
+        {/* Axis indicator labels */}
+        {hasCount && (
+          <text x={pad.left - 8} y={pad.top - 8} textAnchor="end"
+                style={{ fontSize: '9px', fontFamily: 'Space Grotesk, sans-serif', fill: '#999', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+            Cant.
+          </text>
+        )}
+        {hasDual && (
+          <text x={dims.w - pad.right + 8} y={pad.top - 8} textAnchor="start"
+                style={{ fontSize: '9px', fontFamily: 'Space Grotesk, sans-serif', fill: '#7C4DFF', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+            Monto
+          </text>
+        )}
 
         {/* X axis labels */}
         {xLabels.map((label, i) => label ? (
@@ -146,6 +205,7 @@ export default function AnalyticsChart({
         {/* Main lines + areas */}
         {activeMetrics.map(metric => {
           const cfg = metricConfigs[metric] || {}
+          const scale = getScaleFor(metric)
           return (
             <g key={metric}>
               <path d={buildArea(data, metric)} fill={cfg.color || '#3460A8'} opacity={0.06} />
@@ -153,7 +213,7 @@ export default function AnalyticsChart({
                     stroke={cfg.color || '#3460A8'} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
               {/* Data points */}
               {data.map((d, i) => (
-                <circle key={i} cx={getX(i)} cy={getY(d[metric] ?? 0)} r={hoverIdx === i ? 5 : 3}
+                <circle key={i} cx={getX(i)} cy={getY(d[metric] ?? 0, scale)} r={hoverIdx === i ? 5 : 3}
                   fill="white" stroke={cfg.color || '#3460A8'} strokeWidth={2}
                   className="transition-all duration-150" />
               ))}
@@ -174,7 +234,7 @@ export default function AnalyticsChart({
              style={{
                left: Math.min(tooltipPos.x + 12, dims.w - 180),
                top: Math.max(tooltipPos.y - 80, 8),
-               minWidth: 140,
+               minWidth: 150,
              }}>
           <div className="text-[10px] font-bold text-white/50 uppercase tracking-widest mb-2">
             {formatDateFull(data[hoverIdx].date)}
@@ -215,13 +275,8 @@ function formatDateFull(dateStr) {
   return d.toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
 }
 
-function formatYLabel(val, activeMetrics, configs) {
-  // If any money metric is active, format as money
-  const moneyMetric = activeMetrics.find(m => configs[m]?.isMoney)
-  if (moneyMetric) {
-    if (val >= 1000000) return `$${(val / 1000000).toFixed(1)}M`
-    if (val >= 1000) return `$${(val / 1000).toFixed(0)}K`
-    return `$${val}`
-  }
-  return val.toString()
+function formatMoneyLabel(val) {
+  if (val >= 1000000) return `$${(val / 1000000).toFixed(1)}M`
+  if (val >= 1000) return `$${(val / 1000).toFixed(0)}K`
+  return `$${val}`
 }
