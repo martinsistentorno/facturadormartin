@@ -185,6 +185,12 @@ export default async function handler(req, res) {
           }
         }
 
+        // Intentar extraer el nombre real si es transferencia bancaria externa (CVU)
+        let bankSenderName = payment.point_of_interaction?.transaction_data?.bank_info?.payer?.account_holder_name || '';
+        if (payment.transaction_details?.bank_transfer_payer?.account_holder_name) {
+            bankSenderName = payment.transaction_details.bank_transfer_payer.account_holder_name;
+        }
+
         if (clienteNombre === 'Consumidor Final' && !isOwnAccount) {
           // Solo buscar perfil si el payer.id NO es el dueño de la cuenta
           if (payer.id && payerIdStr !== myUserId && (!payer.first_name || payer.first_name === null)) {
@@ -199,6 +205,17 @@ export default async function handler(req, res) {
           } else if (email) {
             clienteNombre = email.split('@')[0]
           }
+        }
+
+        // Si el nombre sigue siendo Consumidor Final, pero tenemos el nombre del banco, usar el del banco
+        if (clienteNombre === 'Consumidor Final' && bankSenderName) {
+            clienteNombre = bankSenderName;
+        }
+
+        // Si Mercado Pago filtró el payer y puso el nombre del dueño por error
+        const lowerName = clienteNombre.toLowerCase();
+        if (lowerName.includes('martin') && lowerName.includes('sist')) {
+            clienteNombre = bankSenderName || 'Consumidor Final';
         }
 
         const medioPagoDetail = translatePaymentMethod(payment.payment_type_id, payment.payment_method_id)
