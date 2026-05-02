@@ -1,4 +1,5 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
+import { supabase } from '../lib/supabase'
 import { hasEtiqueta } from '../utils/labelHelpers'
 import { useVentas } from '../hooks/useVentas'
 import { useClientes } from '../hooks/useClientes'
@@ -35,6 +36,38 @@ export default function Home() {
   const [labels, setLabels] = useState(() => {
     try { return JSON.parse(localStorage.getItem('cmd_labels') || '[]') } catch { return [] }
   })
+
+  // ─── Supabase UI Config Sync ───
+  useEffect(() => {
+    const loadUIConfig = async () => {
+      try {
+        const { data, error } = await supabase.from('ui_config').select('*')
+        if (!error && data) {
+          const folders = data.find(c => c.key === 'folders')?.value
+          const lbs = data.find(c => c.key === 'labels')?.value
+          if (folders) setCustomFolders(folders)
+          if (lbs) setLabels(lbs)
+        }
+      } catch (err) {
+        console.error('Error cargando config desde Supabase:', err)
+      }
+    }
+    loadUIConfig()
+  }, [])
+
+  const saveUIConfig = async (key, value) => {
+    // Guardar en localStorage como backup rápido
+    localStorage.setItem(`cmd_${key}`, JSON.stringify(value))
+    
+    // Guardar en Supabase para persistencia profesional
+    try {
+      await supabase
+        .from('ui_config')
+        .upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: 'key' })
+    } catch (err) {
+      console.warn(`No se pudo sincronizar ${key} con Supabase.`, err)
+    }
+  }
   
   // ─── Modal State ───
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -350,14 +383,15 @@ export default function Home() {
       return
     }
 
-    const idsToProcess = selectedVentas.map(v => String(v.id))
-    
-    setVentas(prev => prev.map(v => 
-      idsToProcess.includes(String(v.id)) ? { ...v, status: 'borrada' } : v
-    ))
-
-    setSelectedIds(new Set())
-    showToast(`${count} venta(s) movida(s) a la papelera`, 'success')
+    try {
+      for (const v of selectedVentas) {
+        await deleteVenta(v.id)
+      }
+      setSelectedIds(new Set())
+      showToast(`${count} venta(s) movida(s) a la papelera`, 'success')
+    } catch (err) {
+      showToast('Error al eliminar: ' + err.message, 'error')
+    }
   }
 
   // ─── Archive handler ───
@@ -382,14 +416,16 @@ export default function Home() {
       return
     }
 
-    const idsToProcess = Array.from(selectedIds).map(id => String(id))
-    
-    setVentas(prev => prev.map(v => 
-      idsToProcess.includes(String(v.id)) ? { ...v, archivada: true } : v
-    ))
-    
-    setSelectedIds(new Set())
-    showToast(`${count} venta(s) archivada(s) correctamente`, 'success')
+    try {
+      const ids = Array.from(selectedIds)
+      for (const id of ids) {
+        await archiveVenta(String(id))
+      }
+      setSelectedIds(new Set())
+      showToast(`${count} venta(s) archivada(s) correctamente`, 'success')
+    } catch (err) {
+      showToast('Error al archivar: ' + err.message, 'error')
+    }
   }
 
   // ─── Retry handler ───
@@ -474,9 +510,8 @@ export default function Home() {
   }
 
   // ─── Emitir Factura handler (Bulk) ───
-  // ─── Emitir Factura handler (Bulk) ───
   const handleInvoice = async (specificVentas = null) => {
-    const toInvoice = specificVentas || ventas.filter(v => selectedIds.has(v.id) && v.status !== 'facturado')
+    const toInvoice = specificVentas || ventas.filter(v => selectedIds.has(String(v.id)) && v.status !== 'facturado')
     if (toInvoice.length === 0) {
       showToast('No hay ventas pendientes seleccionadas', 'error')
       return
@@ -582,7 +617,7 @@ export default function Home() {
   }
 
   const handleBulkAnular = async () => {
-    const selectedVentasArr = ventas.filter(v => selectedIds.has(v.id))
+    const selectedVentasArr = ventas.filter(v => selectedIds.has(String(v.id)))
     const toAnular = selectedVentasArr.filter(v => v.status === 'facturado')
     if (toAnular.length === 0) return
     if (!confirm(`¿Estás seguro de que querés anular las ${toAnular.length} facturas?`)) return
@@ -729,13 +764,13 @@ export default function Home() {
     const folder = { id: Date.now().toString(), name, parentId }
     const updated = [...customFolders, folder]
     setCustomFolders(updated)
-    localStorage.setItem('cmd_folders', JSON.stringify(updated))
+    saveUIConfig('folders', updated)
   }
   const handleDeleteFolder = (id) => {
     const idsToDelete = getDescendantIds(id, customFolders)
     const updated = customFolders.filter(f => !idsToDelete.includes(f.id))
     setCustomFolders(updated)
-    localStorage.setItem('cmd_folders', JSON.stringify(updated))
+    saveUIConfig('folders', updated)
   }
 
   // ─── Label CRUD ───
@@ -743,12 +778,12 @@ export default function Home() {
     const label = { id: Date.now().toString(), name, colorId }
     const updated = [...labels, label]
     setLabels(updated)
-    localStorage.setItem('cmd_labels', JSON.stringify(updated))
+    saveUIConfig('labels', updated)
   }
   const handleDeleteLabel = (id) => {
     const updated = labels.filter(l => l.id !== id)
     setLabels(updated)
-    localStorage.setItem('cmd_labels', JSON.stringify(updated))
+    saveUIConfig('labels', updated)
   }
 
   return (

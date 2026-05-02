@@ -87,8 +87,13 @@ export default function GestionView({
     return sorted
   }, [clients, clientSearch, sortBy])
 
+  const GENERIC_CLIENTS = ['consumidor final', 'consumidor final ', 'cf', 'sin nombre', 'particular', 'cliente genérico', 'cliente generico', 'varios', 'mostrador']
+
   const top5 = useMemo(() => {
-    return [...clients].sort((a, b) => b.totalFacturado - a.totalFacturado).slice(0, 5)
+    return [...clients]
+      .filter(c => !GENERIC_CLIENTS.includes(c.nombre.toLowerCase().trim()))
+      .sort((a, b) => b.totalFacturado - a.totalFacturado)
+      .slice(0, 5)
   }, [clients])
 
   const handleCreateFolder = () => {

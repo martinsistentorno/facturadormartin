@@ -48,8 +48,22 @@ export default async function handler(req, res) {
       production: true
     })
 
-    const ptoVta = 3
-    const cbteTipo = 11
+    // Leer configuración dinámica del emisor
+    let ptoVta = parseInt(process.env.AFIP_PTO_VTA || '1')
+    let cbteTipo = parseInt(process.env.AFIP_TIPO_CBTE || '11')
+    try {
+      const { data: cfgData } = await supabase
+        .from('config_emisor')
+        .select('pto_vta, tipo_cbte')
+        .limit(1)
+        .maybeSingle()
+      if (cfgData) {
+        ptoVta = cfgData.pto_vta || ptoVta
+        cbteTipo = cfgData.tipo_cbte || cbteTipo
+      }
+    } catch (e) {
+      console.warn('[Recover] No se pudo leer config_emisor, usando env/defaults')
+    }
 
     const lastVoucher = await afip.ElectronicBilling.getLastVoucher(ptoVta, cbteTipo)
     console.log(`[Recover] Detectadas ${lastVoucher} facturas en AFIP.`)

@@ -212,6 +212,10 @@ export default async function handler(req, res) {
 
     for (const v of ventas) {
       try {
+        // Armar tipo de comprobante ANTES de consultar AFIP
+        const conceptoVenta = v.datos_fiscales?.concepto || emisorConfig?.concepto_default || 1
+        const cbteTipoVenta = v.datos_fiscales?.tipo_cbte || tipoCbte
+
         // Obtener último comprobante y calcular el siguiente
         let lastVoucher
         try {
@@ -224,7 +228,7 @@ export default async function handler(req, res) {
         }
         const nextVoucher = lastVoucher + 1
 
-        console.log(`Venta ${v.id}: último comprobante=${lastVoucher}, siguiente=${nextVoucher}`)
+        console.log(`Venta ${v.id}: último comprobante=${lastVoucher}, siguiente=${nextVoucher}, tipo=${cbteTipoVenta}`)
 
         // Determinar tipo de documento del receptor
         const cuitCliente = v.datos_fiscales?.cuit?.replace(/-/g, '')
@@ -249,9 +253,6 @@ export default async function handler(req, res) {
         if (condStr.includes('exento')) condicionIvaReceptor = 4
         if (condStr.includes('no responsable')) condicionIvaReceptor = 3
 
-        // Armar el comprobante
-        const conceptoVenta = v.datos_fiscales?.concepto || emisorConfig?.concepto_default || 1
-        const cbteTipoVenta = v.datos_fiscales?.tipo_cbte || tipoCbte
 
         // Fecha de emisión: usar la del formulario si existe, sino hoy
         const fechaEmisionRaw = v.datos_fiscales?.fecha_emision || new Date().toISOString().split('T')[0]
