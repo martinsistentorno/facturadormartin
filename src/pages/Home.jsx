@@ -851,7 +851,9 @@ export default function Home() {
 
       {activeView === 'contable' && (
         <ContableView 
-          ventas={filteredVentas} 
+          ventas={filteredVentas}
+          allVentas={ventas}
+          selectedVentas={selectedVentas}
           filters={filters}
           onFilterChange={handleFilterChange}
           onCardClick={handleContableCardClick} 

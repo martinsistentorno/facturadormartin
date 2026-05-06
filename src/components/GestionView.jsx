@@ -27,6 +27,7 @@ export default function GestionView({
   const [clientSearch, setClientSearch] = useState('')
   const [sortBy, setSortBy] = useState('total')
   const [selectedClient, setSelectedClient] = useState(null)
+  const [filteredVentas, setFilteredVentas] = useState(ventas)
 
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 20
@@ -51,7 +52,7 @@ export default function GestionView({
   // ─── Build client directory from ventas ───
   const clients = useMemo(() => {
     const map = new Map()
-    ventas.forEach(v => {
+    filteredVentas.forEach(v => {
       if (v.status === 'borrada') return
       const nombre = v.cliente?.trim()
       if (!nombre) return
@@ -71,7 +72,7 @@ export default function GestionView({
       if (fecha && (!c.ultimaFecha || fecha > c.ultimaFecha)) c.ultimaFecha = fecha
     })
     return Array.from(map.values())
-  }, [ventas])
+  }, [filteredVentas])
 
   const sortedClients = useMemo(() => {
     let filtered = clients
@@ -120,7 +121,7 @@ export default function GestionView({
   return (
     <div>
       {/* ─── ANALYTICS DASHBOARD ─── */}
-      <AnalyticsDashboard ventas={ventas} />
+      <AnalyticsDashboard ventas={ventas} onFilteredVentasChange={setFilteredVentas} />
 
       {/* ─── TOP 5 CLIENTS ─── */}
       {top5.length > 0 && (

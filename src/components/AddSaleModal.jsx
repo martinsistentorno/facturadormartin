@@ -231,7 +231,7 @@ export default function AddSaleModal({ isOpen, onClose, onSave, searchClientes }
             form="add-sale-form"
             type="submit"
             disabled={loading}
-            className="w-full h-12 rounded-2xl bg-[#121212] text-white flex items-center justify-center gap-3 font-bold uppercase tracking-[0.2em] text-xs hover:-translate-y-1 hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.3)] transition-all duration-300 disabled:opacity-50 disabled:hover:translate-y-0 cursor-pointer"
+            className="w-full h-12 rounded-2xl bg-[#C0443C] text-white flex items-center justify-center gap-3 font-bold uppercase tracking-[0.2em] text-xs hover:-translate-y-1 hover:shadow-[0_20px_40px_-10px_rgba(192,68,60,0.3)] transition-all duration-300 disabled:opacity-50 disabled:hover:translate-y-0 cursor-pointer"
           >
             {loading ? <Loader2 className="animate-spin text-white" size={18} /> : <Plus size={18} />}
             {loading ? 'PROCESANDO...' : 'GENERAR VENTA'}

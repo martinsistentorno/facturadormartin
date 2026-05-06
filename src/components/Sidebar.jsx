@@ -96,7 +96,7 @@ export default function Sidebar({
 
         <button
           onClick={onNewVenta}
-          className="w-10 h-10 rounded-full bg-text-primary text-white flex items-center justify-center shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all cursor-pointer mb-6"
+          className="w-10 h-10 rounded-full bg-[#C0443C] text-white flex items-center justify-center shadow-md hover:shadow-lg hover:bg-[#A0342D] hover:-translate-y-0.5 transition-all cursor-pointer mb-6"
           title="Nueva Venta"
         >
           <Plus size={18} />
@@ -113,14 +113,14 @@ export default function Sidebar({
           <button
             onClick={() => onViewChange('contable')}
             className={`p-2.5 rounded-lg transition-all cursor-pointer ${activeView === 'contable' ? 'bg-blue/10 text-blue' : 'text-text-muted hover:bg-surface-alt hover:text-text-primary'}`}
-            title="Contable"
+            title="Gestión contable"
           >
             <BarChart3 size={18} />
           </button>
           <button
             onClick={() => onViewChange('gestion')}
             className={`p-2.5 rounded-lg transition-all cursor-pointer ${activeView === 'gestion' ? 'bg-blue/10 text-blue' : 'text-text-muted hover:bg-surface-alt hover:text-text-primary'}`}
-            title="Gestión"
+            title="Estadísticas"
           >
             <FolderKanban size={18} />
           </button>
@@ -145,7 +145,7 @@ export default function Sidebar({
         {/* Compose Button (Gmail style) */}
         <button
           onClick={onNewVenta}
-          className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-text-primary text-white text-[10px] font-bold uppercase tracking-widest shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all cursor-pointer"
+          className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-[#C0443C] text-white text-[10px] font-bold uppercase tracking-widest shadow-md hover:shadow-lg hover:bg-[#A0342D] hover:-translate-y-0.5 transition-all cursor-pointer"
         >
           <Plus size={14} />
           Nueva Venta
@@ -156,13 +156,13 @@ export default function Sidebar({
       <nav className="px-2 mt-1">
         <SidebarItem
           icon={<BarChart3 size={16} />}
-          label="Contable"
+          label="Gestión contable"
           active={isActive('contable')}
           onClick={() => onViewChange('contable')}
         />
         <SidebarItem
           icon={<FolderKanban size={16} />}
-          label="Organización"
+          label="Estadísticas"
           active={isActive('gestion')}
           onClick={() => onViewChange('gestion')}
         />
@@ -333,7 +333,7 @@ export default function Sidebar({
                   ))}
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={handleCreateLabel} className="flex-1 text-[10px] font-bold text-white bg-text-primary rounded-lg py-1 cursor-pointer hover:bg-text-primary/90 transition-colors">Crear</button>
+                  <button onClick={handleCreateLabel} className="flex-1 text-[10px] font-bold text-white bg-[#3460A8] rounded-lg py-1 cursor-pointer hover:bg-[#2A4D86] transition-colors">Crear</button>
                   <button onClick={() => setShowNewLabel(false)} className="text-[10px] font-bold text-text-muted hover:text-red cursor-pointer px-2">Cancelar</button>
                 </div>
               </div>
