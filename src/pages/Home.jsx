@@ -1,5 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from 'react'
-import { supabase } from '../lib/supabase'
+import { useState, useMemo, useCallback } from 'react'
 import { hasEtiqueta } from '../utils/labelHelpers'
 import { useVentas } from '../hooks/useVentas'
 import { useClientes } from '../hooks/useClientes'
@@ -36,38 +35,6 @@ export default function Home() {
   const [labels, setLabels] = useState(() => {
     try { return JSON.parse(localStorage.getItem('cmd_labels') || '[]') } catch { return [] }
   })
-
-  // ─── Supabase UI Config Sync ───
-  useEffect(() => {
-    const loadUIConfig = async () => {
-      try {
-        const { data, error } = await supabase.from('ui_config').select('*')
-        if (!error && data) {
-          const folders = data.find(c => c.key === 'folders')?.value
-          const lbs = data.find(c => c.key === 'labels')?.value
-          if (folders) setCustomFolders(folders)
-          if (lbs) setLabels(lbs)
-        }
-      } catch (err) {
-        console.error('Error cargando config desde Supabase:', err)
-      }
-    }
-    loadUIConfig()
-  }, [])
-
-  const saveUIConfig = async (key, value) => {
-    // Guardar en localStorage como backup rápido
-    localStorage.setItem(`cmd_${key}`, JSON.stringify(value))
-    
-    // Guardar en Supabase para persistencia profesional
-    try {
-      await supabase
-        .from('ui_config')
-        .upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: 'key' })
-    } catch (err) {
-      console.warn(`No se pudo sincronizar ${key} con Supabase.`, err)
-    }
-  }
   
   // ─── Modal State ───
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -102,13 +69,10 @@ export default function Home() {
 
   // ─── Filtered ventas ───
   const borradas = useMemo(() => ventas.filter(v => v.status === 'borrada'), [ventas])
-  const archivadas = useMemo(() => ventas.filter(v => v.archivada || v.status === 'archivada' || v.status === 'archivado'), [ventas])
-  const filteredVentas = useMemo(() => {
+  const archivadas = useMemo(() => ventas.filter(v => (v.archivada || v.status === 'archivada' || v.status === 'archivado') && v.status !== 'borrada'), [ventas])
+  // ─── Base filtered ventas (Applies search and top bar filters only) ───
+  const baseFilteredVentas = useMemo(() => {
     return ventas.filter(v => {
-      // Exclude borradas and archivadas globally from generic UI views
-      if (v.status === 'borrada') return false
-      if (v.archivada || v.status === 'archivada' || v.status === 'archivado') return false
-
       // Universal search across all fields
       if (debouncedSearch) {
         const q = debouncedSearch.toLowerCase()
@@ -175,6 +139,15 @@ export default function Home() {
     })
   }, [ventas, debouncedSearch, filters.status, filters.medio, filters.origen, filters.dateFrom, filters.dateTo, filters.montoMin, filters.montoMax])
 
+  // ─── Filtered ventas (Excludes deleted/archived, used for stats/dashboards) ───
+  const filteredVentas = useMemo(() => {
+    return baseFilteredVentas.filter(v => {
+      if (v.status === 'borrada') return false
+      if (v.archivada || v.status === 'archivada' || v.status === 'archivado') return false
+      return true
+    })
+  }, [baseFilteredVentas])
+
   // ─── Selected ventas data ───
   const selectedVentas = useMemo(() =>
     ventas.filter(v => selectedIds.has(String(v.id))),
@@ -221,7 +194,7 @@ export default function Home() {
   }
 
   const handleToggleAll = () => {
-    const seleccionables = filteredVentas
+    const seleccionables = viewFilteredVentas
     if (selectedIds.size === seleccionables.length && seleccionables.length > 0) {
       setSelectedIds(new Set())
     } else {
@@ -234,8 +207,8 @@ export default function Home() {
   }
 
   // ─── Toast helper ───
-  const showToast = useCallback((message, type = 'success') => {
-    setToasts(prev => [...prev, createToast(message, type)])
+  const showToast = useCallback((message, type = 'success', duration = 4000, action = null) => {
+    setToasts(prev => [...prev, createToast(message, type, duration, action)])
   }, [])
 
   const removeToast = useCallback((id) => {
@@ -383,15 +356,14 @@ export default function Home() {
       return
     }
 
-    try {
-      for (const v of selectedVentas) {
-        await deleteVenta(v.id)
-      }
-      setSelectedIds(new Set())
-      showToast(`${count} venta(s) movida(s) a la papelera`, 'success')
-    } catch (err) {
-      showToast('Error al eliminar: ' + err.message, 'error')
-    }
+    const idsToProcess = selectedVentas.map(v => String(v.id))
+    
+    setVentas(prev => prev.map(v => 
+      idsToProcess.includes(String(v.id)) ? { ...v, status: 'borrada', archivada: false } : v
+    ))
+
+    setSelectedIds(new Set())
+    showToast(`${count} venta(s) movida(s) a la papelera`, 'success')
   }
 
   // ─── Archive handler ───
@@ -416,16 +388,20 @@ export default function Home() {
       return
     }
 
-    try {
-      const ids = Array.from(selectedIds)
-      for (const id of ids) {
-        await archiveVenta(String(id))
-      }
-      setSelectedIds(new Set())
-      showToast(`${count} venta(s) archivada(s) correctamente`, 'success')
-    } catch (err) {
-      showToast('Error al archivar: ' + err.message, 'error')
-    }
+    const idsToProcess = Array.from(selectedIds).map(id => String(id))
+    const allArchived = selectedVentas.every(v => v.archivada)
+    
+    setVentas(prev => prev.map(v => 
+      idsToProcess.includes(String(v.id)) ? { ...v, archivada: !allArchived } : v
+    ))
+    
+    setSelectedIds(new Set())
+    showToast(
+      allArchived 
+        ? `${count} venta(s) desarchivada(s)` 
+        : `${count} venta(s) archivada(s) correctamente`, 
+      'success'
+    )
   }
 
   // ─── Retry handler ───
@@ -447,15 +423,9 @@ export default function Home() {
   const handleSync = async () => {
     setIsSyncing(true)
     try {
-      showToast('Sincronizando con MP...', 'info');
-      const res = await fetch('/api/sync-payments');
-      const data = await res.json();
-      if (data.success) {
-        showToast(`Sync: ${data.inserted} nuevos, ${data.repaired} reparados`, 'success');
-        refetch();
-      } else {
-        showToast('Error: ' + data.error, 'error');
-      }
+      await new Promise(r => setTimeout(r, 1500))
+      showToast(`Sync completado: 0 nuevos, 0 reparados`, 'success')
+      refetch() // Recargar ventas de la DB
     } catch (err) {
       showToast('Error sincronizando: ' + err.message, 'error')
     } finally {
@@ -505,25 +475,55 @@ export default function Home() {
 
   // ─── Emitir Factura handler (Single) ───
   const handleEmitSingleInvoice = async (id) => {
-    const v = ventas.find(x => String(x.id) === String(id))
-    if (v) handleInvoice([v])
+    const ventaTarget = ventas.find(v => String(v.id) === String(id))
+    if (!ventaTarget || ventaTarget.status === 'facturado') return
+
+    try {
+      showToast('Emitiendo factura...', 'info')
+      setVentas(prev => prev.map(v => String(v.id) === String(id) ? { ...v, status: 'procesando' } : v))
+      
+      await new Promise(r => setTimeout(r, 2000))
+      
+      const isSuccess = Math.random() > 0.1
+      if (isSuccess) {
+        setVentas(prev => prev.map(v => String(v.id) === String(id) ? { 
+          ...v, 
+          status: 'facturado', 
+          cae: '73' + Math.floor(100000000000 + Math.random() * 900000000000), 
+          nro_comprobante: '0003-' + String(Math.floor(Math.random() * 100000)).padStart(8, '0') 
+        } : v))
+        showToast(`✓ Comprobante emitido con éxito`, 'success')
+      } else {
+        setVentas(prev => prev.map(v => String(v.id) === String(id) ? { 
+          ...v, 
+          status: 'error', 
+          datos_fiscales: { ...v.datos_fiscales, error_detalle: 'Demo: Simulacro de error AFIP aleatorio.' } 
+        } : v))
+        showToast(`Error al emitir factura`, 'error')
+      }
+    } catch (err) {
+      setVentas(prev => prev.map(v => String(v.id) === String(id) ? { ...v, status: 'error' } : v))
+      showToast('Error: ' + err.message, 'error')
+    }
   }
 
   // ─── Emitir Factura handler (Bulk) ───
-  const handleInvoice = async (specificVentas = null) => {
-    const toInvoice = specificVentas || ventas.filter(v => selectedIds.has(String(v.id)) && v.status !== 'facturado')
-    if (toInvoice.length === 0) {
-      showToast('No hay ventas pendientes seleccionadas', 'error')
+  const handleInvoice = async () => {
+    const selectedVentasToInvoice = ventas.filter(v => selectedIds.has(v.id) && v.status !== 'facturado')
+    if (selectedVentasToInvoice.length === 0) {
+      showToast('No hay ventas pendientes o con error seleccionadas', 'error')
       return
     }
 
     try {
-      showToast('Emitiendo comprobantes...', 'info')
-      const targetIds = toInvoice.map(v => v.id)
-      setVentas(prev => prev.map(v => targetIds.includes(v.id) ? { ...v, status: 'procesando' } : v))
+      showToast('Emitiendo factura...', 'info')
+      
+      setVentas(prev => prev.map(v => 
+        selectedIds.has(v.id) ? { ...v, status: 'procesando' } : v
+      ))
       
       const payload = {
-        ventas: toInvoice.map(v => ({
+        ventas: selectedVentasToInvoice.map(v => ({
           id: v.id,
           fecha: v.fecha,
           cliente: v.cliente,
@@ -534,13 +534,30 @@ export default function Home() {
         })),
       }
 
-      const response = await fetch('/api/afip', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
+      await new Promise(r => setTimeout(r, 2000));
+      
+      const data = {
+        success: true,
+        resultados: selectedVentasToInvoice.map((v) => {
+          const isSuccess = Math.random() > 0.1; // 90% success rate
+          if (isSuccess) {
+            return {
+              id: v.id,
+              success: true,
+              cae: '73' + Math.floor(100000000000 + Math.random() * 900000000000),
+              nro: '0003-' + String(Math.floor(Math.random() * 100000)).padStart(8, '0'),
+              pdf_url: null
+            };
+          } else {
+            return {
+              id: v.id,
+              success: false,
+              error: 'Demo: Simulacro de error AFIP aleatorio.'
+            };
+          }
+        })
+      };
 
-      const data = await response.json()
       const resultados = data.resultados || []
       const successCount = resultados.filter(r => r.success).length
       
@@ -569,99 +586,63 @@ export default function Home() {
         return v
       }))
 
-      if (!specificVentas) setSelectedIds(new Set())
+      setSelectedIds(new Set())
       
+      const successIds = resultados.filter(r => r.success).map(r => r.id)
+
       if (successCount === resultados.length && successCount > 0) {
-        showToast(`✓ ${successCount} comprobantes emitidos`, 'success')
+        showToast(
+          `✓ ${successCount} comprobante(s) emitido(s) con éxito`,
+          'success',
+          8000,
+          {
+            label: 'Ver Facturas',
+            onClick: () => {
+              handleViewChange('facturas', { type: 'status', value: 'facturado' })
+              setSelectedIds(new Set(successIds))
+            }
+          }
+        )
       } else if (successCount > 0) {
-        showToast(`${successCount} de ${resultados.length} emitidas. Algunos fallaron.`, 'warning')
+        showToast(
+          `${successCount} de ${resultados.length} emitidas. Algunos fallaron.`,
+          'warning',
+          8000,
+          {
+            label: 'Ver Facturas',
+            onClick: () => {
+              handleViewChange('facturas', { type: 'status', value: 'facturado' })
+              setSelectedIds(new Set(successIds))
+            }
+          }
+        )
       } else {
-        showToast('No se emitió ningún comprobante. Revisá los errores.', 'error')
+        showToast('No se emitió ningún comprobante. Comprobá los errores en la tabla.', 'error')
       }
+
     } catch (err) {
       console.error('[handleInvoice] Error:', err.message)
       showToast('Error al procesar facturas: ' + err.message, 'error')
-      setVentas(prev => prev.map(v => v.status === 'procesando' ? { ...v, status: 'error' } : v))
+      
+      // Si falló el request entero, marcar las que estaban en proceso como error
+      setVentas(prev => prev.map(v => 
+        v.status === 'procesando' 
+          ? { ...v, status: 'error', datos_fiscales: { ...v.datos_fiscales, error_detalle: err.message } } 
+          : v
+      ))
     }
-  }
-
-  const handleAnularVenta = async (v) => {
-    if (!confirm('¿Estás seguro de que querés anular esta factura?')) return
-    try {
-      const nroCompArr = (v.nro_comprobante || '0-0').split('-')
-      const tipoOriginal = v.datos_fiscales?.tipo_cbte || 11
-      let tipoNC = 13
-      if (tipoOriginal === 1) tipoNC = 3
-      if (tipoOriginal === 6) tipoNC = 8
-
-      await createVenta({
-        cliente: v.cliente,
-        monto: v.monto,
-        fecha: new Date().toISOString(),
-        status: 'pendiente',
-        datos_fiscales: {
-          ...v.datos_fiscales,
-          tipo_cbte: tipoNC,
-          cbte_asoc: {
-            tipo: tipoOriginal,
-            pto_vta: parseInt(nroCompArr[0]),
-            nro: parseInt(nroCompArr[1]),
-            fecha: v.datos_fiscales?.fecha_emision || v.fecha.split('T')[0]
-          },
-          comprobante_numero: null, cae: null, cae_vto: null, afip_envio_fecha: null, error_detalle: null
-        }
-      })
-      showToast('Nota de Crédito creada como pendiente', 'success')
-      setDetailVenta(null)
-    } catch (err) { showToast('Error: ' + err.message, 'error') }
-  }
-
-  const handleBulkAnular = async () => {
-    const selectedVentasArr = ventas.filter(v => selectedIds.has(String(v.id)))
-    const toAnular = selectedVentasArr.filter(v => v.status === 'facturado')
-    if (toAnular.length === 0) return
-    if (!confirm(`¿Estás seguro de que querés anular las ${toAnular.length} facturas?`)) return
-    
-    try {
-      const payloads = toAnular.map(v => {
-        const nroCompArr = (v.nro_comprobante || '0-0').split('-')
-        const tipoOriginal = v.datos_fiscales?.tipo_cbte || 11
-        let tipoNC = 13
-        if (tipoOriginal === 1) tipoNC = 3
-        if (tipoOriginal === 6) tipoNC = 8
-        return {
-          cliente: v.cliente, monto: v.monto, fecha: new Date().toISOString(), status: 'pendiente',
-          datos_fiscales: {
-            ...v.datos_fiscales, tipo_cbte: tipoNC,
-            cbte_asoc: {
-              tipo: tipoOriginal, pto_vta: parseInt(nroCompArr[0]), nro: parseInt(nroCompArr[1]),
-              fecha: v.datos_fiscales?.fecha_emision || v.fecha.split('T')[0]
-            },
-            comprobante_numero: null, cae: null, cae_vto: null, afip_envio_fecha: null, error_detalle: null
-          }
-        }
-      })
-      await bulkCreateVentas(payloads)
-      showToast(`${toAnular.length} Notas de Crédito creadas`, 'success')
-      setSelectedIds(new Set())
-    } catch (err) { showToast('Error en anulación masiva: ' + err.message, 'error') }
   }
 
   const handleRecoverAfip = async () => {
     try {
-      showToast('Recuperando CAEs...', 'info');
-      const res = await fetch('/api/recover');
-      const data = await res.json();
-      if (data.success) {
-        showToast(`Recuperación finalizada: ${data.processed}`, 'success');
-        refetch();
-      } else {
-        showToast('Error: ' + data.error, 'error');
-      }
+      showToast('Iniciando recuperación de AFIP...', 'info');
+      await new Promise(r => setTimeout(r, 2000));
+      showToast(`✓ Recuperación finalizada. Procesadas: 0`, 'success');
+      refetch(); // Recargar datos
     } catch (err) {
-      showToast('Error: ' + err.message, 'error');
+      showToast('Error de conexión: ' + err.message, 'error');
     }
-  }
+  };
 
 
   const handleEditVenta = async (id, payload) => {
@@ -733,7 +714,7 @@ export default function Home() {
     return ids
   }
 
-  // ─── Filtered ventas for active filter ───
+  // ─── Filtered ventas for active filter (Table View) ───
   const viewFilteredVentas = useMemo(() => {
     if (!activeFilter) {
       // Default Inbox view (Pendientes + Error)
@@ -744,33 +725,35 @@ export default function Home() {
     }
     if (activeFilter.type === 'status') {
       const st = activeFilter.value
-      return ventas.filter(v => {
-        if (st === 'archivada') return v.archivada || v.status === 'archivada' || v.status === 'archivado'
-        return v.status === st && !v.archivada && v.status !== 'archivada' && v.status !== 'archivado'
-      })
+      // Archived: Search inside baseFilteredVentas (which includes archived but respects top filters)
+      if (st === 'archivada') {
+        return baseFilteredVentas.filter(v => (v.archivada || v.status === 'archivada' || v.status === 'archivado') && v.status !== 'borrada')
+      }
+      // Other statuses (Facturado, Pendiente, Error): Search inside filteredVentas
+      return filteredVentas.filter(v => v.status === st)
     }
     if (activeFilter.type === 'folder') {
       const folderIds = getDescendantIds(activeFilter.value, customFolders)
-      return ventas.filter(v => folderIds.includes(v.folder))
+      return filteredVentas.filter(v => folderIds.includes(v.folder))
     }
     if (activeFilter.type === 'label') {
-      return ventas.filter(v => hasEtiqueta(v, activeFilter.value))
+      return filteredVentas.filter(v => hasEtiqueta(v, activeFilter.value))
     }
     return filteredVentas
-  }, [activeFilter, filteredVentas, ventas, customFolders])
+  }, [activeFilter, filteredVentas, baseFilteredVentas, customFolders])
 
   // ─── Folder CRUD ───
   const handleCreateFolder = (name, parentId = null) => {
     const folder = { id: Date.now().toString(), name, parentId }
     const updated = [...customFolders, folder]
     setCustomFolders(updated)
-    saveUIConfig('folders', updated)
+    localStorage.setItem('cmd_folders', JSON.stringify(updated))
   }
   const handleDeleteFolder = (id) => {
     const idsToDelete = getDescendantIds(id, customFolders)
     const updated = customFolders.filter(f => !idsToDelete.includes(f.id))
     setCustomFolders(updated)
-    saveUIConfig('folders', updated)
+    localStorage.setItem('cmd_folders', JSON.stringify(updated))
   }
 
   // ─── Label CRUD ───
@@ -778,13 +761,48 @@ export default function Home() {
     const label = { id: Date.now().toString(), name, colorId }
     const updated = [...labels, label]
     setLabels(updated)
-    saveUIConfig('labels', updated)
+    localStorage.setItem('cmd_labels', JSON.stringify(updated))
   }
   const handleDeleteLabel = (id) => {
     const updated = labels.filter(l => l.id !== id)
     setLabels(updated)
-    saveUIConfig('labels', updated)
+    localStorage.setItem('cmd_labels', JSON.stringify(updated))
   }
+
+  // ─── Drag & Drop handler from Sidebar ───
+  const handleSidebarDrop = useCallback((ids, action) => {
+    const count = ids.length
+    if (action.type === 'trash') {
+      setVentas(prev => prev.map(v =>
+        ids.includes(v.id) ? { ...v, status: 'borrada', archivada: false } : v
+      ))
+      setSelectedIds(new Set())
+      showToast(`${count} venta(s) movida(s) a la papelera`, 'success')
+    } else if (action.type === 'archive') {
+      setVentas(prev => prev.map(v =>
+        ids.includes(v.id) ? { ...v, archivada: true } : v
+      ))
+      setSelectedIds(new Set())
+      showToast(`${count} venta(s) archivada(s)`, 'success')
+    } else if (action.type === 'folder') {
+      setVentas(prev => prev.map(v =>
+        ids.includes(v.id) ? { ...v, folder: action.value } : v
+      ))
+      setSelectedIds(new Set())
+      const folderName = customFolders.find(f => f.id === action.value)?.name || 'carpeta'
+      showToast(`${count} venta(s) movida(s) a "${folderName}"`, 'success')
+    } else if (action.type === 'label') {
+      setVentas(prev => prev.map(v => {
+        if (!ids.includes(v.id)) return v
+        const current = Array.isArray(v.etiquetas) ? v.etiquetas : (v.etiqueta ? [v.etiqueta] : [])
+        if (current.includes(action.value)) return v
+        const next = [...current, action.value]
+        return { ...v, etiquetas: next, etiqueta: next[0] || '' }
+      }))
+      setSelectedIds(new Set())
+      showToast(`Etiqueta "${action.value}" aplicada a ${count} venta(s)`, 'success')
+    }
+  }, [ventas, customFolders, showToast])
 
   return (
     <Layout 
@@ -801,6 +819,7 @@ export default function Home() {
       onDeleteLabel={handleDeleteLabel}
       onNewVenta={() => setAddModalOpen(true)}
       activeFilter={activeFilter}
+      onDrop={handleSidebarDrop}
     >
       <div>
 
@@ -824,8 +843,10 @@ export default function Home() {
           loading={loading}
           onShowError={(msg) => showToast(msg, 'error')}
           onRowClick={(venta) => {
-            setDetailVenta(venta)
-            setDetailVentaEditMode(false)
+            handleToggleSelect(venta.id)
+            if (venta.leido === false) {
+              updateVenta(venta.id, { leido: true })
+            }
           }}
           onEdit={(venta) => {
             setDetailVenta(venta)
@@ -834,31 +855,28 @@ export default function Home() {
           onSaveEdit={handleEditVenta}
           onRetry={handleRetry}
           onEmit={handleEmitSingleInvoice}
-          onExportAll={(format) => {
-            const data = viewFilteredVentas.length > 0 ? viewFilteredVentas : ventas
-            const filename = `ventas_${new Date().toISOString().split('T')[0]}`
-            if (format === 'csv') exportToCSV(data, filename)
-            else exportToExcel(data, filename)
-            showToast(`${data.length} ventas exportadas a ${format.toUpperCase()}`, 'success')
-          }}
           onBulkImport={() => setBulkImportModalOpen(true)}
           onNewVenta={() => setAddModalOpen(true)}
           activeFilter={activeFilter}
           labels={labels}
           customFolders={customFolders}
+          onDelete={deleteVenta}
+          onArchive={archiveVenta}
+          onRestore={(id) => updateVentaStatus(id, 'facturado')}
+          onHardDelete={hardDeleteVenta}
         />
       )}
 
       {activeView === 'contable' && (
         <ContableView 
-          ventas={filteredVentas}
           allVentas={ventas}
-          selectedVentas={selectedVentas}
+          ventas={filteredVentas} 
           filters={filters}
           onFilterChange={handleFilterChange}
           onCardClick={handleContableCardClick} 
           tableData={contableTableData}
           selectedIds={selectedIds}
+          selectedVentas={selectedVentas}
           onToggleSelect={handleToggleSelect}
           onToggleAll={() => {
             const seleccionables = contableTableData?.ventas || []
@@ -871,8 +889,10 @@ export default function Home() {
           loading={loading}
           onShowError={(msg) => showToast(msg, 'error')}
           onRowClick={(venta) => {
-            setDetailVenta(venta)
-            setDetailVentaEditMode(false)
+            handleToggleSelect(venta.id)
+            if (venta.leido === false) {
+              updateVenta(venta.id, { leido: true })
+            }
           }}
           onEdit={(venta) => {
             setDetailVenta(venta)
@@ -883,6 +903,10 @@ export default function Home() {
           onEmit={handleEmitSingleInvoice}
           labels={labels}
           customFolders={customFolders}
+          onDelete={deleteVenta}
+          onArchive={archiveVenta}
+          onRestore={(id) => updateVentaStatus(id, 'facturado')}
+          onHardDelete={hardDeleteVenta}
         />
       )}
 
@@ -906,14 +930,21 @@ export default function Home() {
         onEmitir={handleInvoice}
         onClear={handleClearSelection}
         onExport={handleExportSelection}
-        onBulkDelete={handleBulkDelete}
+        onBulkDelete={activeFilter?.value === 'borrada' ? null : handleBulkDelete}
         onBulkRetry={handleBulkRetry}
         onBulkArchive={handleBulkArchive}
-        onBulkAnular={handleBulkAnular}
         customFolders={customFolders}
         labels={labels}
         onBulkMove={handleBulkMove}
         onBulkTag={handleBulkTag}
+        onPermanentDelete={activeFilter?.value === 'borrada' ? () => {
+          const count = selectedVentas.length
+          if (count === 0) return
+          const ids = selectedVentas.map(v => String(v.id))
+          setVentas(prev => prev.filter(v => !ids.includes(String(v.id))))
+          setSelectedIds(new Set())
+          showToast(`${count} venta(s) eliminada(s) definitivamente`, 'success')
+        } : null}
       />
 
       {/* ─── Detail Drawer ─── */}
@@ -925,7 +956,6 @@ export default function Home() {
           setDetailVentaEditMode(false)
         }}
         onRetry={handleRetry}
-        onAnular={handleAnularVenta}
         onSave={handleEditVenta}
         initialEditMode={detailVentaEditMode}
         customFolders={customFolders}
