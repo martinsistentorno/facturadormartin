@@ -63,7 +63,7 @@ export default function ContableView({
           className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-[#2D8F5E] text-white text-[10px] font-bold uppercase tracking-widest hover:bg-[#24734B] hover:-translate-y-0.5 transition-all duration-300 cursor-pointer shadow-lg shadow-black/10"
         >
           <Sparkles size={13} />
-          Reporte fiscal
+          Resumen Contable
         </button>
       </div>
 

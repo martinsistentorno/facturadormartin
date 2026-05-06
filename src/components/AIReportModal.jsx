@@ -55,7 +55,7 @@ function FiscalReportView({ data, contentRef }) {
       <div className="bg-gradient-to-r from-purple/10 to-blue/10 p-6 rounded-2xl border border-purple/10">
         <div className="flex items-center gap-2 text-purple mb-2">
           <Sparkles size={14} />
-          <span className="text-[10px] font-bold uppercase tracking-[0.2em]">Diagnóstico fiscal algorítmico</span>
+          <span className="text-[10px] font-bold uppercase tracking-[0.2em]">Resumen contable</span>
         </div>
         <h2 className="text-xl font-black text-text-primary uppercase tracking-tight">
           Categoría {r.category} — {r.fmt(r.limit)} de tope anual
@@ -161,9 +161,9 @@ function FiscalReportView({ data, contentRef }) {
       )}
 
       {/* Table context */}
-      <div className="p-4 rounded-2xl bg-text-primary text-white">
-        <span className="text-[9px] font-bold uppercase tracking-widest text-blue/80">Contexto de la tabla actual</span>
-        <p className="text-xs mt-1 opacity-80 leading-relaxed">
+      <div className="p-4 rounded-2xl bg-surface-alt/50 border border-border/40">
+        <span className="text-[9px] font-bold uppercase tracking-widest text-text-muted">Contexto de la tabla actual</span>
+        <p className="text-xs mt-1 text-text-secondary leading-relaxed">
           Mostrando {r.tableTotal} registros: {r.tableFacturadas} facturadas ({r.fmt(r.tableBilledTotal)}), {r.tablePendientes} pendientes ({r.fmt(r.tablePendingTotal)}), {r.tableErrors} con error. Este reporte se recalcula automáticamente cada vez que aplicás filtros.
         </p>
       </div>
@@ -191,7 +191,7 @@ function PerformanceReportView({ data, contentRef }) {
       <div className="bg-gradient-to-r from-blue/10 to-purple/10 p-6 rounded-2xl border border-blue/10">
         <div className="flex items-center gap-2 text-blue mb-2">
           <BarChart3 size={14} />
-          <span className="text-[10px] font-bold uppercase tracking-[0.2em]">Análisis de rendimiento algorítmico</span>
+          <span className="text-[10px] font-bold uppercase tracking-[0.2em]">Resumen estadísticas</span>
         </div>
         <h2 className="text-xl font-black text-text-primary uppercase tracking-tight">
           {r.durationDays} días analizados {r.selectedClient !== 'all' ? `— ${r.selectedClient}` : ''}
@@ -201,15 +201,14 @@ function PerformanceReportView({ data, contentRef }) {
 
       {/* Overview */}
       <Section icon={BarChart3} title="Resumen del período" color="text-[#3460A8]">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-3">
           <Metric label="Total facturado" value={r.fmt(r.totalBilled)} />
           <Metric label="Operaciones" value={r.totalOps} sub={`${r.dailyOpsAvg.toFixed(1)} ops/día`} />
-          <Metric label="Tasa de conversión" value={`${r.conversionRate}%`} sub={`${r.billed} fact / ${r.totalOps} total`} color={r.conversionRate >= 80 ? 'text-[#2D8F5E]' : 'text-[#F59E0B]'} />
           <Metric label="Pendientes" value={r.pending} sub="Sin facturar" color={r.pending > 0 ? 'text-[#F59E0B]' : 'text-[#2D8F5E]'} />
         </div>
         {r.pending > 0 && (
           <p className="text-[10px] text-text-muted">
-            Pipeline pendiente estimado: {r.fmt(r.avgTicket * r.pending)} (basado en ticket promedio)
+            Monto pendiente de facturar estimado: {r.fmt(r.avgTicket * r.pending)} (basado en ticket promedio)
           </p>
         )}
       </Section>
@@ -332,10 +331,10 @@ function PerformanceReportView({ data, contentRef }) {
       )}
 
       {/* Projection */}
-      <div className="p-4 rounded-2xl bg-text-primary text-white">
-        <span className="text-[9px] font-bold uppercase tracking-widest text-blue/80">Proyección próximo período</span>
-        <p className="text-xs mt-1 opacity-80 leading-relaxed">
-          Basado en la tendencia {r.montoTrendLabel} y el promedio diario de {r.fmt(r.dailyAvg)}, se proyecta un facturado de <strong>{r.fmt(r.projectedMonto)}</strong> para los próximos {r.durationDays} días.
+      <div className="p-4 rounded-2xl bg-surface-alt/50 border border-border/40">
+        <span className="text-[9px] font-bold uppercase tracking-widest text-text-muted">Proyección próximo período</span>
+        <p className="text-xs mt-1 text-text-secondary leading-relaxed">
+          Basado en la tendencia {r.montoTrendLabel} y el promedio diario de {r.fmt(r.dailyAvg)}, se proyecta un facturado de <strong className="text-text-primary">{r.fmt(r.projectedMonto)}</strong> para los próximos {r.durationDays} días.
           {r.selectedClient !== 'all' ? ` (filtrado por cliente: ${r.selectedClient})` : ''}
         </p>
       </div>
@@ -361,7 +360,7 @@ export default function AIReportModal({ isOpen, onClose, type, data }) {
     try {
       // Small delay to ensure all charts (Recharts) are stable and fully rendered
       await new Promise(r => setTimeout(r, 100));
-      const title = type === 'fiscal' ? 'Reporte_Fiscal' : 'Reporte_Rendimiento';
+      const title = type === 'fiscal' ? 'Resumen_Contable' : 'Resumen_Estadisticas';
       await exportReportToPDF(reportRef.current, title);
     } finally {
       setExporting(false);
@@ -379,7 +378,7 @@ export default function AIReportModal({ isOpen, onClose, type, data }) {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Reporte CMD — Motor Analítico">
+    <Modal isOpen={isOpen} onClose={onClose} title="Resumen — Motor Analítico">
       {/* Export toolbar */}
       <div className="flex items-center justify-end gap-2 mb-4 -mt-1">
         <button

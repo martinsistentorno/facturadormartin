@@ -263,7 +263,7 @@ export default function AnalyticsDashboard({ ventas = [], onFilteredVentasChange
           className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-[#3460A8] text-white text-[10px] font-bold uppercase tracking-widest hover:bg-[#2A4D86] hover:-translate-y-0.5 transition-all duration-300 cursor-pointer shadow-lg shadow-black/10"
         >
           <Sparkles size={13} />
-          Análisis de Rendimiento
+          Resumen Estadísticas
         </button>
       </div>
 

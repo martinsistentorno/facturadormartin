@@ -80,8 +80,10 @@ export function generateFiscalReport({ allVentas, tableVentas, selectedVentas, c
     clientMap[name].total += getAmount(v);
     clientMap[name].count++;
   });
+  const GENERIC_CLIENTS = ['consumidor final', 'cf', 'sin nombre', 'particular', 'cliente genérico', 'cliente generico', 'varios', 'mostrador'];
   const clientRanking = Object.entries(clientMap)
     .map(([name, d]) => ({ name, ...d }))
+    .filter(c => !GENERIC_CLIENTS.includes(c.name.toLowerCase().trim()))
     .sort((a, b) => b.total - a.total);
   const totalFromSource = source.reduce((s, v) => s + getAmount(v), 0);
   const top3 = clientRanking.slice(0, 3).map(c => ({
