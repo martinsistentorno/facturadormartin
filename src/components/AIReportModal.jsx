@@ -60,6 +60,9 @@ function FiscalReportView({ data, contentRef }) {
         <h2 className="text-xl font-black text-text-primary uppercase tracking-tight">
           Categoría {r.category} — {r.fmt(r.limit)} de tope anual
         </h2>
+        <p className="text-[10px] font-medium text-text-muted mt-1 italic opacity-80">
+          * Basado en los registros filtrados en tu tabla ({r.tableTotal} comprobantes).
+        </p>
         <div className="flex items-center gap-3 mt-3">
           <Badge text={statusLabel} variant={statusColor} />
           <span className="text-xs text-text-muted">{r.pctUsed}% utilizado</span>
@@ -160,15 +163,7 @@ function FiscalReportView({ data, contentRef }) {
         </Section>
       )}
 
-      {/* Table context */}
-      <div className="p-4 rounded-2xl bg-surface-alt/50 border border-border/40">
-        <span className="text-[9px] font-bold uppercase tracking-widest text-text-muted">Contexto de la tabla actual</span>
-        <p className="text-xs mt-1 text-text-secondary leading-relaxed">
-          Mostrando {r.tableTotal} registros: {r.tableFacturadas} facturadas ({r.fmt(r.tableBilledTotal)}), {r.tablePendientes} pendientes ({r.fmt(r.tablePendingTotal)}), {r.tableErrors} con error. Este reporte se recalcula automáticamente cada vez que aplicás filtros.
-        </p>
-      </div>
 
-      <p className="text-[9px] text-center text-text-muted italic">* Reporte generado algorítmicamente a partir de los datos filtrados en tu tabla. No constituye asesoramiento contable.</p>
     </div>
   );
 }
@@ -196,7 +191,9 @@ function PerformanceReportView({ data, contentRef }) {
         <h2 className="text-xl font-black text-text-primary uppercase tracking-tight">
           {r.durationDays} días analizados {r.selectedClient !== 'all' ? `— ${r.selectedClient}` : ''}
         </h2>
-        <p className="text-xs text-text-muted mt-1">{r.startDate} → {r.endDate}</p>
+        <p className="text-[10px] font-medium text-text-muted mt-1 italic opacity-80">
+          * Basado en los registros filtrados en tu tabla. {r.startDate} → {r.endDate}
+        </p>
       </div>
 
       {/* Overview */}
@@ -339,7 +336,7 @@ function PerformanceReportView({ data, contentRef }) {
         </p>
       </div>
 
-      <p className="text-[9px] text-center text-text-muted italic">* Reporte generado algorítmicamente a partir de los datos filtrados. No constituye asesoramiento contable.</p>
+
     </div>
   );
 }
