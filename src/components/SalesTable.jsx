@@ -1,13 +1,13 @@
 import StatusBadge from './StatusBadge'
 import { LABEL_COLORS } from '../config/colors'
 import { getEtiquetas, hasEtiqueta } from '../utils/labelHelpers'
-import { AlertCircle, Edit2, FileDown, RotateCcw, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Save, Loader2, X, Settings2, Check, Eye, FileText, Download, Archive, Tag, FolderInput, ChevronRight as ChevronRightSub } from 'lucide-react'
+import { AlertCircle, Edit2, FileDown, RotateCcw, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Save, Loader2, X, Settings2, Check, Eye, FileText, Download, Archive, Tag, FolderInput, ChevronRight as ChevronRightSub, Trash2 } from 'lucide-react'
 import { generateInvoicePdf } from '../utils/invoicePdf'
 import { useState, Fragment, useEffect, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { useConfig } from '../context/ConfigContext'
 import { translatePaymentMethod, getPaymentBadgeStyle } from '../utils/paymentMethods'
-import { exportToExcel } from '../utils/exportUtils'
+import { exportToExcel, exportToCSV } from '../utils/exportUtils'
 
 const PAGE_SIZES = [25, 50, 100]
 
@@ -103,12 +103,19 @@ export default function SalesTable({
   onEmit,
   labels = [],
   customFolders = [],
+  onBulkImport,
+  onDelete,
+  onArchive,
+  onRestore,
+  onHardDelete,
 }) {
   const { emisor, isRI } = useConfig()
   const [sortKey, setSortKey] = useState('fecha')
   const [sortDir, setSortDir] = useState('desc')
   const [page, setPage] = useState(0)
   const [pageSize, setPageSize] = useState(25)
+  const [exportOpen, setExportOpen] = useState(false)
+  const exportRef = useRef(null)
 
   // ─── Column visibility state ───
   const [visibleColumns, setVisibleColumns] = useState(() => {
@@ -131,6 +138,16 @@ export default function SalesTable({
   const [ctxSub, setCtxSub] = useState(null); // 'labels' | 'folders' | null
   const longPressTimer = useRef(null);
   const ctxMenuRef = useRef(null);
+
+  // Close dropdowns on outside click
+  useEffect(() => {
+    const handler = (e) => {
+      if (exportRef.current && !exportRef.current.contains(e.target)) setExportOpen(false)
+      if (pickerRef.current && !pickerRef.current.contains(e.target)) setShowColumnPicker(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
 
   const closeCtxMenu = useCallback(() => {
     setCtxMenu(null);
@@ -341,7 +358,7 @@ export default function SalesTable({
   // ─── Sort header helper ───
   const SortHeader = ({ label, sortField, align }) => (
     <th
-      className={`px-4 py-3 ${align === 'right' ? 'text-right' : 'text-left'} text-xs font-semibold text-text-secondary uppercase tracking-wider cursor-pointer select-none hover:text-accent transition-colors group`}
+      className={`px-[clamp(0.4rem,1vw,1rem)] py-[clamp(0.4rem,0.8vh,0.75rem)] ${align === 'right' ? 'text-right' : 'text-left'} text-[clamp(10px,0.7vw,11px)] font-bold text-text-secondary uppercase tracking-wider cursor-pointer select-none hover:text-accent transition-colors group`}
       onClick={() => handleSort(sortField)}
     >
       <div className={`inline-flex items-center gap-1 ${align === 'right' ? 'flex-row-reverse' : ''}`}>
@@ -484,14 +501,47 @@ export default function SalesTable({
         {/* Table Toolbar / Pagination & Column Picker (Gmail Style) */}
         <div className="flex items-center justify-between px-2 py-2 mb-2 gap-2 relative">
           
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => exportToExcel(sortedVentas)}
-              className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest text-text-muted hover:text-[#316973] hover:bg-[#316973]/10 transition-all cursor-pointer"
-            >
-              <Download size={14} />
-              Exportar
-            </button>
+          <div className="flex items-center gap-1">
+            {/* Unified Export Dropdown */}
+            <div className="relative" ref={exportRef}>
+              <button
+                onClick={() => setExportOpen(!exportOpen)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/60 bg-white text-[10px] md:text-xs font-semibold text-text-muted hover:bg-surface-alt hover:text-text-primary shadow-sm transition-all cursor-pointer"
+              >
+                <FileDown size={13} />
+                Exportar
+                <ChevronDown size={12} className={`transition-transform ${exportOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {exportOpen && (
+                <div className="absolute left-0 mt-2 w-40 bg-white border border-border rounded-xl shadow-lg z-50 py-1 animate-slide-down">
+                  <button
+                    onClick={() => { exportToExcel(sortedVentas); setExportOpen(false) }}
+                    className="w-full flex items-center gap-2 px-4 py-2 text-xs font-semibold text-text-secondary hover:bg-surface-alt hover:text-green transition-colors cursor-pointer text-left"
+                  >
+                    <div className="w-1.5 h-1.5 rounded-full bg-green" />
+                    Excel (.xlsx)
+                  </button>
+                  <button
+                    onClick={() => { exportToCSV(sortedVentas); setExportOpen(false) }}
+                    className="w-full flex items-center gap-2 px-4 py-2 text-xs font-semibold text-text-secondary hover:bg-surface-alt hover:text-blue transition-colors cursor-pointer text-left"
+                  >
+                    <div className="w-1.5 h-1.5 rounded-full bg-blue" />
+                    CSV (.csv)
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {onBulkImport && (
+              <button
+                onClick={onBulkImport}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/60 bg-white text-[10px] md:text-xs font-semibold text-text-muted hover:bg-surface-alt hover:text-purple shadow-sm transition-all cursor-pointer"
+              >
+                <FolderInput size={13} />
+                Carga Masiva
+              </button>
+            )}
           </div>
 
           <div className="flex items-center gap-6">
@@ -581,11 +631,11 @@ export default function SalesTable({
 
         {/* Table Container */}
         <div className="bg-white rounded-2xl border border-border/40 shadow-[0_2px_10px_rgba(0,0,0,0.02)] overflow-hidden">
-          <div className="overflow-x-auto min-h-[400px]">
-          <table className="w-full text-sm">
-            <thead>
+          <div className="overflow-x-auto min-h-[400px] scroll-shadow-container">
+          <table className="w-full text-sm border-collapse">
+            <thead className="sticky top-0 z-10 bg-white shadow-[0_1px_0_rgba(0,0,0,0.05)]">
               <tr className="border-b border-border/60">
-                <th className="w-12 px-4 py-3 text-left">
+                <th className="w-10 px-[clamp(0.4rem,1vw,1rem)] py-3 text-left">
                   <input
                     type="checkbox"
                     checked={allSelected}
@@ -606,7 +656,7 @@ export default function SalesTable({
                 {isVisible('factura') && <SortHeader label="Factura" sortField="factura" />}
                 {isVisible('cae') && <SortHeader label="CAE" sortField="cae" />}
                 {isVisible('etiqueta') && <SortHeader label="Etiqueta" sortField="etiqueta" />}
-                <th className="px-4 py-3 text-right bg-surface-alt/30"></th>
+                <th className="px-4 py-3 text-right bg-surface-alt/5 bg-white sticky right-0 shadow-[-1px_0_0_rgba(0,0,0,0.05)]"></th>
               </tr>
             </thead>
             <tbody>
@@ -617,7 +667,16 @@ export default function SalesTable({
                 return (
                   <tr
                     key={venta.id}
-                    onClick={() => handleRowClick(venta)}
+                    draggable
+                    onDragStart={(e) => {
+                      const isCurrentSelected = selectedIds.has(venta.id)
+                      const ids = isCurrentSelected && selectedIds.size > 0
+                        ? Array.from(selectedIds)
+                        : [venta.id]
+                      e.dataTransfer.setData('application/venta-ids', JSON.stringify(ids))
+                      e.dataTransfer.effectAllowed = 'move'
+                    }}
+                    onClick={() => onRowClick?.(venta)}
                     onContextMenu={(e) => handleContextMenu(e, venta)}
                     onTouchStart={(e) => handleTouchStart(e, venta)}
                     onTouchEnd={handleTouchEnd}
@@ -630,7 +689,7 @@ export default function SalesTable({
                     `}
                     style={{ touchAction: 'pan-y' }}
                   >
-                    <td className="px-4 py-3">
+                    <td className="px-[clamp(0.4rem,1vw,1rem)] py-[clamp(0.4rem,0.8vh,0.75rem)]">
                       <input
                         type="checkbox"
                         checked={isSelected}
@@ -640,18 +699,25 @@ export default function SalesTable({
                       />
                     </td>
                     {isVisible('fecha') && (
-                      <td className="px-4 py-3">
+                      <td className="px-[clamp(0.4rem,1vw,1rem)] py-[clamp(0.4rem,0.8vh,0.75rem)]">
                         <div className="text-text-primary font-medium">{formatDate(venta.fecha)}</div>
                         <div className="text-text-muted text-xs">{formatTime(venta.fecha)}</div>
                       </td>
                     )}
                     {isVisible('cliente') && (
-                      <td className="px-4 py-3">
-                        <div className="text-text-primary uppercase">{venta.cliente || '—'}</div>
+                      <td className="px-[clamp(0.4rem,1vw,1rem)] py-[clamp(0.4rem,0.8vh,0.75rem)]">
+                        <div className="flex items-center gap-2">
+                          {venta.leido === false && (
+                            <div className="w-1.5 h-1.5 rounded-full bg-blue shrink-0 shadow-[0_0_8px_rgba(52,96,168,0.5)]" title="Venta nueva" />
+                          )}
+                          <div className={`uppercase truncate max-w-[12vw] ${venta.leido === false ? 'font-black text-text-primary text-[clamp(11px,0.85vw,13px)]' : 'text-text-primary text-[clamp(11px,0.85vw,13px)] font-bold'}`}>
+                            {venta.cliente || '—'}
+                          </div>
+                        </div>
                       </td>
                     )}
                     {isVisible('cuit') && (
-                      <td className="px-4 py-3">
+                      <td className="px-[clamp(0.4rem,1vw,1rem)] py-[clamp(0.4rem,0.8vh,0.75rem)]">
                         <div className="text-text-muted font-mono text-xs">{venta.datos_fiscales?.cuit || '—'}</div>
                       </td>
                     )}
@@ -659,8 +725,8 @@ export default function SalesTable({
                       <td className="px-4 py-3 text-right">
                         {[3, 8, 13, 113].includes(venta.datos_fiscales?.tipo_cbte) ? (
                           <div className="flex flex-col items-end">
-                            <span className="text-[#C0443C] font-semibold tabular-nums">- {formatCurrency(venta.monto)}</span>
-                            <span className="text-[9px] font-bold text-[#C0443C]/80 uppercase tracking-wider">Nota de Crédito</span>
+                            <span className="text-[#C0443C] font-bold text-[clamp(11px,0.85vw,13px)] tabular-nums">- {formatCurrency(venta.monto)}</span>
+                            <span className="text-[8px] font-bold text-[#C0443C]/80 uppercase tracking-wider">Nota de Crédito</span>
                           </div>
                         ) : [2, 7, 12, 112].includes(venta.datos_fiscales?.tipo_cbte) ? (
                           <div className="flex flex-col items-end">
@@ -668,7 +734,7 @@ export default function SalesTable({
                             <span className="text-[9px] font-bold text-[#3460A8]/80 uppercase tracking-wider">Nota de Débito</span>
                           </div>
                         ) : (
-                          <span className="text-text-primary font-semibold tabular-nums">{formatCurrency(venta.monto)}</span>
+                          <span className="text-text-primary font-bold text-[clamp(11px,0.85vw,13px)] tabular-nums">{formatCurrency(venta.monto)}</span>
                         )}
                         {isRI && venta.datos_fiscales?.neto_gravado != null && (
                           <div className="text-[9px] text-text-muted tabular-nums mt-0.5">
@@ -678,27 +744,27 @@ export default function SalesTable({
                       </td>
                     )}
                     {isVisible('iva') && (
-                      <td className="px-4 py-3">
+                      <td className="px-[clamp(0.4rem,1vw,1rem)] py-[clamp(0.4rem,0.8vh,0.75rem)]">
                         <div className="text-text-secondary text-xs">{venta.datos_fiscales?.condicion_iva || '—'}</div>
                       </td>
                     )}
                     {isVisible('descripcion') && (
-                      <td className="px-4 py-3">
-                        <div className="text-text-secondary text-xs italic truncate max-w-[150px]" title={venta.datos_fiscales?.descripcion}>{venta.datos_fiscales?.descripcion || '—'}</div>
+                      <td className="px-[clamp(0.4rem,1vw,1rem)] py-[clamp(0.4rem,0.8vh,0.75rem)]">
+                        <div className="text-text-secondary text-[clamp(10px,0.8vw,12px)] italic truncate max-w-[150px]" title={venta.datos_fiscales?.descripcion}>{venta.datos_fiscales?.descripcion || '—'}</div>
                       </td>
                     )}
                     {isVisible('origen') && (
-                      <td className="px-4 py-3">
+                      <td className="px-[clamp(0.4rem,1vw,1rem)] py-[clamp(0.4rem,0.8vh,0.75rem)]">
                         <OrigenBadge origen={venta.datos_fiscales?.origen} mpId={venta.mp_payment_id} />
                       </td>
                     )}
                     {isVisible('medio') && (
-                      <td className="px-4 py-3">
+                      <td className="px-[clamp(0.4rem,1vw,1rem)] py-[clamp(0.4rem,0.8vh,0.75rem)]">
                         <PaymentBadge method={venta.datos_fiscales?.medio_pago || venta.datos_fiscales?.forma_pago} />
                       </td>
                     )}
                     {isVisible('status') && (
-                      <td className="px-4 py-3">
+                      <td className="px-[clamp(0.4rem,1vw,1rem)] py-[clamp(0.4rem,0.8vh,0.75rem)]">
                         <div className="flex items-center gap-2">
                           <StatusBadge status={venta.status} />
                           {isError && venta.datos_fiscales?.error_detalle && (
@@ -716,23 +782,23 @@ export default function SalesTable({
                       </td>
                     )}
                     {isVisible('factura') && (
-                      <td className="px-4 py-3">
-                        <div className="text-text-primary text-xs font-mono whitespace-nowrap">
+                      <td className="px-[clamp(0.4rem,1vw,1rem)] py-[clamp(0.4rem,0.8vh,0.75rem)]">
+                        <div className="text-text-primary text-[clamp(10px,0.8vw,12px)] font-mono whitespace-nowrap">
                           {venta.nro_comprobante || <span className="text-text-muted">—</span>}
                         </div>
                       </td>
                     )}
                     {isVisible('cae') && (
-                      <td className="px-4 py-3">
+                      <td className="px-[clamp(0.4rem,1vw,1rem)] py-[clamp(0.4rem,0.8vh,0.75rem)]">
                         {venta.cae ? (
                           <div>
-                            <div className="text-text-primary text-xs font-mono">{venta.cae}</div>
+                            <div className="text-text-primary text-[clamp(10px,0.8vw,12px)] font-mono">{venta.cae}</div>
                             {venta.vto_cae && (
-                              <div className="text-text-muted text-xs">Vto: {formatDate(venta.vto_cae)}</div>
+                              <div className="text-text-muted text-[10px]">Vto: {formatDate(venta.vto_cae)}</div>
                             )}
                           </div>
                         ) : (
-                          <span className="text-xs text-text-muted tabular-nums font-mono">{venta.cae || '—'}</span>
+                          <span className="text-[clamp(10px,0.8vw,12px)] text-text-muted tabular-nums font-mono">{venta.cae || '—'}</span>
                         )}
                       </td>
                     )}
@@ -750,7 +816,7 @@ export default function SalesTable({
                         )}
                       </td>
                     )}
-                    <td className="px-4 py-3 text-right">
+                                                            <td className="px-[clamp(0.4rem,1vw,1rem)] py-[clamp(0.4rem,0.8vh,0.75rem)] text-right bg-white sticky right-0 shadow-[-1px_0_0_rgba(0,0,0,0.05)]">
                       <div className="flex items-center justify-end gap-1">
                         {venta.status === 'facturado' && (
                           <button
@@ -832,122 +898,164 @@ export default function SalesTable({
           <div className="fixed inset-0 z-[99998]" onClick={closeCtxMenu} onContextMenu={(e) => { e.preventDefault(); closeCtxMenu(); }} />
           <div
             ref={ctxMenuRef}
-            className="fixed z-[99999] bg-white border border-border/40 rounded-xl shadow-2xl min-w-[200px] overflow-hidden animate-slide-down py-1"
+            className="fixed z-[99999] bg-white border border-border/60 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] min-w-[200px] overflow-hidden animate-slide-down py-1.5"
             style={{
               left: Math.min(ctxMenu.x, window.innerWidth - 220),
               top: Math.min(ctxMenu.y, window.innerHeight - 300),
             }}
           >
             {/* Header */}
-            <div className="px-4 py-2.5 border-b border-border/20">
-              <span className="text-[9px] font-black uppercase tracking-[0.2em] text-text-muted">
+            <div className="px-4 py-3 border-b border-border/30 bg-surface-alt/30">
+              <span className="block text-[10px] font-black uppercase tracking-[0.15em] text-text-primary/70">
+                Organizar
+              </span>
+              <span className="block text-xs font-bold text-text-primary truncate mt-0.5" title={ctxMenu.venta?.cliente || 'Consumidor Final'}>
                 {ctxMenu.venta?.cliente || 'Consumidor Final'}
               </span>
             </div>
 
-            {/* Archive */}
-            <button
-              onClick={handleCtxArchive}
-              className="w-full flex items-center gap-3 px-4 py-2.5 text-[11px] font-semibold text-text-primary hover:bg-surface-alt transition-colors cursor-pointer"
-            >
-              <Archive size={15} className="text-text-muted" />
-              {(ctxMenu.venta?.archivada || ctxMenu.venta?.status === 'archivada' || ctxMenu.venta?.status === 'archivado') ? 'Desarchivar' : 'Archivar'}
-            </button>
-
-            <div className="h-px bg-border/20 mx-2" />
-
-            {/* Labels submenu */}
-            <div className="relative">
+            <div className="p-1">
+              {/* Archive */}
               <button
-                onClick={() => setCtxSub(ctxSub === 'labels' ? null : 'labels')}
-                className="w-full flex items-center justify-between px-4 py-2.5 text-[11px] font-semibold text-text-primary hover:bg-surface-alt transition-colors cursor-pointer"
+                onMouseEnter={() => setCtxSub(null)}
+                onClick={handleCtxArchive}
+                className="w-full flex items-center gap-3 px-3 py-2.5 text-[11px] font-semibold text-text-primary hover:bg-surface-alt rounded-lg transition-colors cursor-pointer"
               >
-                <span className="flex items-center gap-3">
-                  <Tag size={15} className="text-text-muted" />
-                  Etiquetar
-                </span>
-                <ChevronRightSub size={14} className={`text-text-muted transition-transform ${ctxSub === 'labels' ? 'rotate-90' : ''}`} />
+                <Archive size={15} className="text-text-muted" />
+                {(ctxMenu.venta?.archivada || ctxMenu.venta?.status === 'archivada' || ctxMenu.venta?.status === 'archivado') ? 'Desarchivar' : 'Archivar'}
               </button>
-              {ctxSub === 'labels' && (
-                <div className="border-t border-border/10 bg-surface-alt/30 py-1">
-                  {getEtiquetas(ctxMenu.venta).length > 0 && (
-                    <button
-                      onClick={() => handleCtxLabel('')}
-                      className="w-full flex items-center gap-3 px-6 py-2 text-[11px] font-semibold text-red hover:bg-red-subtle/30 transition-colors cursor-pointer"
-                    >
-                      <X size={13} />
-                      Quitar todas
-                    </button>
-                  )}
-                  {labels.map(label => {
-                    const colorObj = LABEL_COLORS.find(c => c.id === label.colorId) || LABEL_COLORS[0];
-                    const isActive = hasEtiqueta(ctxMenu.venta, label.name);
-                    return (
-                      <button
-                        key={label.name}
-                        onClick={() => handleCtxLabel(label.name)}
-                        className={`w-full flex items-center gap-3 px-6 py-2 text-[11px] font-semibold transition-colors cursor-pointer ${
-                          isActive ? 'bg-accent/5 text-accent' : 'text-text-primary hover:bg-surface-alt'
-                        }`}
-                      >
-                        <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: colorObj.color }} />
-                        {label.name}
-                        {isActive && <Check size={13} className="ml-auto text-accent" />}
-                      </button>
-                    );
-                  })}
-                  {labels.length === 0 && (
-                    <div className="px-6 py-3 text-[10px] text-text-muted italic">No hay etiquetas creadas</div>
-                  )}
-                </div>
-              )}
-            </div>
 
-            <div className="h-px bg-border/20 mx-2" />
-
-            {/* Folders submenu */}
-            <div className="relative">
+              {/* Trash / Delete Action */}
               <button
-                onClick={() => setCtxSub(ctxSub === 'folders' ? null : 'folders')}
-                className="w-full flex items-center justify-between px-4 py-2.5 text-[11px] font-semibold text-text-primary hover:bg-surface-alt transition-colors cursor-pointer"
+                onClick={() => {
+                  if (ctxMenu.venta?.status === 'borrada') {
+                    if (confirm('¿Estás seguro de eliminar esta venta definitivamente? Esta acción no se puede deshacer.')) {
+                      onHardDelete?.(ctxMenu.venta.id);
+                    }
+                  } else {
+                    onDelete?.(ctxMenu.venta.id);
+                  }
+                  closeCtxMenu();
+                }}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 text-[11px] font-semibold rounded-lg transition-colors cursor-pointer ${
+                  ctxMenu.venta?.status === 'borrada' ? 'text-red hover:bg-red-subtle/30' : 'text-text-primary hover:bg-surface-alt'
+                }`}
               >
-                <span className="flex items-center gap-3">
-                  <FolderInput size={15} className="text-text-muted" />
-                  Mover a carpeta
-                </span>
-                <ChevronRightSub size={14} className={`text-text-muted transition-transform ${ctxSub === 'folders' ? 'rotate-90' : ''}`} />
+                <Trash2 size={15} className={ctxMenu.venta?.status === 'borrada' ? 'text-red' : 'text-text-muted'} />
+                {ctxMenu.venta?.status === 'borrada' ? 'Eliminar definitivamente' : 'Enviar a papelera'}
               </button>
-              {ctxSub === 'folders' && (
-                <div className="border-t border-border/10 bg-surface-alt/30 py-1">
-                  {ctxMenu.venta?.folder && (
-                    <button
-                      onClick={() => handleCtxMove(null)}
-                      className="w-full flex items-center gap-3 px-6 py-2 text-[11px] font-semibold text-red hover:bg-red-subtle/30 transition-colors cursor-pointer"
-                    >
-                      <X size={13} />
-                      Sacar de carpeta
-                    </button>
-                  )}
-                  {customFolders.map(folder => {
-                    const isActive = ctxMenu.venta?.folder === folder.id;
-                    return (
-                      <button
-                        key={folder.id}
-                        onClick={() => handleCtxMove(folder.id)}
-                        className={`w-full flex items-center gap-3 px-6 py-2 text-[11px] font-semibold transition-colors cursor-pointer ${
-                          isActive ? 'bg-accent/5 text-accent' : 'text-text-primary hover:bg-surface-alt'
-                        }`}
-                      >
-                        📁 {folder.name}
-                        {isActive && <Check size={13} className="ml-auto text-accent" />}
-                      </button>
-                    );
-                  })}
-                  {customFolders.length === 0 && (
-                    <div className="px-6 py-3 text-[10px] text-text-muted italic">No hay carpetas creadas</div>
-                  )}
-                </div>
+
+              {ctxMenu.venta?.status === 'borrada' && (
+                <button
+                  onClick={() => { onRestore?.(ctxMenu.venta.id); closeCtxMenu(); }}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 text-[11px] font-semibold text-text-primary hover:bg-surface-alt rounded-lg transition-colors cursor-pointer"
+                >
+                  <RotateCcw size={15} className="text-text-muted" />
+                  Restaurar venta
+                </button>
               )}
+
+              <div className="h-px bg-border/20 mx-2 my-0.5" />
+
+              {/* Labels submenu */}
+              <div 
+                className="relative"
+                onMouseEnter={() => setCtxSub('labels')}
+              >
+                <button
+                  onClick={() => setCtxSub(ctxSub === 'labels' ? null : 'labels')}
+                  className="w-full flex items-center justify-between px-3 py-2.5 text-[11px] font-semibold text-text-primary hover:bg-surface-alt rounded-lg transition-colors cursor-pointer"
+                >
+                  <span className="flex items-center gap-3">
+                    <Tag size={15} className="text-text-muted" />
+                    Etiquetar
+                  </span>
+                  <ChevronRightSub size={14} className={`text-text-muted transition-transform ${ctxSub === 'labels' ? 'rotate-90' : ''}`} />
+                </button>
+                {ctxSub === 'labels' && (
+                  <div className="border-t border-border/10 bg-surface-alt/30 rounded-b-lg py-1">
+                    {getEtiquetas(ctxMenu.venta).length > 0 && (
+                      <button
+                        onClick={() => handleCtxLabel('')}
+                        className="w-full flex items-center gap-3 px-6 py-2 text-[11px] font-semibold text-red hover:bg-red-subtle/30 rounded-lg transition-colors cursor-pointer"
+                      >
+                        <X size={13} />
+                        Quitar todas
+                      </button>
+                    )}
+                    {labels.map(label => {
+                      const colorObj = LABEL_COLORS.find(c => c.id === label.colorId) || LABEL_COLORS[0];
+                      const isActive = hasEtiqueta(ctxMenu.venta, label.name);
+                      return (
+                        <button
+                          key={label.name}
+                          onClick={() => handleCtxLabel(label.name)}
+                          className={`w-full flex items-center gap-3 px-6 py-2 text-[11px] font-semibold transition-colors cursor-pointer rounded-lg ${
+                            isActive ? 'bg-accent/5 text-accent' : 'text-text-primary hover:bg-surface-alt'
+                          }`}
+                        >
+                          <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: colorObj.color }} />
+                          {label.name}
+                          {isActive && <Check size={13} className="ml-auto text-accent" />}
+                        </button>
+                      );
+                    })}
+                    {labels.length === 0 && (
+                      <div className="px-6 py-3 text-[10px] text-text-muted italic">No hay etiquetas creadas</div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="h-px bg-border/20 mx-2 my-0.5" />
+
+              {/* Folders submenu */}
+              <div 
+                className="relative"
+                onMouseEnter={() => setCtxSub('folders')}
+              >
+                <button
+                  onClick={() => setCtxSub(ctxSub === 'folders' ? null : 'folders')}
+                  className="w-full flex items-center justify-between px-3 py-2.5 text-[11px] font-semibold text-text-primary hover:bg-surface-alt rounded-lg transition-colors cursor-pointer"
+                >
+                  <span className="flex items-center gap-3">
+                    <FolderInput size={15} className="text-text-muted" />
+                    Mover a carpeta
+                  </span>
+                  <ChevronRightSub size={14} className={`text-text-muted transition-transform ${ctxSub === 'folders' ? 'rotate-90' : ''}`} />
+                </button>
+                {ctxSub === 'folders' && (
+                  <div className="border-t border-border/10 bg-surface-alt/30 rounded-b-lg py-1">
+                    {ctxMenu.venta?.folder && (
+                      <button
+                        onClick={() => handleCtxMove(null)}
+                        className="w-full flex items-center gap-3 px-6 py-2 text-[11px] font-semibold text-red hover:bg-red-subtle/30 rounded-lg transition-colors cursor-pointer"
+                      >
+                        <X size={13} />
+                        Sacar de carpeta
+                      </button>
+                    )}
+                    {customFolders.map(folder => {
+                      const isActive = ctxMenu.venta?.folder === folder.id;
+                      return (
+                        <button
+                          key={folder.id}
+                          onClick={() => handleCtxMove(folder.id)}
+                          className={`w-full flex items-center gap-3 px-6 py-2 text-[11px] font-semibold transition-colors cursor-pointer rounded-lg ${
+                            isActive ? 'bg-accent/5 text-accent' : 'text-text-primary hover:bg-surface-alt'
+                          }`}
+                        >
+                          📁 {folder.name}
+                          {isActive && <Check size={13} className="ml-auto text-accent" />}
+                        </button>
+                      );
+                    })}
+                    {customFolders.length === 0 && (
+                      <div className="px-6 py-3 text-[10px] text-text-muted italic">No hay carpetas creadas</div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>,

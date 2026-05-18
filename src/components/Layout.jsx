@@ -22,6 +22,7 @@ export default function Layout({
   onDeleteLabel,
   onNewVenta,
   activeFilter,
+  onDrop,
 }) {
   const { user, signOut } = useAuth()
   const { emisor, saveConfig } = useConfig()
@@ -47,22 +48,22 @@ export default function Layout({
   }, [activeView, activeFilter])
 
   return (
-    <div className="min-h-screen bg-base flex flex-col">
+    <div className="h-[100dvh] bg-base flex flex-col overflow-hidden">
       
       {/* ─── Top Header (full width) ─── */}
-      <header className="flex items-center justify-between px-4 md:px-8 py-4 relative z-20">
+      <header className="flex items-center justify-between px-4 md:px-8 py-4 relative z-20" style={{ backgroundColor: '#1B3A4B' }}>
         <div className="flex items-center gap-2">
           {/* Mobile sidebar toggle */}
           <button 
-            className="lg:hidden p-2 rounded-lg bg-white border border-border shadow-sm text-text-primary mr-2"
+            className="lg:hidden p-2 rounded-lg bg-white/10 border border-white/20 text-white mr-2"
             onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
           >
             {mobileSidebarOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
 
-          <img src="/logo-comand.png" alt="Command Logo" className="h-6 md:h-8 w-auto object-contain" />
-          <span className="text-[10px] md:text-xs font-black text-text-primary uppercase tracking-widest ml-1 border-l-2 border-border pl-2 md:pl-3 hidden md:inline-block">
-            Facturador
+          <img src="/logo-comand.png" alt="Command Logo" className="h-6 md:h-8 w-auto object-contain brightness-0 invert" />
+          <span className="text-[10px] md:text-xs font-black text-white/90 uppercase tracking-widest ml-1 border-l-2 border-white/30 pl-2 md:pl-3 hidden md:inline-block">
+            Asistente y Facturador
           </span>
         </div>
         
@@ -70,7 +71,7 @@ export default function Layout({
         <div className={`
           absolute top-full right-4 mt-2 z-50 lg:static lg:mt-0 lg:z-auto
           flex-col lg:flex-row items-stretch lg:items-center gap-4 
-          bg-white lg:px-5 lg:py-2.5 p-4 lg:p-0 rounded-2xl lg:rounded-full border border-border shadow-lg lg:shadow-sm
+          bg-white lg:bg-white/10 lg:backdrop-blur-md lg:px-5 lg:py-2.5 p-4 lg:p-0 rounded-2xl lg:rounded-full border border-border lg:border-white/20 shadow-lg lg:shadow-none
           ${mobileMenuOpen ? 'flex' : 'hidden lg:flex'}
           min-w-[200px] lg:min-w-0
         `}>
@@ -78,23 +79,23 @@ export default function Layout({
           {/* Emisor name + config button */}
           <button
             onClick={() => setConfigOpen(true)}
-            className="flex items-center gap-1.5 text-xs font-semibold text-text-secondary hover:text-text-primary transition-colors cursor-pointer group"
+            className="flex items-center gap-1.5 text-xs font-semibold text-text-secondary lg:text-white/80 hover:text-text-primary lg:hover:text-white transition-colors cursor-pointer group"
            
             title="Editar datos fiscales"
           >
             <span className="truncate max-w-[140px]">{emisor?.razon_social || EMISOR.razonSocial}</span>
-            <Settings size={12} className="text-text-muted group-hover:text-accent group-hover:rotate-90 transition-all duration-300" />
+            <Settings size={12} className="text-text-muted lg:text-white/50 group-hover:text-accent lg:group-hover:text-white group-hover:rotate-90 transition-all duration-300" />
           </button>
 
-          <div className="w-full h-[1px] md:w-[1px] md:h-4 bg-border"></div>
+          <div className="w-full h-[1px] md:w-[1px] md:h-4 bg-border lg:bg-white/20"></div>
           
           {/* User Dropdown Menu */}
           <div className="relative">
             <button 
               onClick={() => setUserMenuOpen(!userMenuOpen)}
-              className="flex items-center gap-2 text-xs font-semibold text-text-secondary hover:text-accent transition-colors cursor-pointer group py-1"
+              className="flex items-center gap-2 text-xs font-semibold text-text-secondary lg:text-white/80 hover:text-accent lg:hover:text-white transition-colors cursor-pointer group py-1"
             >
-              <div className="w-6 h-6 rounded-full bg-surface-alt flex items-center justify-center text-text-muted group-hover:bg-accent/10 group-hover:text-accent transition-all">
+              <div className="w-6 h-6 rounded-full bg-surface-alt lg:bg-white/15 flex items-center justify-center text-text-muted lg:text-white/70 group-hover:bg-accent/10 lg:group-hover:bg-white/25 group-hover:text-accent lg:group-hover:text-white transition-all">
                 <User size={14} />
               </div>
               <span className="truncate max-w-[150px]">{user?.email || 'Usuario'}</span>
@@ -177,11 +178,11 @@ export default function Layout({
 
         {/* Sidebar */}
         <div className={`
-          fixed top-0 left-0 h-full z-40 bg-base
+          fixed top-0 left-0 h-full z-40
           lg:static lg:z-auto
           transition-transform duration-300
           ${mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-        `}>
+        `} style={{ backgroundColor: '#1B3A4B' }}>
           <Sidebar
             activeView={activeView}
             onViewChange={(view, filter) => { onViewChange(view, filter); setMobileSidebarOpen(false) }}
@@ -196,6 +197,7 @@ export default function Layout({
             collapsed={sidebarCollapsed}
             onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
             activeFilter={activeFilter}
+            onDrop={onDrop}
           />
         </div>
 
