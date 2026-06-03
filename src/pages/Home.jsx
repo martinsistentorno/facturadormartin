@@ -481,26 +481,51 @@ export default function Home() {
     try {
       showToast('Emitiendo factura...', 'info')
       setVentas(prev => prev.map(v => String(v.id) === String(id) ? { ...v, status: 'procesando' } : v))
-      
-      await new Promise(r => setTimeout(r, 2000))
-      
-      const isSuccess = Math.random() > 0.1
-      if (isSuccess) {
-        setVentas(prev => prev.map(v => String(v.id) === String(id) ? { 
-          ...v, 
-          status: 'facturado', 
-          cae: '73' + Math.floor(100000000000 + Math.random() * 900000000000), 
-          nro_comprobante: '0003-' + String(Math.floor(Math.random() * 100000)).padStart(8, '0') 
+
+      const payload = {
+        ventas: [{
+          id: ventaTarget.id,
+          fecha: ventaTarget.fecha,
+          cliente: ventaTarget.cliente,
+          monto: ventaTarget.monto,
+          datos_fiscales: ventaTarget.datos_fiscales || {},
+          cbte_asoc: ventaTarget.datos_fiscales?.cbte_asoc || null,
+          mp_payment_id: ventaTarget.mp_payment_id,
+        }],
+      }
+
+      const response = await fetch('/api/afip', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data?.error || `HTTP ${response.status}`)
+      }
+
+      const res = (data.resultados || []).find(r => String(r.id) === String(id))
+
+      if (res?.success) {
+        setVentas(prev => prev.map(v => String(v.id) === String(id) ? {
+          ...v,
+          status: 'facturado',
+          cae: res.cae,
+          nro_comprobante: res.nro,
+          pdf_url: res.pdf_url || null,
         } : v))
         showToast(`✓ Comprobante emitido con éxito`, 'success')
       } else {
-        setVentas(prev => prev.map(v => String(v.id) === String(id) ? { 
-          ...v, 
-          status: 'error', 
-          datos_fiscales: { ...v.datos_fiscales, error_detalle: 'Demo: Simulacro de error AFIP aleatorio.' } 
+        setVentas(prev => prev.map(v => String(v.id) === String(id) ? {
+          ...v,
+          status: 'error',
+          datos_fiscales: { ...v.datos_fiscales, error_detalle: res?.error || 'Error desconocido al emitir' },
         } : v))
-        showToast(`Error al emitir factura`, 'error')
+        showToast(`Error al emitir factura: ${res?.error || 'desconocido'}`, 'error')
       }
+
+      refetch()
     } catch (err) {
       setVentas(prev => prev.map(v => String(v.id) === String(id) ? { ...v, status: 'error' } : v))
       showToast('Error: ' + err.message, 'error')
@@ -534,29 +559,16 @@ export default function Home() {
         })),
       }
 
-      await new Promise(r => setTimeout(r, 2000));
-      
-      const data = {
-        success: true,
-        resultados: selectedVentasToInvoice.map((v) => {
-          const isSuccess = Math.random() > 0.1; // 90% success rate
-          if (isSuccess) {
-            return {
-              id: v.id,
-              success: true,
-              cae: '73' + Math.floor(100000000000 + Math.random() * 900000000000),
-              nro: '0003-' + String(Math.floor(Math.random() * 100000)).padStart(8, '0'),
-              pdf_url: null
-            };
-          } else {
-            return {
-              id: v.id,
-              success: false,
-              error: 'Demo: Simulacro de error AFIP aleatorio.'
-            };
-          }
-        })
-      };
+      const response = await fetch('/api/afip', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data?.error || `HTTP ${response.status}`)
+      }
 
       const resultados = data.resultados || []
       const successCount = resultados.filter(r => r.success).length
@@ -587,7 +599,10 @@ export default function Home() {
       }))
 
       setSelectedIds(new Set())
-      
+
+      // Sincronizar con la DB tras el update local (defensa contra desincronización)
+      refetch()
+
       const successIds = resultados.filter(r => r.success).map(r => r.id)
 
       if (successCount === resultados.length && successCount > 0) {
