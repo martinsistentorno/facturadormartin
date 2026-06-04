@@ -423,10 +423,21 @@ export default function Home() {
   const handleSync = async () => {
     setIsSyncing(true)
     try {
-      await new Promise(r => setTimeout(r, 1500))
-      showToast(`Sync completado: 0 nuevos, 0 reparados`, 'success')
-      refetch() // Recargar ventas de la DB
+      const response = await fetch('/api/sync-payments', { method: 'GET' })
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data?.error || `HTTP ${response.status}`)
+      }
+      const inserted = data.inserted ?? 0
+      const repaired = data.repaired ?? 0
+      const skipped = data.skipped ?? 0
+      showToast(
+        `Sync completado: ${inserted} nuevos, ${repaired} reparados, ${skipped} ya existían`,
+        'success'
+      )
+      await refetch() // Recargar ventas de la DB
     } catch (err) {
+      console.error('[handleSync] Error:', err)
       showToast('Error sincronizando: ' + err.message, 'error')
     } finally {
       setIsSyncing(false)
@@ -650,14 +661,20 @@ export default function Home() {
 
   const handleRecoverAfip = async () => {
     try {
-      showToast('Iniciando recuperación de AFIP...', 'info');
-      await new Promise(r => setTimeout(r, 2000));
-      showToast(`✓ Recuperación finalizada. Procesadas: 0`, 'success');
-      refetch(); // Recargar datos
+      showToast('Iniciando recuperación de AFIP... (puede tardar varios segundos)', 'info')
+      const response = await fetch('/api/recover', { method: 'POST' })
+      const data = await response.json()
+      if (!response.ok || data?.success === false) {
+        throw new Error(data?.error || `HTTP ${response.status}`)
+      }
+      const processed = data.processed ?? 0
+      showToast(`✓ Recuperación finalizada. Procesadas: ${processed}`, 'success')
+      await refetch() // Recargar datos
     } catch (err) {
-      showToast('Error de conexión: ' + err.message, 'error');
+      console.error('[handleRecoverAfip] Error:', err)
+      showToast('Error de conexión: ' + err.message, 'error')
     }
-  };
+  }
 
 
   const handleEditVenta = async (id, payload) => {
