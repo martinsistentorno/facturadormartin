@@ -108,9 +108,12 @@ export default async function handler(req, res) {
           continue
         }
 
-        // Ya existe?
-        const { data: existing } = await supabaseAdmin
-          .from('ventas').select('id, datos_fiscales').eq('mp_payment_id', paymentId).maybeSingle()
+        // Ya existe? Usamos limit(1) en vez de maybeSingle() porque si hay
+        // duplicados antiguos en la DB, maybeSingle() devuelve error y data:null,
+        // lo que hacía que el cron insertara OTRA fila más cada noche.
+        const { data: existingRows } = await supabaseAdmin
+          .from('ventas').select('id, datos_fiscales').eq('mp_payment_id', paymentId).limit(1)
+        const existing = existingRows && existingRows.length > 0 ? existingRows[0] : null
 
         if (existing) {
           // MODO REPARACIÓN: Si existe pero le faltan los datos fiscales, los recuperamos
@@ -273,10 +276,12 @@ export default async function handler(req, res) {
             continue
           }
 
-          // Ya existe?
-          const { data: existing } = await supabaseAdmin
-            .from('ventas').select('id, datos_fiscales').eq('mp_payment_id', mpId).maybeSingle()
-          
+          // Ya existe? Idem nota arriba: limit(1) en lugar de maybeSingle()
+          // para tolerar duplicados existentes sin seguir agregándolos.
+          const { data: existingRows } = await supabaseAdmin
+            .from('ventas').select('id, datos_fiscales').eq('mp_payment_id', mpId).limit(1)
+          const existing = existingRows && existingRows.length > 0 ? existingRows[0] : null
+
           if (existing) {
             // REPARACIÓN MeLi:
             if (!existing.datos_fiscales) {
