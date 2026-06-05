@@ -161,13 +161,27 @@ export default function AnalyticsDashboard({ ventas = [], onFilteredVentasChange
   // ─── DATE CALCULATIONS ───
   const today = new Date()
   const todayStr = toDateStr(today)
-  
+
+  // Fecha de la venta más vieja (excluyendo borradas). Se usa como inicio del
+  // rango "Histórico" para que el gráfico haga zoom al periodo con datos reales
+  // en lugar de plotear desde 2020 dejando años vacíos al inicio.
+  const oldestSaleDate = useMemo(() => {
+    let oldest = null
+    for (const v of dashboardVentas) {
+      if (v.status === 'borrada' || !v.fecha) continue
+      const d = new Date(v.fecha)
+      if (Number.isNaN(d.getTime())) continue
+      if (!oldest || d < oldest) oldest = d
+    }
+    return oldest ? toDateStr(oldest) : todayStr
+  }, [dashboardVentas, todayStr])
+
   let startDate, endDate;
   if (timeframe === 'custom' && customFrom && customTo) {
     startDate = customFrom
     endDate = customTo
   } else if (timeframe === 'all') {
-    startDate = '2020-01-01'
+    startDate = oldestSaleDate
     endDate = todayStr
   } else if (timeframe === 'year') {
     startDate = `${today.getFullYear()}-01-01`
