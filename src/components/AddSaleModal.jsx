@@ -69,44 +69,48 @@ export default function AddSaleModal({ isOpen, onClose, onSave, searchClientes }
 
   const handleCuitLookup = async (rawCuit) => {
     const val = (rawCuit || '').replace(/\D/g, '');
+    // El endpoint /api/lookup-cuit usa el padrón AFIP que exige 11 dígitos.
+    // Para DNI (7-8 dígitos) no hay padrón, simplemente lo dejamos cargado.
     if (!val || val.length < 8) return;
+    if (val.length !== 11) {
+      setFormData(prev => ({ ...prev, cuit: val, docType: val.length === 11 ? 'CUIT' : 'DNI' }));
+      return;
+    }
 
     setLookingUp(true);
     try {
-      // Simulate network delay
-      await new Promise(r => setTimeout(r, 800));
+      const response = await fetch(`/api/lookup-cuit?cuit=${encodeURIComponent(val)}`);
+      const data = await response.json();
+      if (!response.ok || !data?.success || !data?.razonSocial) {
+        // 404 = CUIT no encontrado; no es error fatal, solo dejamos el CUIT cargado
+        setFormData(prev => ({ ...prev, cuit: val, docType: 'CUIT' }));
+        return;
+      }
 
-      // Mock AFIP response — realistic simulation
-      const isCompany = val.startsWith('30') || val.startsWith('33');
-      const mockRazonSocial = isCompany 
-        ? `Empresa Demo ${val.substring(2, 6)} SA` 
-        : `Usuario ${val.substring(2, 6)}`;
-      
-      // Companies are usually RI, individuals are usually CF or Monotributista
-      const mockCondicion = isCompany ? 'Responsable Inscripto' : 'Consumidor Final';
-      
-      // Realistic domicilio
-      const calles = ['Av. Corrientes', 'Av. Rivadavia', 'Calle San Martín', 'Bv. Oroño', 'Calle Córdoba'];
-      const mockDomicilio = `${calles[Math.floor(Math.random() * calles.length)]} ${Math.floor(100 + Math.random() * 9000)}, CABA`;
+      // /api/lookup-cuit devuelve { success, cuit, razonSocial: { razonSocial, cuit, condicion_iva, domicilio, inicio_actividades } }
+      const info = data.razonSocial;
+      const condicion = info.condicion_iva || 'Consumidor Final';
 
       const updates = {
         ...formData,
-        cliente: mockRazonSocial,
+        cliente: info.razonSocial || formData.cliente,
         docType: 'CUIT',
-        condicionIva: mockCondicion,
+        condicionIva: condicion,
         cuit: val,
-        domicilio: mockDomicilio,
+        domicilio: info.domicilio || formData.domicilio,
       };
 
-      // Auto-select A/B when emisor is RI
+      // Auto-select A/B/C según condición del receptor cuando emisor es RI
       if (isRI) {
-        updates.tipoCbte = getDefaultTipoCbte(emisor, mockCondicion);
+        updates.tipoCbte = getDefaultTipoCbte(emisor, condicion);
       }
 
       setFormData(updates);
       setAfipLocked(true);
-    } catch(err) {
+    } catch (err) {
       console.error('Error fetching CUIT', err);
+      // Fallar silenciosamente: dejar el CUIT cargado para que el usuario complete a mano
+      setFormData(prev => ({ ...prev, cuit: val, docType: 'CUIT' }));
     } finally {
       setLookingUp(false);
     }

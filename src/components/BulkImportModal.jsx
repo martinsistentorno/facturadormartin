@@ -37,12 +37,36 @@ export default function BulkImportModal({ isOpen, onClose, onSave }) {
 
   const handleDownloadTemplate = () => {
     const ws = XLSX.utils.json_to_sheet([
-      { Cliente: "Juan Perez", CUIT: "20-12345678-9", Monto: 15000.50, Forma_Pago: "Transferencia Bancaria" },
-      { Cliente: "Consumidor Final Ej", CUIT: "", Monto: 5000, Forma_Pago: "Mercado Pago" }
+      { Fecha: "2026-03-15", Cliente: "Juan Perez", CUIT: "20-12345678-9", Monto: 15000.50, Forma_Pago: "Transferencia Bancaria" },
+      { Fecha: "2026-04-02", Cliente: "Consumidor Final Ej", CUIT: "", Monto: 5000, Forma_Pago: "Mercado Pago" }
     ]);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Ventas");
     XLSX.writeFile(wb, "CMD_Plantilla_Ventas.xlsx");
+  };
+
+  // Parsea fechas en distintos formatos comunes: Date object, ISO string,
+  // serial number de Excel, "DD/MM/YYYY", "YYYY-MM-DD"; null si inválido.
+  const parseFecha = (raw) => {
+    if (raw === undefined || raw === null || raw === '') return null;
+    if (raw instanceof Date) return Number.isNaN(raw.getTime()) ? null : raw;
+    if (typeof raw === 'number') {
+      // Serial Excel: días desde 1899-12-30
+      const ms = (raw - 25569) * 86400 * 1000;
+      const d = new Date(ms);
+      return Number.isNaN(d.getTime()) ? null : d;
+    }
+    const s = String(raw).trim();
+    // DD/MM/YYYY o DD-MM-YYYY
+    const dmy = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+    if (dmy) {
+      const [, dd, mm, yyyy] = dmy;
+      const d = new Date(`${yyyy}-${mm.padStart(2,'0')}-${dd.padStart(2,'0')}T12:00:00`);
+      return Number.isNaN(d.getTime()) ? null : d;
+    }
+    // ISO o YYYY-MM-DD
+    const d = new Date(s);
+    return Number.isNaN(d.getTime()) ? null : d;
   };
 
   const processFile = (selectedFile) => {
@@ -55,7 +79,9 @@ export default function BulkImportModal({ isOpen, onClose, onSave }) {
     reader.onload = (e) => {
       try {
         const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: 'array' });
+        // cellDates: true para que columnas formateadas como fecha lleguen como Date,
+        // no como serial Excel — más robusto al parseo.
+        const workbook = XLSX.read(data, { type: 'array', cellDates: true });
         const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
         const rows = XLSX.utils.sheet_to_json(firstSheet, { defval: "" });
 
@@ -64,7 +90,7 @@ export default function BulkImportModal({ isOpen, onClose, onSave }) {
 
         rows.forEach((row, index) => {
           const rowNum = index + 2; // +1 de índice, +1 del header
-          
+
           const cliente = String(row.Cliente || '').trim();
           const cuit = String(row.CUIT || '').trim();
           const montoRaw = row.Monto;
@@ -74,7 +100,7 @@ export default function BulkImportModal({ isOpen, onClose, onSave }) {
              foundErrors.push(`Fila ${rowNum}: Cliente es obligatorio.`);
              return;
           }
-          
+
           const monto = parseFloat(montoRaw);
           if (isNaN(monto) || monto <= 0) {
              foundErrors.push(`Fila ${rowNum}: Monto inválido para ${cliente}.`);
@@ -85,8 +111,16 @@ export default function BulkImportModal({ isOpen, onClose, onSave }) {
             formaPago = 'Contado - Efectivo';
           }
 
+          // Fecha: usar la del archivo si vino válida, si no, fallback a hoy con warning.
+          const fechaParsed = parseFecha(row.Fecha);
+          if (row.Fecha && !fechaParsed) {
+            foundErrors.push(`Fila ${rowNum}: Fecha "${row.Fecha}" inválida para ${cliente}. Usá YYYY-MM-DD o DD/MM/YYYY.`);
+            return;
+          }
+          const fechaISO = (fechaParsed || new Date()).toISOString();
+
           validVentas.push({
-            fecha: new Date().toISOString(),
+            fecha: fechaISO,
             cliente: cliente,
             monto: monto,
             status: 'pendiente',
