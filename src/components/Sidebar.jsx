@@ -69,6 +69,13 @@ export default function Sidebar({
     papelera: ventas.filter(v => v.status === 'borrada').length,
   }
 
+  // Contadores de NO LEÍDAS por sección (burbuja estilo correo)
+  const unread = {
+    inbox: ventas.filter(v => (v.status === 'pendiente' || v.status === 'procesando' || v.status === 'error') && !v.archivada && v.status !== 'archivada' && v.status !== 'borrada' && !v.folder && v.leido === false).length,
+    facturadas: ventas.filter(v => v.status === 'facturado' && !v.archivada && v.leido === false).length,
+    error: ventas.filter(v => v.status === 'error' && !v.archivada && v.leido === false).length,
+  }
+
   const handleCreateFolder = () => {
     if (newFolderName.trim()) {
       onCreateFolder?.(newFolderName.trim(), newFolderParentId)
@@ -200,6 +207,7 @@ export default function Sidebar({
           icon={<Clock size={15} />}
           label="Ventas pendientes"
           count={counts.inbox}
+          unread={unread.inbox}
           active={isActive('facturas') && !isActive('facturas', { type: 'status' }) && !isActive('facturas', { type: 'historico' })}
           onClick={() => onViewChange('facturas')}
           color="#FFE100"
@@ -208,6 +216,7 @@ export default function Sidebar({
           icon={<FileCheck size={15} />}
           label="Facturadas"
           count={counts.facturadas}
+          unread={unread.facturadas}
           active={isActive('facturas', { type: 'status', value: 'facturado' })}
           onClick={() => onViewChange('facturas', { type: 'status', value: 'facturado' })}
           color="#2D8F5E"
@@ -216,6 +225,7 @@ export default function Sidebar({
           icon={<AlertCircle size={15} />}
           label="Error"
           count={counts.error}
+          unread={unread.error}
           active={isActive('facturas', { type: 'status', value: 'error' })}
           onClick={() => onViewChange('facturas', { type: 'status', value: 'error' })}
           color="#C0443C"
@@ -328,6 +338,7 @@ export default function Sidebar({
                     icon={<div className="w-3 h-3 rounded-full" style={{ backgroundColor: colorObj.color }} />}
                     label={label.name}
                     count={ventas.filter(v => hasEtiqueta(v, label.name)).length}
+                    unread={ventas.filter(v => hasEtiqueta(v, label.name) && v.leido === false).length}
                     active={isActive('facturas', { type: 'label', value: label.name })}
                     onClick={() => onViewChange('facturas', { type: 'label', value: label.name })}
                     isDropTarget={dropTarget === `label-${label.name}`}
@@ -388,7 +399,8 @@ export default function Sidebar({
   )
 }
 
-function SidebarItem({ icon, label, count, active, onClick, color, highlight, isDropTarget, onDragOver, onDragLeave, onDrop }) {
+function SidebarItem({ icon, label, count, unread = 0, active, onClick, color, highlight, isDropTarget, onDragOver, onDragLeave, onDrop }) {
+  const hasUnread = unread > 0
   return (
     <button
       onClick={onClick}
@@ -397,11 +409,12 @@ function SidebarItem({ icon, label, count, active, onClick, color, highlight, is
       onDrop={onDrop}
       className={`
         w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[12px] font-semibold transition-all cursor-pointer
-        ${active 
-          ? 'bg-white/15 text-white font-bold' 
+        ${active
+          ? 'bg-white/15 text-white font-bold'
           : 'text-white/70 hover:bg-white/10 hover:text-white'
         }
-        ${highlight ? 'font-bold' : ''}
+        ${(highlight || hasUnread) ? 'font-bold' : ''}
+        ${hasUnread && !active ? 'text-white' : ''}
         ${isDropTarget ? 'ring-2 ring-[#C0443C] ring-offset-1 ring-offset-[#1B3A4B] bg-[#C0443C]/20 scale-[1.02]' : ''}
       `}
     >
@@ -409,6 +422,14 @@ function SidebarItem({ icon, label, count, active, onClick, color, highlight, is
         {icon}
       </span>
       <span className="flex-1 text-left truncate">{label}</span>
+      {hasUnread && (
+        <span
+          className="text-[10px] font-black tabular-nums text-white bg-[#3460A8] rounded-full min-w-[18px] h-[18px] px-1.5 flex items-center justify-center shadow-sm"
+          title={`${unread} sin leer`}
+        >
+          {unread}
+        </span>
+      )}
       {count !== undefined && count > 0 && (
         <span className={`text-[10px] font-bold tabular-nums ${active ? 'text-white' : 'text-white/40'}`}>
           {count}
@@ -445,6 +466,7 @@ function FolderNode({ folder, folders, depth, ventas, isActive, onViewChange, on
   const [expanded, setExpanded] = useState(true)
   const hasChildren = folders.some(f => f.parentId === folder.id)
   const count = ventas.filter(v => v.folder === folder.id).length
+  const unreadCount = ventas.filter(v => v.folder === folder.id && v.leido === false).length
   const active = isActive('facturas', { type: 'folder', value: folder.id })
   const isOver = dropTarget === `folder-${folder.id}`
 
@@ -476,7 +498,15 @@ function FolderNode({ folder, folders, depth, ventas, isActive, onViewChange, on
           <span className={`shrink-0 ${active ? 'text-white' : 'text-white/50'}`}>
             <FolderKanban size={15} />
           </span>
-          <span className="flex-1 text-left truncate">{folder.name}</span>
+          <span className={`flex-1 text-left truncate ${unreadCount > 0 ? 'font-bold text-white' : ''}`}>{folder.name}</span>
+          {unreadCount > 0 && (
+            <span
+              className="text-[10px] font-black tabular-nums text-white bg-[#3460A8] rounded-full min-w-[18px] h-[18px] px-1.5 flex items-center justify-center shadow-sm shrink-0"
+              title={`${unreadCount} sin leer`}
+            >
+              {unreadCount}
+            </span>
+          )}
           {count > 0 && (
             <span className={`text-[10px] font-bold tabular-nums ${active ? 'text-white' : 'text-white/40'}`}>{count}</span>
           )}
