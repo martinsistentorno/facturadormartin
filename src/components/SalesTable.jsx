@@ -304,11 +304,20 @@ export default function SalesTable({
     return 0
   })
 
+  // ─── Agrupar "No leídos" primero (estilo correo) ───
+  // El orden de columnas se respeta DENTRO de cada grupo. Solo cuando hay
+  // al menos una no leída se muestran los encabezados de sección.
+  const unreadCount = ventas.filter(v => v.leido === false).length
+  const hasUnread = unreadCount > 0
+  const groupedVentas = hasUnread
+    ? [...sortedVentas.filter(v => v.leido === false), ...sortedVentas.filter(v => v.leido !== false)]
+    : sortedVentas
+
   // ─── Pagination ───
-  const totalPages = Math.ceil(sortedVentas.length / pageSize)
-  const pagedVentas = sortedVentas.slice(page * pageSize, (page + 1) * pageSize)
+  const totalPages = Math.ceil(groupedVentas.length / pageSize)
+  const pagedVentas = groupedVentas.slice(page * pageSize, (page + 1) * pageSize)
   const startIndex = page * pageSize + 1
-  const endIndex = Math.min((page + 1) * pageSize, sortedVentas.length)
+  const endIndex = Math.min((page + 1) * pageSize, groupedVentas.length)
 
   const allSelected = ventas.length > 0 && selectedIds.size === ventas.length
 
@@ -375,14 +384,24 @@ export default function SalesTable({
       
       {/* ─── Mobile Card View ─── */}
       <div className="md:hidden space-y-3 px-1">
-        {pagedVentas.map((venta) => {
+        {(() => { let lastGroupM = null; return pagedVentas.map((venta) => {
           const isSelected = selectedIds.has(venta.id)
           const isError = venta.status === 'error'
           const isNC = [3, 8, 13, 113].includes(venta.datos_fiscales?.tipo_cbte)
-          
+          const groupM = venta.leido === false ? 'unread' : 'read'
+          const showSectionHeaderM = hasUnread && groupM !== lastGroupM
+          lastGroupM = groupM
+
           return (
-            <div 
-              key={venta.id}
+            <Fragment key={venta.id}>
+              {showSectionHeaderM && (
+                <div className="px-1 pt-2 pb-0.5">
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-text-muted">
+                    {groupM === 'unread' ? `No leídos · ${unreadCount}` : 'Todo lo demás'}
+                  </span>
+                </div>
+              )}
+            <div
               onClick={() => handleRowClick(venta)}
               onContextMenu={(e) => handleContextMenu(e, venta)}
               onTouchStart={(e) => handleTouchStart(e, venta)}
@@ -491,8 +510,9 @@ export default function SalesTable({
                 </div>
               </div>
             </div>
+            </Fragment>
           )
-        })}
+        }) })()}
       </div>
 
       {/* ─── Desktop Table View (md+) ─── */}
@@ -660,13 +680,25 @@ export default function SalesTable({
               </tr>
             </thead>
             <tbody>
-              {pagedVentas.map((venta, i) => {
+              {(() => { let lastGroup = null; return pagedVentas.map((venta, i) => {
                 const isSelected = selectedIds.has(venta.id)
                 const isError = venta.status === 'error'
-  
+                const group = venta.leido === false ? 'unread' : 'read'
+                const showSectionHeader = hasUnread && group !== lastGroup
+                lastGroup = group
+
                 return (
+                  <Fragment key={venta.id}>
+                    {showSectionHeader && (
+                      <tr className="bg-surface-alt/40 border-b border-border/40 select-none">
+                        <td colSpan={99} className="px-4 py-2">
+                          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-text-muted">
+                            {group === 'unread' ? `No leídos · ${unreadCount}` : 'Todo lo demás'}
+                          </span>
+                        </td>
+                      </tr>
+                    )}
                   <tr
-                    key={venta.id}
                     draggable
                     onDragStart={(e) => {
                       const isCurrentSelected = selectedIds.has(venta.id)
@@ -884,8 +916,9 @@ export default function SalesTable({
                       </div>
                     </td>
                   </tr>
+                  </Fragment>
                 )
-              })}
+              }) })()}
             </tbody>
           </table>
         </div>

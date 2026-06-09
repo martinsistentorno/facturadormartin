@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { hasEtiqueta } from '../utils/labelHelpers'
 import { useVentas } from '../hooks/useVentas'
 import { useClientes } from '../hooks/useClientes'
@@ -153,6 +153,29 @@ export default function Home() {
     ventas.filter(v => selectedIds.has(String(v.id))),
     [ventas, selectedIds]
   )
+
+  // ─── Marcar como leída al DESELECCIONAR (estilo correo) ───
+  // Una venta "no leída" pasa a "leída" cuando el usuario la deselecciona,
+  // no apenas la clickea. Así no salta de la sección "No leídos" a "Todo lo
+  // demás" mientras todavía la está mirando. Cubre todas las vías de deselección
+  // (click en fila, checkbox, botón Limpiar, acciones masivas).
+  const prevSelectedRef = useRef(new Set())
+  useEffect(() => {
+    const prev = prevSelectedRef.current
+    const deselected = []
+    prev.forEach(id => { if (!selectedIds.has(id)) deselected.push(id) })
+    prevSelectedRef.current = new Set(selectedIds)
+    if (deselected.length === 0) return
+
+    deselected.forEach(id => {
+      const v = ventas.find(x => String(x.id) === String(id))
+      if (v && v.leido === false) {
+        updateVenta(v.id, { leido: true }).catch(err =>
+          console.error('[leido] No se pudo marcar como leída:', err.message)
+        )
+      }
+    })
+  }, [selectedIds, ventas, updateVenta])
 
   const handleCardClick = (title, filteredVentas, timeframe) => {
     let tfLabel = ''
@@ -874,12 +897,7 @@ export default function Home() {
           onToggleAll={handleToggleAll}
           loading={loading}
           onShowError={(msg) => showToast(msg, 'error')}
-          onRowClick={(venta) => {
-            handleToggleSelect(venta.id)
-            if (venta.leido === false) {
-              updateVenta(venta.id, { leido: true })
-            }
-          }}
+          onRowClick={(venta) => handleToggleSelect(venta.id)}
           onEdit={(venta) => {
             setDetailVenta(venta)
             setDetailVentaEditMode(venta.status !== 'facturado')
@@ -920,12 +938,7 @@ export default function Home() {
           }}
           loading={loading}
           onShowError={(msg) => showToast(msg, 'error')}
-          onRowClick={(venta) => {
-            handleToggleSelect(venta.id)
-            if (venta.leido === false) {
-              updateVenta(venta.id, { leido: true })
-            }
-          }}
+          onRowClick={(venta) => handleToggleSelect(venta.id)}
           onEdit={(venta) => {
             setDetailVenta(venta)
             setDetailVentaEditMode(venta.status !== 'facturado')
