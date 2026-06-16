@@ -166,21 +166,25 @@ const QuickCuitInput = ({ venta, onSaveEdit }) => {
             }
           })
         } else {
-          console.log('[QuickCuitInput] CUIT no encontrado o error en respuesta de AFIP, guardando solo CUIT')
+          console.log('[QuickCuitInput] CUIT no encontrado o error en respuesta de AFIP, guardando solo CUIT y revirtiendo cliente a Consumidor Final')
           onSaveEdit(venta.id, {
+            cliente: 'Consumidor Final',
             datos_fiscales: {
               ...venta.datos_fiscales,
               cuit: cleanCuit,
+              condicion_iva: 'Consumidor Final',
               doc_tipo: 'CUIT'
             }
           })
         }
       } catch (err) {
-        console.error('[QuickCuitInput] Error fetch inline AFIP', err)
+        console.error('[QuickCuitInput] Error fetch inline AFIP, revirtiendo cliente a Consumidor Final', err)
         onSaveEdit(venta.id, {
+          cliente: 'Consumidor Final',
           datos_fiscales: {
             ...venta.datos_fiscales,
             cuit: cleanCuit,
+            condicion_iva: 'Consumidor Final',
             doc_tipo: 'CUIT'
           }
         })
