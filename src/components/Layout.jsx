@@ -23,6 +23,9 @@ export default function Layout({
   onNewVenta,
   activeFilter,
   onDrop,
+  // Year selector props
+  selectedYear,
+  onYearChange,
 }) {
   const { user, signOut } = useAuth()
   const { emisor, saveConfig } = useConfig()
@@ -67,7 +70,6 @@ export default function Layout({
           </span>
         </div>
         
-        {/* Desktop/Tablet Menu */}
         <div className={`
           absolute top-full right-4 mt-2 z-50 lg:static lg:mt-0 lg:z-auto
           flex-col lg:flex-row items-stretch lg:items-center gap-4 
@@ -75,6 +77,29 @@ export default function Layout({
           ${mobileMenuOpen ? 'flex' : 'hidden lg:flex'}
           min-w-[200px] lg:min-w-0
         `}>
+
+          {/* Selector de Año Fiscal */}
+          <div className="relative flex items-center bg-surface-alt lg:bg-white/10 border border-border lg:border-white/10 rounded-xl px-2.5 py-1 lg:py-0.5 text-text-primary lg:text-white text-[10px] font-bold tracking-wider font-mono">
+            <span className="text-text-muted lg:text-white/50 text-[9px] uppercase mr-2 tracking-widest hidden md:inline">Período:</span>
+            <select 
+              value={selectedYear} 
+              onChange={(e) => onYearChange(e.target.value === 'all' ? 'all' : parseInt(e.target.value))} 
+              className="bg-transparent border-0 text-text-primary lg:text-white font-black focus:outline-none focus:ring-0 cursor-pointer pr-4"
+              style={{ 
+                WebkitAppearance: 'none', 
+                appearance: 'none', 
+                background: 'url("data:image/svg+xml;utf8,<svg fill=\'%23a0aec0\' height=\'24\' viewBox=\'0 0 24 24\' width=\'24\' xmlns=\'http://www.w3.org/2000/svg\'><path d=\'M7 10l5 5 5-5z\'/></svg>") no-repeat right center', 
+                backgroundSize: '16px' 
+              }}
+            >
+              <option value="2026" className="bg-[#1B3A4B] text-white font-bold">Año 2026</option>
+              <option value="2025" className="bg-[#1B3A4B] text-white font-bold">Año 2025</option>
+              <option value="2024" className="bg-[#1B3A4B] text-white font-bold">Año 2024</option>
+              <option value="all" className="bg-[#1B3A4B] text-white font-bold">Histórico</option>
+            </select>
+          </div>
+
+          <div className="w-full h-[1px] md:w-[1px] md:h-4 bg-border lg:bg-white/20"></div>
 
           {/* Emisor name + config button */}
           <button

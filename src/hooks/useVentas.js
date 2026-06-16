@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 
-export function useVentas() {
+export function useVentas(selectedYear) {
   const [ventas, setVentas] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -11,10 +11,15 @@ export function useVentas() {
       setLoading(true)
       setError(null)
 
-      const { data, error: fetchError } = await supabase
-        .from('ventas')
-        .select('*')
-        .order('fecha', { ascending: false })
+      let query = supabase.from('ventas').select('*')
+
+      if (selectedYear && selectedYear !== 'all') {
+        const start = `${selectedYear}-01-01T00:00:00Z`
+        const end = `${selectedYear}-12-31T23:59:59Z`
+        query = query.gte('fecha', start).lte('fecha', end)
+      }
+
+      const { data, error: fetchError } = await query.order('fecha', { ascending: false })
 
       if (fetchError) throw fetchError
       setVentas(data || [])
@@ -24,7 +29,7 @@ export function useVentas() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [selectedYear])
 
   useEffect(() => {
     fetchVentas()
@@ -32,18 +37,20 @@ export function useVentas() {
     // ─── Auto-polling cada 15 segundos ───
     // Esto asegura que la UI se actualice sola sin depender de F5 o del socket realtime si falla
     const pollInterval = setInterval(() => {
-      // Background re-fetch sin mostrar cartel de loading si ya hay datos
-      supabase
-        .from('ventas')
-        .select('*')
-        .order('fecha', { ascending: false })
+      let query = supabase.from('ventas').select('*')
+
+      if (selectedYear && selectedYear !== 'all') {
+        const start = `${selectedYear}-01-01T00:00:00Z`
+        const end = `${selectedYear}-12-31T23:59:59Z`
+        query = query.gte('fecha', start).lte('fecha', end)
+      }
+
+      query.order('fecha', { ascending: false })
         .then(({ data, error }) => {
           if (!error && data) {
             setVentas(data)
           }
         })
-        
-      // También podríamos disparar el sync silenciosamente, lo hacemos cada 30 min o si es necesario
     }, 15000)
 
     // ─── Realtime subscription ───
@@ -59,6 +66,13 @@ export function useVentas() {
             setVentas(prev => {
               // evitar duplicados si el fetch de polling ya lo trajo
               if (prev.some(v => v.id === payload.new.id)) return prev;
+              
+              // Si estamos filtrando por año, ignorar si la nueva venta no corresponde al año activo
+              if (selectedYear && selectedYear !== 'all') {
+                const ventaYear = new Date(payload.new.fecha).getFullYear()
+                if (ventaYear !== selectedYear) return prev
+              }
+
               return [payload.new, ...prev].sort((a,b) => new Date(b.fecha) - new Date(a.fecha))
             })
           } else if (payload.eventType === 'UPDATE') {
@@ -76,7 +90,7 @@ export function useVentas() {
       clearInterval(pollInterval)
       supabase.removeChannel(channel)
     }
-  }, [fetchVentas])
+  }, [fetchVentas, selectedYear])
 
   const updateVentaStatus = useCallback(async (id, status, extraFields = {}) => {
     const { error: updateError } = await supabase

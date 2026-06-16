@@ -16,7 +16,8 @@ import ContableView from '../components/ContableView'
 import GestionView from '../components/GestionView'
 
 export default function Home() {
-  const { ventas, setVentas, loading, error, refetch, updateVentaStatus, updateVenta, createVenta, deleteVenta, hardDeleteVenta, archiveVenta, updateVentaEtiqueta, bulkCreateVentas } = useVentas()
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
+  const { ventas, setVentas, loading, error, refetch, updateVentaStatus, updateVenta, createVenta, deleteVenta, hardDeleteVenta, archiveVenta, updateVentaEtiqueta, bulkCreateVentas } = useVentas(selectedYear)
   const { search: searchClientes } = useClientes(ventas)
   const [selectedIds, setSelectedIds] = useState(new Set())
   const [toasts, setToasts] = useState([])
@@ -875,6 +876,8 @@ export default function Home() {
       onNewVenta={() => setAddModalOpen(true)}
       activeFilter={activeFilter}
       onDrop={handleSidebarDrop}
+      selectedYear={selectedYear}
+      onYearChange={setSelectedYear}
     >
       <div>
 
