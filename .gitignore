@@ -26,3 +26,14 @@ dist-ssr
 *.sw?
 
 .vercel
+
+# Scratch and Temporary files
+scratch/
+*.csv
+test-*.js
+verify-*.js
+clean-*.js
+cert_base64*.txt
+key_base64.txt
+*.crt
+*.key

@@ -1,18 +1,17 @@
-export const MONOTRIBUTO_LIMITS_2024 = {
-  'A': 6450000,
-  'B': 9450000,
-  'C': 13250000,
-  'D': 16450000,
-  'E': 19350000,
-  'F': 24250000,
-  'G': 29000000,
-  'H': 44000000,
-  'I': 49250000,
-  'J': 56400000,
-  'K': 68000000
+export const MONOTRIBUTO_LIMITS = {
+  'A': 10277988.13,
+  'B': 15058447.71,
+  'C': 21113696.52,
+  'D': 26212853.42,
+  'E': 30833964.37,
+  'F': 38642048.36,
+  'G': 46211109.37,
+  'H': 70113407.33,
+  'I': 78479211.62,
+  'J': 89872640.30,
+  'K': 108357084.05
 };
 
-// Se puede cambiar la referencia cuando AFIP publique la de 2025/2026
 export const getMonotributoLimit = (category) => {
-  return MONOTRIBUTO_LIMITS_2024[category] || MONOTRIBUTO_LIMITS_2024['A'];
+  return MONOTRIBUTO_LIMITS[category] || MONOTRIBUTO_LIMITS['A'];
 };
