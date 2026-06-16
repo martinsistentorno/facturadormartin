@@ -222,14 +222,12 @@ export default function Sidebar({
           color="#2D8F5E"
         />
         <SidebarItem
-          icon={<AlertCircle size={15} />}
-          label="Error"
-          count={counts.error}
-          unread={unread.error}
-          active={isActive('facturas', { type: 'status', value: 'error' })}
-          onClick={() => onViewChange('facturas', { type: 'status', value: 'error' })}
-          color="#C0443C"
-          highlight={counts.error > 0}
+          icon={<FileText size={15} />}
+          label="Todas"
+          count={counts.historico}
+          active={isActive('facturas', { type: 'historico' })}
+          onClick={() => onViewChange('facturas', { type: 'historico' })}
+          color="#3460A8"
         />
         
         <div className="h-px bg-white/10 mx-2 my-2" />
