@@ -24,7 +24,7 @@ const FORMAS_PAGO = [
 const COLUMN_CONFIG = [
   { id: 'fecha', label: 'Fecha', default: true },
   { id: 'cliente', label: 'Cliente', default: true },
-  { id: 'cuit', label: 'CUIT / DNI', default: false },
+  { id: 'cuit', label: 'CUIT / DNI', default: true },
   { id: 'monto', label: 'Monto', default: true, align: 'right' },
   { id: 'iva', label: 'Cond. IVA', default: false },
   { id: 'descripcion', label: 'Descripción', default: false },
@@ -84,6 +84,119 @@ const EtiquetasCellContent = ({ venta, labels }) => {
       {visible.map(name => <EtiquetaBadge key={name} name={name} labels={labels} />)}
       {overflow > 0 && (
         <span className="text-[9px] font-black text-text-muted bg-surface-alt border border-border/40 rounded-full px-1.5 py-0.5">+{overflow}</span>
+      )}
+    </div>
+  )
+}
+
+const QuickCuitInput = ({ venta, onSaveEdit }) => {
+  const [value, setValue] = useState(venta.datos_fiscales?.cuit || '')
+  const [loading, setLoading] = useState(false)
+  const isEditable = venta.status === 'pendiente' || venta.status === 'error'
+
+  useEffect(() => {
+    setValue(venta.datos_fiscales?.cuit || '')
+  }, [venta.datos_fiscales?.cuit])
+
+  if (!isEditable) {
+    return <span className="text-text-muted font-mono text-xs">{venta.datos_fiscales?.cuit || '—'}</span>
+  }
+
+  const handleBlurOrEnter = async (val) => {
+    const cleanCuit = (val || '').replace(/\D/g, '')
+    const currentCuit = (venta.datos_fiscales?.cuit || '').replace(/\D/g, '')
+    if (cleanCuit === currentCuit) return
+
+    if (!cleanCuit) {
+      onSaveEdit(venta.id, {
+        datos_fiscales: {
+          ...venta.datos_fiscales,
+          cuit: '',
+          doc_tipo: 'DNI'
+        }
+      })
+      return
+    }
+
+    if (cleanCuit.length < 10) {
+      onSaveEdit(venta.id, {
+        datos_fiscales: {
+          ...venta.datos_fiscales,
+          cuit: cleanCuit,
+          doc_tipo: 'DNI'
+        }
+      })
+      return
+    }
+
+    if (cleanCuit.length === 11) {
+      setLoading(true)
+      try {
+        const response = await fetch(`/api/lookup-cuit?cuit=${encodeURIComponent(cleanCuit)}`)
+        const data = await response.json()
+        if (response.ok && data?.success && data?.razonSocial?.razonSocial) {
+          const info = data.razonSocial
+          const mappedCond = info.condicion_iva || 'Consumidor Final'
+          
+          onSaveEdit(venta.id, {
+            cliente: info.razonSocial,
+            datos_fiscales: {
+              ...venta.datos_fiscales,
+              cuit: cleanCuit,
+              condicion_iva: mappedCond,
+              doc_tipo: 'CUIT',
+              domicilio: info.domicilio || venta.datos_fiscales?.domicilio || '',
+            }
+          })
+        } else {
+          onSaveEdit(venta.id, {
+            datos_fiscales: {
+              ...venta.datos_fiscales,
+              cuit: cleanCuit,
+              doc_tipo: 'CUIT'
+            }
+          })
+        }
+      } catch (err) {
+        console.error('Error lookup-cuit inline', err)
+        onSaveEdit(venta.id, {
+          datos_fiscales: {
+            ...venta.datos_fiscales,
+            cuit: cleanCuit,
+            doc_tipo: 'CUIT'
+          }
+        })
+      } finally {
+        setLoading(false)
+      }
+    } else {
+      onSaveEdit(venta.id, {
+        datos_fiscales: {
+          ...venta.datos_fiscales,
+          cuit: cleanCuit
+        }
+      })
+    }
+  }
+
+  return (
+    <div className="relative flex items-center max-w-[150px]">
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onBlur={() => handleBlurOrEnter(value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.target.blur()
+          }
+        }}
+        placeholder="Cargar CUIT/DNI..."
+        disabled={loading}
+        className="w-full px-2.5 py-1 text-xs font-mono font-medium rounded-xl border border-border bg-white text-text-primary focus:outline-none focus:ring-2 focus:ring-accent/10 focus:border-accent disabled:opacity-50"
+      />
+      {loading && (
+        <Loader2 size={12} className="absolute right-3.5 animate-spin text-accent" />
       )}
     </div>
   )
@@ -749,8 +862,8 @@ export default function SalesTable({
                       </td>
                     )}
                     {isVisible('cuit') && (
-                      <td className="px-[clamp(0.4rem,1vw,1rem)] py-[clamp(0.4rem,0.8vh,0.75rem)]">
-                        <div className="text-text-muted font-mono text-xs">{venta.datos_fiscales?.cuit || '—'}</div>
+                      <td className="px-[clamp(0.4rem,1vw,1rem)] py-[clamp(0.4rem,0.8vh,0.75rem)]" onClick={(e) => e.stopPropagation()}>
+                        <QuickCuitInput venta={venta} onSaveEdit={onSaveEdit} />
                       </td>
                     )}
                     {isVisible('monto') && (

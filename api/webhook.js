@@ -63,6 +63,33 @@ export default async function handler(req, res) {
       : []
     const body = req.body
 
+    // ─── Función helper: buscar datos fiscales históricos de un cliente recurrente ───
+    async function getPastCustomerFiscalData(supabaseAdmin, clienteNombre) {
+      if (!clienteNombre || clienteNombre === 'Consumidor Final') return null;
+      try {
+        const { data } = await supabaseAdmin
+          .from('ventas')
+          .select('datos_fiscales')
+          .eq('cliente', clienteNombre)
+          .not('datos_fiscales->cuit', 'eq', '')
+          .not('datos_fiscales->cuit', 'is', null)
+          .order('fecha', { ascending: false })
+          .limit(1);
+
+        if (data && data.length > 0 && data[0].datos_fiscales?.cuit) {
+          return {
+            cuit: data[0].datos_fiscales.cuit,
+            condicion_iva: data[0].datos_fiscales.condicion_iva || 'Consumidor Final',
+            domicilio: data[0].datos_fiscales.domicilio || '',
+            email: data[0].datos_fiscales.email || ''
+          };
+        }
+      } catch (err) {
+        console.warn('[Webhook] Error buscando datos fiscales históricos:', err.message);
+      }
+      return null;
+    }
+
     // Log COMPLETO del body para diagnóstico
     console.log('[Webhook] Body COMPLETO:', JSON.stringify(body, null, 2))
     console.log('[Webhook] Query params:', JSON.stringify(req.query))
@@ -244,8 +271,22 @@ export default async function handler(req, res) {
 
       // Si es Consumidor Final y es menor al límite legal, no guardamos CUIT
       const LIMITE_IDENTIFICACION_ARCA = 10000000;
-      const finalCuit = ((clienteNombre === 'Consumidor Final' || clienteNombre.includes('Venta MeLi')) && (order.total_amount || 0) < LIMITE_IDENTIFICACION_ARCA) ? '' : resolvedCuit;
-      const condicionIva = condicionIvaFallback || ((finalCuit && finalCuit.length === 11) ? 'Responsable Inscripto' : 'Consumidor Final')
+      let finalCuit = ((clienteNombre === 'Consumidor Final' || clienteNombre.includes('Venta MeLi')) && (order.total_amount || 0) < LIMITE_IDENTIFICACION_ARCA) ? '' : resolvedCuit;
+      let condicionIva = condicionIvaFallback || ((finalCuit && finalCuit.length === 11) ? 'Responsable Inscripto' : 'Consumidor Final');
+      let autoMappedDomicilio = '';
+      let autoMappedEmail = buyer.email || '';
+
+      // Auto-mapear desde el historial si no hay CUIT y el cliente no es Consumidor Final
+      if (!finalCuit && clienteNombre !== 'Consumidor Final') {
+        const pastData = await getPastCustomerFiscalData(supabaseAdmin, clienteNombre);
+        if (pastData) {
+          finalCuit = pastData.cuit;
+          condicionIva = pastData.condicion_iva;
+          autoMappedDomicilio = pastData.domicilio;
+          if (pastData.email) autoMappedEmail = pastData.email;
+          console.log(`[Webhook] Auto-mapeado cliente recurrente (Meli): ${clienteNombre} -> CUIT ${finalCuit}`);
+        }
+      }
 
       const ventaRecord = {
         fecha: order.date_created || new Date().toISOString(),
@@ -255,11 +296,12 @@ export default async function handler(req, res) {
         // Prefijo "order-" para diferenciar del paymentId puro
         mp_payment_id: `order-${orderId}`,
         datos_fiscales: {
-          email: buyer.email || '',
+          email: autoMappedEmail || buyer.email || '',
           identification: { type: docType, number: docNumber },
           cuit: finalCuit,
           condicion_iva: condicionIva,
           forma_pago: formaPago,
+          domicilio: autoMappedDomicilio || '',
           meli_order_id: orderId,
           meli_payment_ids: orderPaymentIds,
           meli_status: order.status,
@@ -519,8 +561,22 @@ async function processPayment(supabaseAdmin, accessToken, paymentId, res) {
 
   // Si es Consumidor Final y el monto es menor al límite legal, no guardamos CUIT
   const LIMITE_IDENTIFICACION_ARCA = 10000000;
-  const finalCuit = (clienteNombre === 'Consumidor Final' && (payment.transaction_amount || 0) < LIMITE_IDENTIFICACION_ARCA) ? '' : resolvedCuit;
-  const condicionIva = condicionIvaFallback || ((finalCuit && finalCuit.length === 11) ? 'Responsable Inscripto' : 'Consumidor Final')
+  let finalCuit = (clienteNombre === 'Consumidor Final' && (payment.transaction_amount || 0) < LIMITE_IDENTIFICACION_ARCA) ? '' : resolvedCuit;
+  let condicionIva = condicionIvaFallback || ((finalCuit && finalCuit.length === 11) ? 'Responsable Inscripto' : 'Consumidor Final');
+  let autoMappedDomicilio = '';
+  let autoMappedEmail = payer.email || '';
+
+  // Auto-mapear desde el historial si no hay CUIT y el cliente no es Consumidor Final
+  if (!finalCuit && clienteNombre !== 'Consumidor Final') {
+    const pastData = await getPastCustomerFiscalData(supabaseAdmin, clienteNombre);
+    if (pastData) {
+      finalCuit = pastData.cuit;
+      condicionIva = pastData.condicion_iva;
+      autoMappedDomicilio = pastData.domicilio;
+      if (pastData.email) autoMappedEmail = pastData.email;
+      console.log(`[Webhook] Auto-mapeado cliente recurrente: ${clienteNombre} -> CUIT ${finalCuit}`);
+    }
+  }
 
   const ventaRecord = {
     fecha: payment.date_approved || payment.date_created || new Date().toISOString(),
@@ -529,11 +585,12 @@ async function processPayment(supabaseAdmin, accessToken, paymentId, res) {
     status: 'pendiente',
     mp_payment_id: paymentId,
     datos_fiscales: {
-      email: payer.email || '',
+      email: autoMappedEmail || payer.email || '',
       identification: { type: payer.identification?.type || 'DNI', number: payer.identification?.number || '' },
       cuit: finalCuit,
       condicion_iva: condicionIva,
       forma_pago: formaPago,
+      domicilio: autoMappedDomicilio || '',
       mp_status: payment.status,
       mp_method: payment.payment_method_id || '',
       mp_type: payment.payment_type_id || '',
