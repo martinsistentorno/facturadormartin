@@ -105,8 +105,11 @@ const QuickCuitInput = ({ venta, onSaveEdit }) => {
   const handleBlurOrEnter = async (val) => {
     const cleanCuit = (val || '').replace(/\D/g, '')
     const currentCuit = (venta.datos_fiscales?.cuit || '').replace(/\D/g, '')
+    
+    // Si no cambió el valor, no hacer nada
     if (cleanCuit === currentCuit) return
 
+    // Si está vacío, se borra (es una edición válida)
     if (!cleanCuit) {
       onSaveEdit(venta.id, {
         datos_fiscales: {
@@ -118,7 +121,16 @@ const QuickCuitInput = ({ venta, onSaveEdit }) => {
       return
     }
 
-    if (cleanCuit.length < 10) {
+    // Validar longitudes permitidas: DNI (7 u 8 dígitos) o CUIT (11 dígitos)
+    const isValidLen = cleanCuit.length === 7 || cleanCuit.length === 8 || cleanCuit.length === 11
+    if (!isValidLen) {
+      // Si la longitud es inválida, restauramos el valor original y no guardamos basura
+      setValue(venta.datos_fiscales?.cuit || '')
+      return
+    }
+
+    // Si es DNI (7 u 8 dígitos)
+    if (cleanCuit.length === 7 || cleanCuit.length === 8) {
       onSaveEdit(venta.id, {
         datos_fiscales: {
           ...venta.datos_fiscales,
@@ -129,14 +141,19 @@ const QuickCuitInput = ({ venta, onSaveEdit }) => {
       return
     }
 
+    // Si es CUIT de 11 dígitos, consultamos AFIP
     if (cleanCuit.length === 11) {
       setLoading(true)
+      console.log(`[QuickCuitInput] Consultando AFIP para CUIT: ${cleanCuit}`)
       try {
         const response = await fetch(`/api/lookup-cuit?cuit=${encodeURIComponent(cleanCuit)}`)
         const data = await response.json()
+        console.log('[QuickCuitInput] Respuesta AFIP:', data)
+        
         if (response.ok && data?.success && data?.razonSocial?.razonSocial) {
           const info = data.razonSocial
           const mappedCond = info.condicion_iva || 'Consumidor Final'
+          console.log(`[QuickCuitInput] Guardando con AFIP OK: ${info.razonSocial} | ${mappedCond}`)
           
           onSaveEdit(venta.id, {
             cliente: info.razonSocial,
@@ -149,6 +166,7 @@ const QuickCuitInput = ({ venta, onSaveEdit }) => {
             }
           })
         } else {
+          console.log('[QuickCuitInput] CUIT no encontrado o error en respuesta de AFIP, guardando solo CUIT')
           onSaveEdit(venta.id, {
             datos_fiscales: {
               ...venta.datos_fiscales,
@@ -158,7 +176,7 @@ const QuickCuitInput = ({ venta, onSaveEdit }) => {
           })
         }
       } catch (err) {
-        console.error('Error lookup-cuit inline', err)
+        console.error('[QuickCuitInput] Error fetch inline AFIP', err)
         onSaveEdit(venta.id, {
           datos_fiscales: {
             ...venta.datos_fiscales,
@@ -169,13 +187,6 @@ const QuickCuitInput = ({ venta, onSaveEdit }) => {
       } finally {
         setLoading(false)
       }
-    } else {
-      onSaveEdit(venta.id, {
-        datos_fiscales: {
-          ...venta.datos_fiscales,
-          cuit: cleanCuit
-        }
-      })
     }
   }
 
@@ -188,6 +199,10 @@ const QuickCuitInput = ({ venta, onSaveEdit }) => {
         onBlur={() => handleBlurOrEnter(value)}
         onKeyDown={(e) => {
           if (e.key === 'Enter') {
+            e.target.blur()
+          }
+          if (e.key === 'Escape') {
+            setValue(venta.datos_fiscales?.cuit || '')
             e.target.blur()
           }
         }}
