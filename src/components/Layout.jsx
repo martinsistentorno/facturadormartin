@@ -83,7 +83,7 @@ export default function Layout({
             <span className="text-text-muted lg:text-white/50 text-[9px] uppercase mr-2 tracking-widest hidden md:inline">Período:</span>
             <select 
               value={selectedYear} 
-              onChange={(e) => onYearChange(e.target.value === 'all' ? 'all' : parseInt(e.target.value))} 
+              onChange={(e) => onYearChange(parseInt(e.target.value))} 
               className="bg-transparent border-0 text-text-primary lg:text-white font-black focus:outline-none focus:ring-0 cursor-pointer pr-4"
               style={{ 
                 WebkitAppearance: 'none', 
@@ -95,7 +95,6 @@ export default function Layout({
               <option value="2026" className="bg-[#1B3A4B] text-white font-bold">Año 2026</option>
               <option value="2025" className="bg-[#1B3A4B] text-white font-bold">Año 2025</option>
               <option value="2024" className="bg-[#1B3A4B] text-white font-bold">Año 2024</option>
-              <option value="all" className="bg-[#1B3A4B] text-white font-bold">Histórico</option>
             </select>
           </div>
 
