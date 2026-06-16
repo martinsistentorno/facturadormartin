@@ -785,6 +785,9 @@ export default function Home() {
       if (st === 'archivada') {
         return baseFilteredVentas.filter(v => (v.archivada || v.status === 'archivada' || v.status === 'archivado') && v.status !== 'borrada')
       }
+      if (st === 'borrada') {
+        return baseFilteredVentas.filter(v => v.status === 'borrada')
+      }
       // Other statuses (Facturado, Pendiente, Error): Search inside filteredVentas
       return filteredVentas.filter(v => v.status === st)
     }
