@@ -138,12 +138,24 @@ export function useVentas(selectedYear) {
   }, [])
 
   const hardDeleteVenta = useCallback(async (id) => {
-    const { error: deleteError } = await supabase
-      .from('ventas')
-      .delete()
-      .eq('id', id)
+    // Obtener el token de la sesión activa de Supabase
+    const { data: { session } } = await supabase.auth.getSession()
+    const token = session?.access_token
 
-    if (deleteError) throw deleteError
+    const response = await fetch('/api/hard-delete-venta', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify({ id })
+    })
+
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({}))
+      throw new Error(errData.error || 'Error al eliminar la venta permanentemente')
+    }
+
     setVentas(prev => prev.filter(v => v.id !== id))
   }, [])
 

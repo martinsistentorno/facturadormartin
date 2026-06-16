@@ -919,7 +919,7 @@ export default function Home() {
           onDelete={deleteVenta}
           onArchive={archiveVenta}
           onRestore={(id) => updateVentaStatus(id, 'facturado')}
-          onHardDelete={hardDeleteVenta}
+          onHardDelete={handleHardDeleteVenta}
         />
       )}
 
@@ -957,7 +957,7 @@ export default function Home() {
           onDelete={deleteVenta}
           onArchive={archiveVenta}
           onRestore={(id) => updateVentaStatus(id, 'facturado')}
-          onHardDelete={hardDeleteVenta}
+          onHardDelete={handleHardDeleteVenta}
         />
       )}
 
