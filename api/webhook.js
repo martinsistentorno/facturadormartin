@@ -38,6 +38,29 @@ export default async function handler(req, res) {
     const accessToken = await getValidAccessToken()
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseKey)
+
+    // ─── Obtener datos del emisor dinámicamente ───
+    let emisorCuit = process.env.AFIP_CUIT || ''
+    let emisorRazonSocial = ''
+    try {
+      const { data: cfgData } = await supabaseAdmin
+        .from('config_emisor')
+        .select('cuit, razon_social')
+        .limit(1)
+        .maybeSingle()
+      if (cfgData) {
+        if (cfgData.cuit) emisorCuit = String(cfgData.cuit)
+        if (cfgData.razon_social) emisorRazonSocial = cfgData.razon_social
+      }
+    } catch (e) {
+      console.warn('[Webhook] No se pudo leer config_emisor:', e.message)
+    }
+
+    const ownCuit = emisorCuit.replace(/\D/g, '')
+    const ownDni = ownCuit.length === 11 ? ownCuit.substring(2, 10) : ''
+    const ownNameWords = emisorRazonSocial 
+      ? emisorRazonSocial.toLowerCase().split(/[^a-z0-9]/).filter(w => w.length >= 3 && w !== 'sas' && w !== 'srl' && w !== 'sa') 
+      : []
     const body = req.body
 
     // Log COMPLETO del body para diagnóstico
@@ -165,8 +188,8 @@ export default async function handler(req, res) {
       let condicionIvaFallback = null
       let isOwnAccount = false
 
-      // Filtrar CUIT/DNI propio de Martin
-      if (docNumber === '20354302684' || docNumber === '35430268') {
+      // Filtrar CUIT/DNI propio del emisor
+      if ((ownCuit && docNumber === ownCuit) || (ownDni && docNumber === ownDni)) {
         docNumber = ''
         extractedBillingName = ''
         clienteNombre = 'Consumidor Final'
@@ -219,7 +242,9 @@ export default async function handler(req, res) {
       const firstPayment = order.payments?.[0]
       const formaPago = translatePaymentMethod(firstPayment?.payment_type, firstPayment?.payment_method_id)
 
-      const finalCuit = clienteNombre === 'Consumidor Final' || clienteNombre.includes('Venta MeLi') ? '' : resolvedCuit
+      // Si es Consumidor Final y es menor al límite legal, no guardamos CUIT
+      const LIMITE_IDENTIFICACION_ARCA = 10000000;
+      const finalCuit = ((clienteNombre === 'Consumidor Final' || clienteNombre.includes('Venta MeLi')) && (order.total_amount || 0) < LIMITE_IDENTIFICACION_ARCA) ? '' : resolvedCuit;
       const condicionIva = condicionIvaFallback || ((finalCuit && finalCuit.length === 11) ? 'Responsable Inscripto' : 'Consumidor Final')
 
       const ventaRecord = {
@@ -443,8 +468,8 @@ async function processPayment(supabaseAdmin, accessToken, paymentId, res) {
   let condicionIvaFallback = null
   let isOwnAccount = payerIdStr === ownerIdStr
 
-  // Filtrar CUIT/DNI propio de Martin
-  if (docNumber === '20354302684' || docNumber === '35430268') {
+  // Filtrar CUIT/DNI propio del emisor
+  if ((ownCuit && docNumber === ownCuit) || (ownDni && docNumber === ownDni)) {
     docNumber = ''
     clienteNombre = 'Consumidor Final'
     isOwnAccount = true
@@ -492,8 +517,9 @@ async function processPayment(supabaseAdmin, accessToken, paymentId, res) {
   // Método de pago
   const formaPago = translatePaymentMethod(payment.payment_type_id, payment.payment_method_id)
 
-  // Si es Consumidor Final y fue transferencia ajena o no pudimos sacarlo, vaciamos CUIT
-  const finalCuit = clienteNombre === 'Consumidor Final' ? '' : resolvedCuit
+  // Si es Consumidor Final y el monto es menor al límite legal, no guardamos CUIT
+  const LIMITE_IDENTIFICACION_ARCA = 10000000;
+  const finalCuit = (clienteNombre === 'Consumidor Final' && (payment.transaction_amount || 0) < LIMITE_IDENTIFICACION_ARCA) ? '' : resolvedCuit;
   const condicionIva = condicionIvaFallback || ((finalCuit && finalCuit.length === 11) ? 'Responsable Inscripto' : 'Consumidor Final')
 
   const ventaRecord = {

@@ -31,6 +31,29 @@ export default async function handler(req, res) {
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseKey)
 
+    // ─── Obtener datos del emisor dinámicamente ───
+    let emisorCuit = process.env.AFIP_CUIT || ''
+    let emisorRazonSocial = ''
+    try {
+      const { data: cfgData } = await supabaseAdmin
+        .from('config_emisor')
+        .select('cuit, razon_social')
+        .limit(1)
+        .maybeSingle()
+      if (cfgData) {
+        if (cfgData.cuit) emisorCuit = String(cfgData.cuit)
+        if (cfgData.razon_social) emisorRazonSocial = cfgData.razon_social
+      }
+    } catch (e) {
+      console.warn('[Sync] No se pudo leer config_emisor:', e.message)
+    }
+
+    const ownCuit = emisorCuit.replace(/\D/g, '')
+    const ownDni = ownCuit.length === 11 ? ownCuit.substring(2, 10) : ''
+    const ownNameWords = emisorRazonSocial 
+      ? emisorRazonSocial.toLowerCase().split(/[^a-z0-9]/).filter(w => w.length >= 3 && w !== 'sas' && w !== 'srl' && w !== 'sa') 
+      : []
+
     // ─── Obtener el ID del dueño de la cuenta ───
     const meRes = await fetch('https://api.mercadopago.com/users/me', {
       headers: { 'Authorization': `Bearer ${accessToken}` }
@@ -165,8 +188,8 @@ export default async function handler(req, res) {
         const isOwnAccount = payerIdStr === myUserId
         let condicionIvaFallback = null
 
-        // Filtrar CUIT/DNI propio de Martin
-        if (docNumber === '20354302684' || docNumber === '35430268') {
+        // Filtrar CUIT/DNI propio del emisor
+        if ((ownCuit && docNumber === ownCuit) || (ownDni && docNumber === ownDni)) {
           docNumber = ''
           resolvedCuit = ''
           docType = 'DNI'
@@ -217,13 +240,15 @@ export default async function handler(req, res) {
 
         // Si Mercado Pago filtró el payer y puso el nombre del dueño por error
         const lowerName = clienteNombre.toLowerCase();
-        if (lowerName.includes('martin') && lowerName.includes('sist')) {
+        const matchesOwner = ownNameWords.length > 0 && ownNameWords.every(word => lowerName.includes(word));
+        if (matchesOwner) {
             clienteNombre = bankSenderName || 'Consumidor Final';
         }
 
         const medioPagoDetail = translatePaymentMethod(payment.payment_type_id, payment.payment_method_id)
         const formaPago = simplifyPaymentMethod(medioPagoDetail)
-        const finalCuit = clienteNombre === 'Consumidor Final' ? '' : resolvedCuit
+        const LIMITE_IDENTIFICACION_ARCA = 10000000;
+        const finalCuit = (clienteNombre === 'Consumidor Final' && (payment.transaction_amount || 0) < LIMITE_IDENTIFICACION_ARCA) ? '' : resolvedCuit;
         const condicionIva = condicionIvaFallback || ((finalCuit && finalCuit.length === 11) ? 'Responsable Inscripto' : 'Consumidor Final')
 
         return {
@@ -406,9 +431,8 @@ export default async function handler(req, res) {
             }
           }
 
-          let isOwnAccount = false
-          // Filtrar CUIT/DNI propio de Martin
-          if (docNumber === '20354302684' || docNumber === '35430268') {
+          // Filtrar CUIT/DNI propio del emisor
+          if ((ownCuit && docNumber === ownCuit) || (ownDni && docNumber === ownDni)) {
             docNumber = ''
             extractedBillingName = ''
             clienteNombre = 'Consumidor Final'
@@ -461,8 +485,9 @@ export default async function handler(req, res) {
           const medioPagoDetail = translatePaymentMethod(firstPayment?.payment_type, firstPayment?.payment_method_id)
           const formaPago = simplifyPaymentMethod(medioPagoDetail)
 
-          // Si es Consumidor Final, NO guardar CUIT
-          const finalCuit = clienteNombre === 'Consumidor Final' ? '' : resolvedCuit
+          // Si es Consumidor Final y es menor al límite legal, no guardamos CUIT
+          const LIMITE_IDENTIFICACION_ARCA = 10000000;
+          const finalCuit = (clienteNombre === 'Consumidor Final' && (order.total_amount || 0) < LIMITE_IDENTIFICACION_ARCA) ? '' : resolvedCuit;
           const condicionIva = condicionIvaFallback || ((finalCuit && finalCuit.length === 11) ? 'Responsable Inscripto' : 'Consumidor Final')
 
           const ventaRecord = {
